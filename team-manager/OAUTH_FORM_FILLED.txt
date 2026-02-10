@@ -1,0 +1,65 @@
+================================================================================
+GITHUB OAUTH REGISTRATION FORM - WHAT TO ENTER
+================================================================================
+
+FIELD 1: Application name
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Enter: Team Manager Dev
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+FIELD 2: Homepage URL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Enter: http://localhost:5173
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+FIELD 3: Application description (Optional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Enter: A collaborative team management platform with real-time task synchronization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+FIELD 4: Authorization callback URL ⚠️ IMPORTANT!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Enter: http://localhost:3000/api/oauth/github/callback
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+FIELD 5: Enable Device Flow
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Leave UNCHECKED (empty)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+================================================================================
+AFTER CLICKING "Register application"
+================================================================================
+
+You'll see a page with:
+  • Client ID (32 character string)
+  • Client Secret (starts with "ghp_")
+
+COPY BOTH VALUES!
+
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Edit team-manager/.env and add:
+   GITHUB_CLIENT_ID=<paste your Client ID here>
+   GITHUB_CLIENT_SECRET=<paste your Client Secret here>
+
+2. Create team-manager/.env.local and add:
+   VITE_GITHUB_CLIENT_ID=<paste your Client ID here>
+
+3. Edit team-manager/client/src/const.ts (see GITHUB_OAUTH_SETUP.md for code)
+
+4. Restart dev server:
+   pnpm dev
+
+5. Test at http://localhost:5173
+   Click "Sign in" → Authorize with GitHub → Done!
+
+================================================================================
