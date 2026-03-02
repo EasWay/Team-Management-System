@@ -1,12 +1,15 @@
 import { defineConfig } from "drizzle-kit";
 
-const connectionString = process.env.DATABASE_URL || "./dev.db";
-
 export default defineConfig({
   schema: "./drizzle/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: connectionString,
+    host: "localhost",
+    port: 5433, // PostgreSQL 13 is running on port 5433
+    user: "postgres",
+    password: "postgres",
+    database: "team_manager_db", // Updated to match created database name
+    ssl: false, // Disable SSL for local development
   },
 });

@@ -269,7 +269,7 @@ The implementation uses TypeScript throughout with React 19 for the frontend and
     - Add document management (create, rename, delete)
     - _Requirements: 5.1_
   
-  - [-] 8.5 Write property tests for editor features
+  - [x] 8.5 Write property tests for editor features
     - **Property 23: Editor Feature Preservation**
     - Test that Monaco Editor features remain functional during collaboration
     - **Validates: Requirements 5.5**

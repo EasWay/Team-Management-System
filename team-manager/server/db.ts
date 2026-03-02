@@ -1,6 +1,7 @@
 import { eq, and, isNull, desc, gte, lte, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pkg from 'pg';
+const { Pool } = pkg;
 import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, departments, InsertDepartment, Department, departmentAssignments, DepartmentAssignment, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, documents, InsertDocument, Document, activities, InsertActivity, Activity, repositories, InsertRepository, Repository } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
@@ -21,14 +22,22 @@ export interface DepartmentHierarchyNode {
 }
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: pkg.Pool | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db) {
     try {
-      const dbPath = process.env.DATABASE_URL || "./dev.db";
-      const sqlite = new Database(dbPath);
-      _db = drizzle(sqlite);
+      _pool = new Pool({
+        host: 'localhost',
+        port: 5433, // PostgreSQL 13 is running on port 5433
+        database: 'team_manager_db', // Updated to match created database name
+        user: 'postgres',
+        password: 'postgres',
+        ssl: false, // Disable SSL for local development
+      });
+      _db = drizzle(_pool);
+      console.log("[Database] Connected to PostgreSQL successfully");
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -48,32 +57,10 @@ export async function withTransaction<T>(
     throw new Error("Database not available");
   }
 
-  // For better-sqlite3 with async operations, we need to handle transactions differently
-  // Since better-sqlite3 is synchronous but Drizzle operations can be async,
-  // we'll use manual transaction control
-  try {
-    // Start transaction
-    (db as any).$client.exec('BEGIN');
-    
-    // Execute the operation
-    const result = await operation(db);
-    
-    // Commit transaction
-    (db as any).$client.exec('COMMIT');
-    
-    return result;
-  } catch (error) {
-    console.error("[Database] Transaction failed, rolling back:", error);
-    
-    // Rollback transaction
-    try {
-      (db as any).$client.exec('ROLLBACK');
-    } catch (rollbackError) {
-      console.error("[Database] Rollback failed:", rollbackError);
-    }
-    
-    throw error;
-  }
+  // PostgreSQL transaction handling with Drizzle
+  return await db.transaction(async (tx) => {
+    return await operation(tx as DbType);
+  });
 }
 
 // Enhanced Error Classes for better error handling

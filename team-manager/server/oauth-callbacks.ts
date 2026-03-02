@@ -14,6 +14,14 @@ import { users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { authService } from './_core/auth';
 
+// Track used OAuth codes to prevent duplicate exchanges
+const usedCodes = new Set<string>();
+
+// Clean up old codes after 5 minutes
+setInterval(() => {
+  usedCodes.clear();
+}, 5 * 60 * 1000);
+
 interface OAuthTokenResponse {
   access_token: string;
   refresh_token?: string;
@@ -53,6 +61,12 @@ async function exchangeCodeForToken(
     grant_type: 'authorization_code',
   });
   
+  console.log('[OAuth] Exchanging code for token with params:', {
+    client_id: provider.clientId,
+    redirect_uri: provider.redirectUri,
+    code: code.substring(0, 10) + '...',
+  });
+  
   const response = await axios.post<OAuthTokenResponse>(
     provider.tokenUrl,
     params.toString(),
@@ -64,6 +78,14 @@ async function exchangeCodeForToken(
     }
   );
   
+  console.log('[OAuth] Token exchange response:', JSON.stringify(response.data, null, 2));
+  
+  // GitHub might return the token in different formats
+  if (!response.data.access_token) {
+    console.error('[OAuth] No access_token in response! Full response:', response.data);
+    throw new Error('No access_token in OAuth response');
+  }
+  
   return response.data;
 }
 
@@ -71,6 +93,8 @@ async function exchangeCodeForToken(
  * Get user info from GitHub
  */
 async function getGitHubUserInfo(accessToken: string): Promise<GitHubUserInfo> {
+  console.log('[OAuth] Getting user info with token:', accessToken ? `${accessToken.substring(0, 10)}...` : 'undefined');
+  
   const response = await axios.get<GitHubUserInfo>('https://api.github.com/user', {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -128,6 +152,16 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
     return;
   }
   
+  // Check if this code has already been used
+  if (usedCodes.has(code)) {
+    console.log('[OAuth] Code already used, ignoring duplicate request');
+    res.status(400).json({ error: 'Authorization code already used' });
+    return;
+  }
+  
+  // Mark code as used immediately
+  usedCodes.add(code);
+  
   try {
     const provider = getProvider('github');
     if (!provider) {
@@ -152,7 +186,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
     let user = await db
       .select()
       .from(users)
-      .where(eq(users.githubId, githubId))
+      .where(eq(users.openId, githubId))
       .limit(1)
       .then(rows => rows[0]);
     
@@ -161,7 +195,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       const [newUser] = await db
         .insert(users)
         .values({
-          githubId,
+          openId: githubId,
           name: userInfo.name || userInfo.login,
           email: userInfo.email,
           role: 'user',
@@ -241,7 +275,7 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
     let user = await db
       .select()
       .from(users)
-      .where(eq(users.googleId, googleId))
+      .where(eq(users.openId, googleId))
       .limit(1)
       .then(rows => rows[0]);
     
@@ -250,7 +284,7 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       const [newUser] = await db
         .insert(users)
         .values({
-          googleId,
+          openId: googleId,
           name: userInfo.name,
           email: userInfo.email,
           role: 'user',
