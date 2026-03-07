@@ -33,46 +33,46 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  
+
   // Initialize Socket.io server
   initializeSocketServer(server);
-  
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  
+
   // Add CSP headers to allow GitHub OAuth and development tools
   app.use((req, res, next) => {
     // In development, be more permissive with CSP to allow dev tools and HMR
     const cspHeader = process.env.NODE_ENV === "development"
       ? "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " +
-        "style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' data: https:; " +
-        "font-src 'self' data:; " +
-        "connect-src 'self' https://github.com https://api.github.com https://accounts.google.com https://www.googleapis.com ws: wss: http://localhost:* http://127.0.0.1:*; " +
-        "frame-ancestors 'none'; " +
-        "base-uri 'self'; " +
-        "form-action 'self' https://github.com https://accounts.google.com; " +
-        "frame-src 'self' https://github.com https://accounts.google.com; " +
-        "worker-src 'self' blob:"
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' https://github.com https://api.github.com https://accounts.google.com https://www.googleapis.com ws: wss: http://localhost:* http://127.0.0.1:*; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self' https://github.com https://accounts.google.com; " +
+      "frame-src 'self' https://github.com https://accounts.google.com; " +
+      "worker-src 'self' blob:"
       : "default-src 'self'; " +
-        "script-src 'self'; " +
-        "style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' data: https:; " +
-        "font-src 'self' data:; " +
-        "connect-src 'self' https://github.com https://api.github.com https://accounts.google.com https://www.googleapis.com; " +
-        "frame-ancestors 'none'; " +
-        "base-uri 'self'; " +
-        "form-action 'self' https://github.com https://accounts.google.com";
-    
+      "script-src 'self' 'sha256-Eoj6XODkFF87BVabaKx38kr7sC0DCgv0l0N3CdsTja8='; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: https:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' https://github.com https://api.github.com https://accounts.google.com https://www.googleapis.com; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self' https://github.com https://accounts.google.com";
+
     res.setHeader("Content-Security-Policy", cspHeader);
     next();
   });
-  
+
   // GitHub webhook endpoint (must be before other routes)
   registerWebhookEndpoint(app);
-  
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // File upload endpoint
