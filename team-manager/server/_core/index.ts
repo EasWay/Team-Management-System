@@ -73,6 +73,11 @@ async function startServer() {
   // GitHub webhook endpoint (must be before other routes)
   registerWebhookEndpoint(app);
 
+  // Healthcheck route
+  app.get('/healthcheck', (req, res) => {
+    res.status(200).send('Service is awake');
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // File upload endpoint
