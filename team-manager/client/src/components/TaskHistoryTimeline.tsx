@@ -29,9 +29,7 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
   }
 
   const getActivityDescription = (activity: typeof history[0]) => {
-    const metadata = activity.metadata
-      ? JSON.parse(activity.metadata)
-      : {};
+    const metadata: any = activity.metadata || {};
 
     switch (activity.type) {
       case "task_created":
@@ -52,7 +50,7 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-sm text-gray-700 mb-3">Activity History</h3>
+      <h3 className="font-semibold text-sm text-foreground mb-3">Activity History</h3>
       <div className="relative">
         {/* Timeline line */}
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
@@ -70,15 +68,15 @@ export function TaskHistoryTimeline({ taskId }: TaskHistoryTimelineProps) {
               <div className="flex-1 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <User className="h-3 w-3 text-gray-400" />
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-semibold text-foreground">
                     User {activity.userId}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-foreground/70">
                     {getActivityDescription(activity)}
                   </span>
                 </div>
-                <div className="text-xs text-gray-400">
-                  {format(new Date(activity.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                <div className="text-xs text-foreground/50">
+                  {activity.createdAt ? format(new Date(activity.createdAt), "MMM d, yyyy 'at' h:mm a") : ""}
                 </div>
               </div>
             </div>

@@ -26,9 +26,9 @@ interface ClientToServerEvents {
   joinDocument: (documentId: string) => void;
   leaveDocument: (documentId: string) => void;
   // Yjs collaborative editing events
-  'yjs:join': (data: { documentId: string }) => void;
-  'yjs:leave': (data: { documentId: string }) => void;
-  'yjs:sync': (data: { documentId: string }) => void;
+  'yjs:join': (data: { documentId: number }) => void;
+  'yjs:leave': (data: { documentId: number }) => void;
+  'yjs:sync': (data: { documentId: number }) => void;
   'yjs:update': (data: { documentId: number; update: string }) => void;
   'yjs:awareness': (data: { documentId: number; state: any }) => void;
 }
@@ -77,7 +77,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get authentication token from tokenStorage utility
     const token = tokenStorage.getAccessToken();
-    
+
     if (!token) {
       console.debug('[Socket.io] No authentication token found - waiting for login');
       return;

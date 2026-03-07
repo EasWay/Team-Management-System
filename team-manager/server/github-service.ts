@@ -101,6 +101,123 @@ export class GitHubService {
   }
 
   /**
+   * Get authenticated user profile
+   */
+  async getAuthenticatedUser(): Promise<{ login: string; name: string | null; avatarUrl: string; htmlUrl: string }> {
+    try {
+      const { data } = await this.octokit.users.getAuthenticated();
+      return {
+        login: data.login,
+        name: data.name,
+        avatarUrl: data.avatar_url,
+        htmlUrl: data.html_url,
+      };
+    } catch (error: any) {
+      console.error('GitHub getAuthenticatedUser error:', error.message, error.status);
+      throw new GitHubServiceError(
+        'Failed to get authenticated user',
+        'GET_USER_FAILED',
+        500,
+        { originalError: error.message }
+      );
+    }
+  }
+
+  /**
+   * List all repositories for the authenticated user
+   */
+  async listUserRepositories(): Promise<GitHubRepository[]> {
+    try {
+      const allRepos: any[] = [];
+
+      // Fetch up to 3 pages (300 repos) to cover "numerous" repositories
+      for (let page = 1; page <= 3; page++) {
+        const { data } = await this.octokit.repos.listForAuthenticatedUser({
+          per_page: 100,
+          page,
+          sort: 'pushed',
+          direction: 'desc',
+          visibility: 'all',
+          affiliation: 'owner,collaborator,organization_member',
+        });
+
+        if (data.length === 0) break;
+        allRepos.push(...data);
+        if (data.length < 100) break;
+      }
+
+      return allRepos.map(repo => ({
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.full_name,
+        url: repo.html_url,
+        description: repo.description,
+        private: repo.private,
+        defaultBranch: repo.default_branch,
+      }));
+    } catch (error: any) {
+      console.error('GitHub listUserRepositories error:', error.message, error.status);
+      throw new GitHubServiceError(
+        'Failed to list user repositories',
+        'LIST_REPOS_FAILED',
+        500,
+        { originalError: error.message }
+      );
+    }
+  }
+
+  /**
+   * Create a new repository for the authenticated user
+   */
+  async createRepo(name: string, description?: string, isPrivate: boolean = true): Promise<GitHubRepository> {
+    try {
+      const { data } = await this.octokit.repos.createForAuthenticatedUser({
+        name,
+        description,
+        private: isPrivate,
+        auto_init: true,
+      });
+
+      return {
+        id: data.id,
+        name: data.name,
+        fullName: data.full_name,
+        url: data.html_url,
+        description: data.description,
+        private: data.private,
+        defaultBranch: data.default_branch,
+      };
+    } catch (error: any) {
+      throw new GitHubServiceError(
+        'Failed to create repository',
+        'CREATE_REPO_FAILED',
+        500,
+        { originalError: error.message }
+      );
+    }
+  }
+
+  /**
+   * Delete a repository
+   */
+  async deleteRepo(owner: string, repo: string): Promise<boolean> {
+    try {
+      await this.octokit.repos.delete({
+        owner,
+        repo,
+      });
+      return true;
+    } catch (error: any) {
+      throw new GitHubServiceError(
+        'Failed to delete repository',
+        'DELETE_REPO_FAILED',
+        error.status || 500,
+        { originalError: error.message }
+      );
+    }
+  }
+
+  /**
    * Validate repository access by attempting to fetch repository data
    */
   async validateRepositoryAccess(owner: string, repo: string): Promise<boolean> {
@@ -271,7 +388,7 @@ export class GitHubService {
         author: issue.user?.login || 'Unknown',
         createdAt: issue.created_at,
         updatedAt: issue.updated_at,
-        labels: issue.labels.map(label => 
+        labels: issue.labels.map(label =>
           typeof label === 'string' ? label : label.name || ''
         ),
       }));

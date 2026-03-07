@@ -1,5 +1,4 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent } from "@/components/ui/card";
 import { GitBranch, Loader2 } from "lucide-react";
 import { RepositoryCard } from "./RepositoryCard";
 
@@ -14,8 +13,8 @@ export function RepositoryList({ teamId }: RepositoryListProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-500">Loading repositories...</p>
+          <Loader2 className="h-8 w-8 text-slate-400 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-500">Loading repositories...</p>
         </div>
       </div>
     );
@@ -23,22 +22,18 @@ export function RepositoryList({ teamId }: RepositoryListProps) {
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="pt-12 text-center">
-          <p className="text-red-600 mb-4">Failed to load repositories: {error.message}</p>
-        </CardContent>
-      </Card>
+      <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center justify-center">
+        <p className="text-accent-alert mb-4">Failed to load repositories: {error.message}</p>
+      </div>
     );
   }
 
   if (!repositories || repositories.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-12 text-center">
-          <GitBranch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">No repositories connected yet.</p>
-        </CardContent>
-      </Card>
+      <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center justify-center">
+        <GitBranch className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+        <p className="text-slate-400 mb-4">No repositories connected yet.</p>
+      </div>
     );
   }
 

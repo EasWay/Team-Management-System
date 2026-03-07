@@ -36,8 +36,8 @@ export function AssigneeDropdown({
       <SelectContent>
         <SelectItem value="unassigned">Unassigned</SelectItem>
         {members?.map((member) => (
-          <SelectItem key={member.userId} value={String(member.userId)}>
-            {member.user?.name || `User ${member.userId}`}
+          <SelectItem key={member.memberId} value={String(member.memberId)}>
+            {member.member?.name || `User ${member.memberId}`}
           </SelectItem>
         ))}
       </SelectContent>

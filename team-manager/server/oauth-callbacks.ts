@@ -147,7 +147,10 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
   const code = req.query.code as string | undefined;
   const state = req.query.state as string | undefined;
   
+  console.log('[OAuth] GitHub callback received:', { code: code?.substring(0, 10), state });
+  
   if (!code || !state) {
+    console.error('[OAuth] Missing code or state');
     res.status(400).json({ error: 'code and state are required' });
     return;
   }
@@ -163,26 +166,40 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
   usedCodes.add(code);
   
   try {
+    console.log('[OAuth] Getting GitHub provider config...');
     const provider = getProvider('github');
     if (!provider) {
+      console.error('[OAuth] GitHub provider not configured');
       res.status(500).json({ error: 'GitHub OAuth not configured' });
       return;
     }
     
+    console.log('[OAuth] Provider config:', {
+      clientId: provider.clientId,
+      redirectUri: provider.redirectUri,
+    });
+    
     // Exchange code for token
+    console.log('[OAuth] Exchanging code for token...');
     const tokenResponse = await exchangeCodeForToken(provider, code);
+    console.log('[OAuth] Token exchange successful');
     
     // Get user info
+    console.log('[OAuth] Getting user info...');
     const userInfo = await getGitHubUserInfo(tokenResponse.access_token);
+    console.log('[OAuth] User info received:', { id: userInfo.id, login: userInfo.login, email: userInfo.email });
     
+    console.log('[OAuth] Getting database connection...');
     const db = await getDb();
     if (!db) {
+      console.error('[OAuth] Database not available');
       res.status(500).json({ error: 'Database not available' });
       return;
     }
     
     // Find or create user
     const githubId = userInfo.id.toString();
+    console.log('[OAuth] Looking for user with openId:', githubId);
     let user = await db
       .select()
       .from(users)
@@ -191,6 +208,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       .then(rows => rows[0]);
     
     if (!user) {
+      console.log('[OAuth] Creating new user...');
       // Create new user
       const [newUser] = await db
         .insert(users)
@@ -203,7 +221,9 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
         .returning();
       
       user = newUser;
+      console.log('[OAuth] New user created:', user.id);
     } else {
+      console.log('[OAuth] Updating existing user:', user.id);
       // Update existing user
       await db
         .update(users)
@@ -216,6 +236,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
     }
     
     // Store OAuth token
+    console.log('[OAuth] Storing OAuth token...');
     const expiresAt = tokenResponse.expires_in
       ? new Date(Date.now() + tokenResponse.expires_in * 1000)
       : undefined;
@@ -225,17 +246,30 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       refreshToken: tokenResponse.refresh_token,
       expiresAt,
     });
+    console.log('[OAuth] OAuth token stored');
     
     // Generate JWT tokens
+    console.log('[OAuth] Generating JWT tokens...');
     const accessToken = await authService.generateAccessToken(user.id, user.email || '');
     const refreshToken = await authService.generateRefreshToken(user.id, user.email || '');
+    console.log('[OAuth] JWT tokens generated');
     
     // Redirect to frontend with tokens in URL (will be stored in localStorage)
-    const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
+    const redirectUrl = `http://localhost:3000/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
+    console.log('[OAuth] Redirecting to:', redirectUrl);
     res.redirect(302, redirectUrl);
   } catch (error) {
-    console.error('[OAuth] GitHub callback failed', error);
-    res.status(500).json({ error: 'GitHub OAuth callback failed' });
+    console.error('[OAuth] GitHub callback failed with error:', error);
+    if (error instanceof Error) {
+      console.error('[OAuth] Error message:', error.message);
+      console.error('[OAuth] Error stack:', error.stack);
+    }
+    // Remove the code from used codes so it can be retried
+    usedCodes.delete(code);
+    res.status(500).json({ 
+      error: 'GitHub OAuth callback failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }
 

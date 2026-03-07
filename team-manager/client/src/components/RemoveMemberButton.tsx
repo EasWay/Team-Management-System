@@ -60,7 +60,7 @@ export function RemoveMemberButton({ teamId, userId, userName }: RemoveMemberBut
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemove}
               className="bg-red-600 hover:bg-red-700"

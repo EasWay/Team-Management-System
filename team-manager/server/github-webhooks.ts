@@ -40,7 +40,7 @@ async function handlePushEvent(payload: any, repositoryId: number, teamId: numbe
       teamId,
       userId: 1, // System user for webhook events
       type: 'commit_pushed',
-      entityId: repositoryId.toString(),
+      entityId: repositoryId,
       entityType: 'repository',
       metadata: JSON.stringify({
         repositoryName: payload.repository?.full_name,
@@ -88,7 +88,7 @@ async function handlePullRequestEvent(payload: any, repositoryId: number, teamId
       teamId,
       userId: 1, // System user for webhook events
       type: activityType,
-      entityId: repositoryId.toString(),
+      entityId: repositoryId,
       entityType: 'repository',
       metadata: JSON.stringify({
         repositoryName: payload.repository?.full_name,
@@ -136,7 +136,7 @@ async function handleIssuesEvent(payload: any, repositoryId: number, teamId: num
       teamId,
       userId: 1, // System user for webhook events
       type: activityType,
-      entityId: repositoryId.toString(),
+      entityId: repositoryId,
       entityType: 'repository',
       metadata: JSON.stringify({
         repositoryName: payload.repository?.full_name,

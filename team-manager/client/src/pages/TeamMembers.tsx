@@ -1,38 +1,70 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit2, Users, Search, Filter, Eye } from "lucide-react";
 import { AddTeamMemberForm } from "@/components/AddTeamMemberForm";
 import { EditTeamMemberForm } from "@/components/EditTeamMemberForm";
 import { TeamMemberDetailModal } from "@/components/TeamMemberDetailModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "sonner";
 import type { TeamMember } from "@shared/types";
+import { Search, Eye, Edit, Trash2, RefreshCw, X } from "lucide-react";
+import { useTeamContext } from "@/contexts/TeamContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+// Random color/badge generator for roles
+function getRoleStyles(position: string) {
+  const p = position.toLowerCase();
+  if (p.includes('admin') || p.includes('lead') || p.includes('manager')) {
+    return "border-yellow-500/30 text-yellow-400 bg-yellow-500/10";
+  }
+  if (p.includes('frontend') || p.includes('ui') || p.includes('design')) {
+    return "border-cyan-500/30 text-cyan-400 bg-cyan-500/10";
+  }
+  if (p.includes('backend') || p.includes('data')) {
+    return "border-blue-500/30 text-blue-400 bg-blue-500/10";
+  }
+  if (p.includes('devops') || p.includes('infra')) {
+    return "border-purple-500/30 text-purple-400 bg-purple-500/10";
+  }
+  if (p.includes('qa') || p.includes('test')) {
+    return "border-pink-500/30 text-pink-400 bg-pink-500/10";
+  }
+  return "border-green-500/30 text-green-400 bg-green-500/10";
+}
 
 export default function TeamMembers() {
-  const { data: members, isLoading, refetch } = trpc.team.listWithDepartments.useQuery();
-  const { data: departments } = trpc.department.list.useQuery();
+  const { data: members, isLoading, refetch } = trpc.team.list.useQuery();
   const deleteMutation = trpc.team.delete.useMutation();
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const { selectedTeamId, teams } = useTeamContext();
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this team member?")) {
-      try {
-        await deleteMutation.mutateAsync({ id });
-        toast.success("Team member deleted successfully");
-        refetch();
-      } catch (error) {
-        toast.error("Failed to delete team member");
-      }
+  const currentTeamName = teams?.find(t => t.id === selectedTeamId)?.name || 'NO ACTIVE TEAM';
+
+  const handleDelete = async () => {
+    if (!memberToDelete) return;
+    try {
+      await deleteMutation.mutateAsync({ id: memberToDelete });
+      toast.success("Team member deleted successfully");
+      refetch();
+      setIsDeleteDialogOpen(false);
+      setMemberToDelete(null);
+    } catch (error) {
+      toast.error("Failed to delete team member");
     }
   };
 
@@ -49,237 +81,183 @@ export default function TeamMembers() {
     toast.success("Team member updated successfully");
   };
 
-  // Filter members based on search term and department
   const filteredMembers = members?.filter((member) => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.duties?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = departmentFilter === "all" || 
-                             (departmentFilter === "unassigned" && !member.currentDepartment) ||
-                             (member.currentDepartment?.id.toString() === departmentFilter);
-    
-    return matchesSearch && matchesDepartment;
+      (member.position?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.duties?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch;
   });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Loading team members...</p>
+      <DashboardLayout>
+        <div className="flex justify-center items-center flex-1 h-screen">
+          <div className="text-center">
+            <RefreshCw className="text-muted-foreground/40 mb-4 animate-spin size-12 mx-auto" />
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Loading roster...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex-1 max-w-[1600px] mx-auto w-full p-8 flex flex-col h-screen overflow-hidden text-foreground font-body">
+
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:justify-between md:items-end mb-12 shrink-0 pt-4 gap-6">
           <div>
-            <h1 className="text-3xl font-bold">Team Members</h1>
-            <p className="text-gray-600 mt-2">Manage your company team and their roles</p>
+            <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2">
+              <span>{currentTeamName}</span>
+              <span className="size-1 rounded-full bg-foreground/20"></span>
+              <span>TEAM</span>
+            </div>
+            <h2 className="text-4xl font-light tracking-tight text-foreground mb-2">{currentTeamName}</h2>
+            <p className="text-[10px] text-muted-foreground max-w-md font-medium tracking-wide">Manage role assignments and review operational status inside your division grid.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Team Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add Team Member</DialogTitle>
-                <DialogDescription>
-                  Add a new member to your team with their details and role.
-                </DialogDescription>
-              </DialogHeader>
-              <AddTeamMemberForm onSuccess={handleAddSuccess} />
-            </DialogContent>
-          </Dialog>
-        </div>
 
-      {/* Search and Filter Controls */}
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search team members..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by department" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {departments?.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id.toString()}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+          <div className="flex gap-4">
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+              <input
+                className="bg-foreground/5 border border-border rounded px-10 py-2.5 text-[10px] uppercase tracking-widest font-bold text-foreground focus:outline-none focus:border-foreground/30 w-full md:w-64 transition-all hover:bg-foreground/10 placeholder:text-muted-foreground"
+                placeholder="Search registry..."
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <button className="px-6 py-2.5 border border-border text-muted-foreground text-[10px] font-bold tracking-widest uppercase hover:text-foreground hover:border-foreground/30 transition-colors rounded">
+              Filters
+            </button>
+            <button
+              className="px-6 py-2.5 bg-white text-black text-[10px] font-bold tracking-widest uppercase hover:bg-slate-200 transition-colors rounded"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              Recruit Asset
+            </button>
+          </div>
+        </header>
 
-      {filteredMembers && filteredMembers.length === 0 ? (
-        <Card>
-          <CardContent className="pt-12 text-center">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">
-              {members && members.length === 0 
-                ? "No team members yet. Add your first team member to get started."
-                : "No team members match your current filters."
-              }
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMembers?.map((member) => (
-            <Card key={member.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{member.name}</CardTitle>
-                    <CardDescription className="text-sm font-medium text-blue-600 mt-1">
-                      {member.position}
-                    </CardDescription>
-                    {member.currentDepartment && (
-                      <CardDescription className="text-xs text-green-600 mt-1">
-                        {member.currentDepartment.name}
-                      </CardDescription>
-                    )}
-                    {!member.currentDepartment && (
-                      <CardDescription className="text-xs text-gray-500 mt-1">
-                        Unassigned
-                      </CardDescription>
-                    )}
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+        {/* Scrollable Grid Container */}
+        <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
+          {filteredMembers && filteredMembers.length === 0 ? (
+            <div className="flex items-center justify-center flex-1 h-[400px]">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">No personnel match parameters.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-2">
+              {filteredMembers?.map((member) => (
+                <div key={member.id} className="liquid-glass-card rounded-xl overflow-hidden group relative">
+
+                  {/* Grid Hovers Action Area */}
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                    <button
                       onClick={() => {
                         setSelectedMember(member);
                         setIsDetailModalOpen(true);
                       }}
-                      title="View Details"
+                      className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
+                      title="View Bio"
                     >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                      <Eye className="size-3.5" />
+                    </button>
+                    <button
                       onClick={() => {
                         setSelectedMember(member);
                         setIsEditDialogOpen(true);
                       }}
-                      title="Edit"
+                      className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
+                      title="Change Assignment"
                     >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(member.id)}
+                      <Edit className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMemberToDelete(member.id);
+                        setIsDeleteDialogOpen(true);
+                      }}
                       disabled={deleteMutation.isPending}
-                      title="Delete"
+                      className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-red-500 hover:border-red-500 hover:text-white flex items-center justify-center text-muted-foreground transition-colors"
+                      title="Purge Record"
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="h-48 relative overflow-hidden bg-white/5">
+                    {member.pictureFileName ? (
+                      <img
+                        alt={member.name}
+                        className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                        src={`/api/uploads/${member.pictureFileName}?t=${Date.now()}`}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-3xl font-light text-muted-foreground/30 bg-muted grayscale group-hover:grayscale-0 group-hover:text-foreground/40 transition-all duration-500">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                      <div>
+                        <h3 className="text-sm font-bold text-white tracking-wide">{member.name}</h3>
+                        <p className="text-[10px] text-white/60 uppercase tracking-widest">{member.position || 'Operative'}</p>
+                      </div>
+                      <div className="size-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"></div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 grid grid-cols-3 gap-2 border-t border-border bg-muted/30">
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Fitness</p>
+                      <p className="text-xs text-foreground font-mono">100%</p>
+                    </div>
+                    <div className="text-center border-x border-border">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Velocity</p>
+                      <p className="text-xs text-foreground font-mono">1.0x</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Health</p>
+                      <p className="text-xs text-foreground font-mono">OPT</p>
+                    </div>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {member.pictureFileName && (
-                  <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden">
-                    <img
-                      src={`/api/uploads/${member.pictureFileName}`}
-                      alt={member.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                {member.email && (
-                  <div>
-                    <p className="text-xs text-gray-500">Email</p>
-                    <p className="text-sm text-gray-700">{member.email}</p>
-                  </div>
-                )}
-                {member.phone && (
-                  <div>
-                    <p className="text-xs text-gray-500">Phone</p>
-                    <p className="text-sm text-gray-700">{member.phone}</p>
-                  </div>
-                )}
-                {member.duties && (
-                  <div>
-                    <p className="text-xs text-gray-500">Duties</p>
-                    <p className="text-sm text-gray-700 line-clamp-2">{member.duties}</p>
-                  </div>
-                )}
-                {/* Department Information */}
-                <div>
-                  <p className="text-xs text-gray-500">Department</p>
-                  {member.currentDepartment ? (
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-700">{member.currentDepartment.name}</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // TODO: Open department reassignment modal
-                          toast.info("Department reassignment coming soon");
-                        }}
-                        className="text-xs"
-                      >
-                        Reassign
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-500">Unassigned</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // TODO: Open department assignment modal
-                          toast.info("Department assignment coming soon");
-                        }}
-                        className="text-xs"
-                      >
-                        Assign
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-background text-foreground liquid-glass-card overflow-hidden">
+          <DialogHeader className="relative z-10 border-b border-border pb-4 mb-4">
+            <DialogTitle className="text-foreground text-lg font-light tracking-tight">Recruit Operative</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-[10px] uppercase tracking-widest">
+              Assign a new member to your working squad.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative z-10">
+            <AddTeamMemberForm onSuccess={handleAddSuccess} />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {selectedMember && (
         <>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Edit Team Member</DialogTitle>
-                <DialogDescription>
-                  Update team member information and role.
+            <DialogContent className="sm:max-w-md bg-background text-foreground liquid-glass-card overflow-hidden">
+              <DialogHeader className="relative z-10 border-b border-border pb-4 mb-4">
+                <DialogTitle className="text-foreground text-lg font-light tracking-tight">Reassign Operative</DialogTitle>
+                <DialogDescription className="text-muted-foreground text-[10px] uppercase tracking-widest">
+                  Update file and clearance for {selectedMember.name}.
                 </DialogDescription>
               </DialogHeader>
-              <EditTeamMemberForm member={selectedMember} onSuccess={handleEditSuccess} />
+              <div className="relative z-10">
+                <EditTeamMemberForm member={selectedMember} onSuccess={handleEditSuccess} />
+              </div>
             </DialogContent>
           </Dialog>
 
@@ -294,7 +272,25 @@ export default function TeamMembers() {
           />
         </>
       )}
-      </div>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Purge Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this team member? This action is permanent and will remove them from the operational registry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Confirm Purge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

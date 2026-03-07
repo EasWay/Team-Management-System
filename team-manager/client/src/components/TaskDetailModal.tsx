@@ -43,15 +43,16 @@ interface Task {
   id: number;
   title: string;
   description: string | null;
-  assigneeId: number | null;
-  priority: "low" | "medium" | "high" | "urgent";
-  status: "todo" | "in_progress" | "review" | "done";
+  priority: string | null;
+  status: string | null;
+  teamId: number | null;
+  assignedTo: number | null;
+  createdBy: number | null;
   dueDate: Date | null;
-  githubPrUrl: string | null;
-  teamId: number;
-  position: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  position?: number;
+  githubPrUrl?: string | null;
 }
 
 interface TaskDetailModalProps {
@@ -62,10 +63,10 @@ interface TaskDetailModalProps {
 }
 
 const priorityColors = {
-  low: "bg-gray-100 text-gray-700 border-gray-300",
-  medium: "bg-blue-100 text-blue-700 border-blue-300",
-  high: "bg-orange-100 text-orange-700 border-orange-300",
-  urgent: "bg-red-100 text-red-700 border-red-300",
+  low: "bg-foreground/5 text-foreground/70 border-border",
+  medium: "bg-blue-500/10 text-blue-600 border-blue-300/50",
+  high: "bg-orange-500/10 text-orange-600 border-orange-300/50",
+  urgent: "bg-red-500/10 text-red-600 border-red-300/50",
 };
 
 export function TaskDetailModal({
@@ -91,9 +92,9 @@ export function TaskDetailModal({
         id: task.id,
         title: editedTask.title,
         description: editedTask.description || undefined,
-        assigneeId: editedTask.assigneeId || undefined,
-        priority: editedTask.priority,
-        status: editedTask.status,
+        assignedTo: editedTask.assignedTo || undefined,
+        priority: editedTask.priority || undefined,
+        status: editedTask.status || undefined,
         dueDate: editedTask.dueDate || undefined,
         githubPrUrl: editedTask.githubPrUrl || undefined,
       });
@@ -139,7 +140,7 @@ export function TaskDetailModal({
                   onChange={(e) =>
                     setEditedTask({ ...editedTask, title: e.target.value })
                   }
-                  className="text-lg font-semibold"
+                  className="text-lg font-semibold text-foreground"
                 />
               ) : (
                 task.title
@@ -157,7 +158,7 @@ export function TaskDetailModal({
               {/* Priority and Status */}
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-semibold mb-2 block text-foreground/90">
                     Priority
                   </label>
                   {isEditing ? (
@@ -188,7 +189,7 @@ export function TaskDetailModal({
                 </div>
 
                 <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-semibold mb-2 block text-foreground/90">
                     Status
                   </label>
                   {isEditing ? (
@@ -216,7 +217,7 @@ export function TaskDetailModal({
 
               {/* Description */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-semibold mb-2 block text-foreground/90">
                   Description
                 </label>
                 {isEditing ? (
@@ -229,7 +230,7 @@ export function TaskDetailModal({
                     placeholder="Add a description..."
                   />
                 ) : (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-foreground/80 leading-relaxed italic">
                     {task.description || "No description provided"}
                   </p>
                 )}
@@ -237,16 +238,16 @@ export function TaskDetailModal({
 
               {/* Assignee */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-semibold mb-2 block text-foreground/90">
                   Assignee
                 </label>
                 {isEditing ? (
                   <Select
-                    value={editedTask.assigneeId ? String(editedTask.assigneeId) : "unassigned"}
+                    value={editedTask.assignedTo ? String(editedTask.assignedTo) : "unassigned"}
                     onValueChange={(value) =>
                       setEditedTask({
                         ...editedTask,
-                        assigneeId: value === "unassigned" ? null : Number(value),
+                        assignedTo: value === "unassigned" ? null : Number(value),
                       })
                     }
                   >
@@ -257,19 +258,19 @@ export function TaskDetailModal({
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {members?.map((member) => (
                         <SelectItem
-                          key={member.userId}
-                          value={String(member.userId)}
+                          key={member.memberId}
+                          value={String(member.memberId)}
                         >
-                          {member.user?.name || member.user?.email || `User ${member.userId}`}
+                          {member.member?.name || member.member?.email || `User ${member.memberId}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="text-sm text-gray-600">
-                    {task.assigneeId
-                      ? members?.find((m) => m.userId === task.assigneeId)?.user
-                          ?.name || `User ${task.assigneeId}`
+                  <p className="text-sm text-foreground/80">
+                    {task.assignedTo
+                      ? members?.find((m) => m.memberId === task.assignedTo)?.member
+                        ?.name || `User ${task.assignedTo}`
                       : "Unassigned"}
                   </p>
                 )}
@@ -277,7 +278,7 @@ export function TaskDetailModal({
 
               {/* Due Date */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-semibold mb-2 block text-foreground/90">
                   Due Date
                 </label>
                 {isEditing ? (
@@ -288,11 +289,11 @@ export function TaskDetailModal({
                         className="w-full justify-start text-left font-normal"
                       >
                         {editedTask.dueDate ? (
-                          format(new Date(editedTask.dueDate), "PPP")
+                          <span className="text-foreground font-medium">{format(new Date(editedTask.dueDate), "PPP")}</span>
                         ) : (
-                          <span>Pick a date</span>
+                          <span className="text-foreground/75">Pick a date</span>
                         )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-70" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -307,7 +308,7 @@ export function TaskDetailModal({
                     </PopoverContent>
                   </Popover>
                 ) : (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-foreground/80 font-medium">
                     {task.dueDate
                       ? format(new Date(task.dueDate), "PPP")
                       : "No due date"}
@@ -317,7 +318,7 @@ export function TaskDetailModal({
 
               {/* GitHub PR URL */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-semibold mb-2 block text-foreground/90">
                   GitHub Pull Request
                 </label>
                 {isEditing ? (
@@ -333,13 +334,13 @@ export function TaskDetailModal({
                     href={task.githubPrUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    className="text-sm text-foreground hover:underline flex items-center gap-1 font-medium"
                   >
                     <Github className="h-4 w-4" />
                     View Pull Request
                   </a>
                 ) : (
-                  <p className="text-sm text-gray-600">No PR linked</p>
+                  <p className="text-sm text-muted-foreground">No PR linked</p>
                 )}
               </div>
 
@@ -358,6 +359,7 @@ export function TaskDetailModal({
                       variant="outline"
                       onClick={handleCancel}
                       disabled={updateMutation.isPending}
+                      className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground"
                     >
                       Cancel
                     </Button>
@@ -396,7 +398,7 @@ export function TaskDetailModal({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"

@@ -25,10 +25,16 @@ export function setupFileUpload(app: express.Application) {
 
       const uploadedFile = req.files.file as fileUpload.UploadedFile;
 
-      // Validate file type (only images)
-      const allowedMimes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      // Validate file type (images and common document types)
+      const allowedMimes = [
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf",
+        "text/plain",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+        "application/msword" // .doc
+      ];
       if (!allowedMimes.includes(uploadedFile.mimetype)) {
-        return res.status(400).json({ error: "Invalid file type. Only images are allowed." });
+        return res.status(400).json({ error: "Invalid file type. Only images and documents (PDF, DOCX, TXT) are allowed." });
       }
 
       // Validate file size (max 5MB)

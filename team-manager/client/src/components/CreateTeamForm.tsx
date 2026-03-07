@@ -55,11 +55,11 @@ export function CreateTeamForm({ onSuccess, onCancel }: CreateTeamFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Team Name</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Team Name</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="e.g., Frontend Team, Backend Team" 
-                  {...field} 
+                <Input
+                  placeholder="e.g., Frontend Team, Backend Team"
+                  {...field}
                   disabled={isLoading}
                 />
               </FormControl>
@@ -73,9 +73,9 @@ export function CreateTeamForm({ onSuccess, onCancel }: CreateTeamFormProps) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (Optional)</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Description (Optional)</FormLabel>
               <FormControl>
-                <Textarea 
+                <Textarea
                   placeholder="Describe the team's purpose and responsibilities..."
                   rows={3}
                   {...field}
@@ -92,7 +92,13 @@ export function CreateTeamForm({ onSuccess, onCancel }: CreateTeamFormProps) {
             {isLoading ? "Creating..." : "Create Team"}
           </Button>
           {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
+              className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground"
+            >
               Cancel
             </Button>
           )}

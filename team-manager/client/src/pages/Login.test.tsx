@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Login from "./Login";
 
@@ -72,12 +73,12 @@ describe("Login Page Component", () => {
     mockSetLocation.mockClear();
     mockMutateAsync.mockClear();
     mockIsPending.mockReturnValue(false); // Reset to false by default
-    
+
     // Get the mocked functions from the module
     const { tokenStorage } = await import("@/lib/tokenStorage");
     mockSetAccessToken = vi.mocked(tokenStorage.setAccessToken);
     mockSetRefreshToken = vi.mocked(tokenStorage.setRefreshToken);
-    
+
     mockSetAccessToken.mockClear();
     mockSetRefreshToken.mockClear();
   });
@@ -117,7 +118,7 @@ describe("Login Page Component", () => {
     // Enter invalid email and valid password
     await user.type(emailField, 'invalid-email');
     await user.type(passwordField, 'password123');
-    
+
     // Trigger form submission
     await user.click(submitButton);
 
@@ -125,7 +126,7 @@ describe("Login Page Component", () => {
     // we'll verify that the API was not called with invalid data
     // This is actually a more robust test as it verifies the validation works
     expect(mockMutateAsync).not.toHaveBeenCalled();
-    
+
     // Alternative: Check if the form is still present (not redirected)
     expect(screen.getByRole('button', { name: /sign in/i })).toBeDefined();
   });
@@ -155,7 +156,7 @@ describe("Login Page Component", () => {
   it("should store tokens in localStorage on successful login", async () => {
     // Test successful login stores tokens in localStorage - validates Requirements 5.1, 5.2, 8.6
     const user = userEvent.setup();
-    
+
     // Mock successful login response
     const mockResponse = {
       success: true,
@@ -168,9 +169,9 @@ describe("Login Page Component", () => {
       accessToken: "mock_access_token_12345",
       refreshToken: "mock_refresh_token_67890",
     };
-    
+
     mockMutateAsync.mockResolvedValueOnce(mockResponse);
-    
+
     renderLogin();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -198,7 +199,7 @@ describe("Login Page Component", () => {
   it("should redirect to dashboard on successful login", async () => {
     // Test successful login redirects to dashboard - validates Requirements 8.6, 8.7
     const user = userEvent.setup();
-    
+
     // Mock successful login response
     const mockResponse = {
       success: true,
@@ -211,9 +212,9 @@ describe("Login Page Component", () => {
       accessToken: "mock_access_token",
       refreshToken: "mock_refresh_token",
     };
-    
+
     mockMutateAsync.mockResolvedValueOnce(mockResponse);
-    
+
     renderLogin();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -234,11 +235,11 @@ describe("Login Page Component", () => {
   it("should display error message on login failure", async () => {
     // Test error message displays on login failure - validates Requirements 8.6, 8.7
     const user = userEvent.setup();
-    
+
     // Mock login failure
     const mockError = new Error(JSON.stringify({ error: "Invalid credentials" }));
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderLogin();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -265,11 +266,11 @@ describe("Login Page Component", () => {
   it("should preserve email field on error", async () => {
     // Test email field preserved on error - validates Requirements 8.6, 8.7
     const user = userEvent.setup();
-    
+
     // Mock login failure
     const mockError = new Error(JSON.stringify({ error: "Invalid credentials" }));
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderLogin();
 
     const emailField = screen.getByLabelText(/email/i) as HTMLInputElement;
@@ -295,14 +296,14 @@ describe("Login Page Component", () => {
   it("should show loading state during submission", async () => {
     // Test loading state during submission - validates Requirements 8.6
     mockIsPending.mockReturnValue(true);
-    
+
     renderLogin();
 
     // When loading, button should show loading text and be disabled
     const loadingButton = screen.getByRole('button', { name: /signing in/i });
     expect(loadingButton).toBeDefined();
     expect(loadingButton).toBeDisabled();
-    
+
     // Check that loading spinner is present
     const loadingSpinner = screen.getByRole('status', { name: /loading/i });
     expect(loadingSpinner).toBeDefined();
@@ -322,11 +323,11 @@ describe("Login Page Component", () => {
   it("should handle generic error messages without revealing email existence", async () => {
     // Test security - no email enumeration - validates Requirements 2.2, 2.5
     const user = userEvent.setup();
-    
+
     // Mock login failure with generic error
     const mockError = new Error(JSON.stringify({ error: "Invalid credentials" }));
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderLogin();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -354,11 +355,11 @@ describe("Login Page Component", () => {
   it("should handle server errors gracefully", async () => {
     // Test server error handling - validates Requirements 8.6, 8.7
     const user = userEvent.setup();
-    
+
     // Mock server error
     const mockError = new Error("Network error");
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderLogin();
 
     const emailField = screen.getByLabelText(/email/i);

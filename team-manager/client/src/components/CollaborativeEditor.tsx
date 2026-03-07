@@ -45,18 +45,39 @@ function getUserColor(userId: number): string {
   return colors[userId % colors.length];
 }
 
+// Convert Base64 back to Uint8Array for Y.applyUpdate
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// Convert Uint8Array to Base64 to safely emit
+function uint8ArrayToBase64(buffer: Uint8Array): string {
+  let binary = '';
+  const len = buffer.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(buffer[i]);
+  }
+  return btoa(binary);
+}
+
 export function CollaborativeEditor({
   documentId,
   initialContent = '',
   language = 'typescript',
   onContentChange,
 }: CollaborativeEditorProps) {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const [isConnected, setIsConnected] = useState(false);
   const [isSynced, setIsSynced] = useState(false);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [content, setContent] = useState(initialContent);
-  
+
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const ydocRef = useRef<Y.Doc | null>(null);
@@ -67,7 +88,7 @@ export function CollaborativeEditor({
   useEffect(() => {
     const ydoc = new Y.Doc();
     const ytext = ydoc.getText('monaco');
-    
+
     ydocRef.current = ydoc;
     ytextRef.current = ytext;
 
@@ -101,7 +122,7 @@ export function CollaborativeEditor({
 
     try {
       // Apply the state from server
-      const stateBuffer = Buffer.from(state, 'base64');
+      const stateBuffer = base64ToUint8Array(state);
       Y.applyUpdate(ydocRef.current, stateBuffer);
 
       // Update editor content
@@ -121,9 +142,9 @@ export function CollaborativeEditor({
 
     try {
       isRemoteChangeRef.current = true;
-      const updateBuffer = Buffer.from(update, 'base64');
+      const updateBuffer = base64ToUint8Array(update);
       Y.applyUpdate(ydocRef.current, updateBuffer);
-      
+
       // Update editor content
       if (ytextRef.current && editorRef.current) {
         const text = ytextRef.current.toString();
@@ -132,7 +153,7 @@ export function CollaborativeEditor({
           model.setValue(text);
         }
       }
-      
+
       isRemoteChangeRef.current = false;
     } catch (error) {
       console.error('[CollaborativeEditor] Failed to apply update:', error);
@@ -167,21 +188,21 @@ export function CollaborativeEditor({
       state,
       color: getUserColor(userId),
     }));
-    
+
     setActiveUsers(users);
   });
 
   // Handle user joined
   useSocketEvent('yjs:user-joined', ({ documentId: docId, userId, username }: any) => {
     if (docId !== documentId) return;
-    
+
     console.log('[CollaborativeEditor] User joined:', username);
   });
 
   // Handle user left
   useSocketEvent('yjs:user-left', ({ documentId: docId, userId }: any) => {
     if (docId !== documentId) return;
-    
+
     setActiveUsers(prev => prev.filter(u => u.userId !== userId));
   });
 
@@ -204,7 +225,7 @@ export function CollaborativeEditor({
       // Update Yjs document
       ydocRef.current.transact(() => {
         if (!ytextRef.current) return;
-        
+
         const currentText = ytextRef.current.toString();
         if (currentText !== value) {
           ytextRef.current.delete(0, currentText.length);
@@ -214,8 +235,8 @@ export function CollaborativeEditor({
 
       // Get the update and send to server
       const update = Y.encodeStateAsUpdate(ydocRef.current);
-      const base64Update = Buffer.from(update).toString('base64');
-      
+      const base64Update = uint8ArrayToBase64(update);
+
       socket.emit('yjs:update', {
         documentId,
         update: base64Update,
@@ -237,10 +258,10 @@ export function CollaborativeEditor({
     if (!editorRef.current || !socket) return;
 
     const editor = editorRef.current;
-    
+
     const disposable = editor.onDidChangeCursorPosition((e: any) => {
       const position = e.position;
-      
+
       socket.emit('yjs:awareness', {
         documentId,
         state: {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Register from "./Register";
 
@@ -72,12 +73,12 @@ describe("Register Page Component", () => {
     mockSetLocation.mockClear();
     mockMutateAsync.mockClear();
     mockIsPending.mockReturnValue(false); // Reset to false by default
-    
+
     // Get the mocked functions from the module
     const { tokenStorage } = await import("@/lib/tokenStorage");
     mockSetAccessToken = vi.mocked(tokenStorage.setAccessToken);
     mockSetRefreshToken = vi.mocked(tokenStorage.setRefreshToken);
-    
+
     mockSetAccessToken.mockClear();
     mockSetRefreshToken.mockClear();
   });
@@ -199,7 +200,7 @@ describe("Register Page Component", () => {
   it("should store tokens in localStorage on successful registration", async () => {
     // Test successful registration stores tokens in localStorage - validates Requirements 5.1, 5.2, 8.6
     const user = userEvent.setup();
-    
+
     // Mock successful registration response
     const mockResponse = {
       success: true,
@@ -212,9 +213,9 @@ describe("Register Page Component", () => {
       accessToken: "mock_access_token_12345",
       refreshToken: "mock_refresh_token_67890",
     };
-    
+
     mockMutateAsync.mockResolvedValueOnce(mockResponse);
-    
+
     renderRegister();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -244,7 +245,7 @@ describe("Register Page Component", () => {
   it("should redirect to dashboard on successful registration", async () => {
     // Test successful registration redirects to dashboard - validates Requirements 8.6, 8.7
     const user = userEvent.setup();
-    
+
     // Mock successful registration response
     const mockResponse = {
       success: true,
@@ -257,9 +258,9 @@ describe("Register Page Component", () => {
       accessToken: "mock_access_token",
       refreshToken: "mock_refresh_token",
     };
-    
+
     mockMutateAsync.mockResolvedValueOnce(mockResponse);
-    
+
     renderRegister();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -282,11 +283,11 @@ describe("Register Page Component", () => {
   it("should display duplicate email error", async () => {
     // Test duplicate email error displays - validates Requirements 1.2, 8.7
     const user = userEvent.setup();
-    
+
     // Mock registration failure with duplicate email
     const mockError = new Error(JSON.stringify({ error: "Email already in use" }));
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderRegister();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -315,11 +316,11 @@ describe("Register Page Component", () => {
   it("should display server errors in alert banner", async () => {
     // Test server errors display in alert banner - validates Requirements 8.7
     const user = userEvent.setup();
-    
+
     // Mock server error
     const mockError = new Error("Server error occurred");
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderRegister();
 
     const emailField = screen.getByLabelText(/email/i);
@@ -343,14 +344,14 @@ describe("Register Page Component", () => {
   it("should show loading state during submission", async () => {
     // Test loading state during submission - validates Requirements 8.6
     mockIsPending.mockReturnValue(true);
-    
+
     renderRegister();
 
     // When loading, button should show loading text and be disabled
     const loadingButton = screen.getByRole('button', { name: /creating account/i });
     expect(loadingButton).toBeDefined();
     expect(loadingButton).toBeDisabled();
-    
+
     // Check that loading spinner is present
     const loadingSpinner = screen.getByRole('status', { name: /loading/i });
     expect(loadingSpinner).toBeDefined();
@@ -359,7 +360,7 @@ describe("Register Page Component", () => {
     const emailField = screen.getByLabelText(/email/i);
     const passwordField = screen.getByLabelText(/^password$/i);
     const confirmPasswordField = screen.getByLabelText(/confirm password/i);
-    
+
     expect(emailField).toBeDisabled();
     expect(passwordField).toBeDisabled();
     expect(confirmPasswordField).toBeDisabled();
@@ -410,11 +411,11 @@ describe("Register Page Component", () => {
   it("should preserve form data on error except passwords", async () => {
     // Test form data preserved on error - validates Requirements 8.7
     const user = userEvent.setup();
-    
+
     // Mock registration failure
     const mockError = new Error(JSON.stringify({ error: "Registration failed" }));
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderRegister();
 
     const emailField = screen.getByLabelText(/email/i) as HTMLInputElement;
@@ -442,11 +443,11 @@ describe("Register Page Component", () => {
   it("should handle generic server errors gracefully", async () => {
     // Test generic server error handling - validates Requirements 8.7
     const user = userEvent.setup();
-    
+
     // Mock generic server error
     const mockError = new Error("Network error");
     mockMutateAsync.mockRejectedValueOnce(mockError);
-    
+
     renderRegister();
 
     const emailField = screen.getByLabelText(/email/i);

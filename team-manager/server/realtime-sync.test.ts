@@ -8,7 +8,7 @@ import {
   moveTask,
   getDb,
 } from './db';
-import { users, teams, teamMembersCollaborative, tasks, activities } from '../drizzle/schema';
+import { users, teams, teamMembersCollaborative, tasks, activities, teamMembers } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import * as socketServer from './socket-server';
 
@@ -40,6 +40,10 @@ async function cleanupTestData() {
     await db.delete(teamMembersCollaborative);
     await db.delete(teams);
     // Clean up test users by email pattern
+    await db.delete(teamMembers).where(eq(teamMembers.email, 'admin@realtime.test'));
+    await db.delete(teamMembers).where(eq(teamMembers.email, 'member1@realtime.test'));
+    await db.delete(teamMembers).where(eq(teamMembers.email, 'member2@realtime.test'));
+    await db.delete(teamMembers).where(eq(teamMembers.email, 'member3@realtime.test'));
     await db.delete(users).where(eq(users.email, 'admin@realtime.test'));
     await db.delete(users).where(eq(users.email, 'member1@realtime.test'));
     await db.delete(users).where(eq(users.email, 'member2@realtime.test'));
@@ -70,11 +74,22 @@ async function createTestUser(email: string, name: string): Promise<number> {
     })
     .returning();
 
-  return user.id;
+  const [member] = await db
+    .insert(teamMembers)
+    .values({
+      name,
+      email,
+      position: 'Test User',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning();
+
+  return member.id;
 }
 
 // Helper to add user to team with specific role
-async function addUserToTeam(teamId: number, userId: number, role: string): Promise<void> {
+async function addUserToTeam(teamId: number, memberId: number, role: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
@@ -93,7 +108,7 @@ describe('Real-time Synchronization Property Tests', () => {
   beforeEach(async () => {
     await cleanupTestData();
     vi.clearAllMocks();
-    
+
     // Create shared test data once per test
     adminId = await createTestUser('admin@realtime.test', 'Admin User');
     team = await createTeam({ name: 'Real-time Test Team' }, adminId);

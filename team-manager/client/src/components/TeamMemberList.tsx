@@ -28,13 +28,14 @@ type TeamRole = "admin" | "team_lead" | "developer" | "viewer";
 interface TeamMember {
   id: number;
   teamId: number;
-  userId: number;
+  memberId: number;
   role: TeamRole;
   joinedAt: Date;
-  user: {
+  member: {
     id: number;
     name: string | null;
     email: string | null;
+    pictureFileName: string | null;
   };
 }
 
@@ -49,8 +50,8 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-500">Loading team members...</p>
+          <Loader2 className="h-8 w-8 text-slate-500 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-600 dark:text-slate-400">Loading team members...</p>
         </div>
       </div>
     );
@@ -60,7 +61,7 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
     return (
       <Card>
         <CardContent className="pt-12 text-center">
-          <p className="text-red-600 mb-4">Failed to load team members: {error.message}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">Failed to load team members: {error.message}</p>
         </CardContent>
       </Card>
     );
@@ -70,8 +71,8 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
     return (
       <Card>
         <CardContent className="pt-12 text-center">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">No team members yet. Invite users to join this team.</p>
+          <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 mb-4">No team members yet. Invite users to join this team.</p>
         </CardContent>
       </Card>
     );
@@ -82,24 +83,32 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
       {members.map((member) => {
         const RoleIcon = roleIcons[member.role as TeamRole];
         const roleColor = roleColors[member.role as TeamRole];
-        const userName = member.user?.name || member.user?.email || `User #${member.userId}`;
+        const userName = member.member?.name || member.member?.email || `User #${member.memberId}`;
 
         return (
           <Card key={member.id}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-gray-600" />
+                  <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                    {member.member?.pictureFileName ? (
+                      <img
+                        src={`/api/uploads/${member.member.pictureFileName}`}
+                        alt={userName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Users className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                    )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium">{userName}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{userName}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge className={roleColor}>
                         <RoleIcon className="h-3 w-3 mr-1" />
                         {member.role}
                       </Badge>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         Joined {new Date(member.joinedAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -108,12 +117,12 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
                 <div className="flex items-center gap-2">
                   <RoleChangeDropdown
                     teamId={teamId}
-                    userId={member.userId}
+                    userId={member.memberId}
                     currentRole={member.role}
                   />
                   <RemoveMemberButton
                     teamId={teamId}
-                    userId={member.userId}
+                    userId={member.memberId}
                     userName={userName}
                   />
                 </div>

@@ -54,8 +54,13 @@ function Input({
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        // Shared
+        "file:text-foreground placeholder:text-foreground/50 dark:placeholder:text-white/30 selection:bg-primary selection:text-primary-foreground h-9 w-full min-w-0 rounded-lg border px-3 py-1 text-base text-slate-900 transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        // Dark mode
+        "dark:bg-white/5 dark:border-white/10 dark:text-slate-100 dark:focus-visible:border-white/30 dark:focus-visible:ring-white/10 dark:focus-visible:ring-[3px]",
+        // Light mode - glass input
+        "bg-white/80 border-[rgba(60,60,67,0.15)] shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_1px_3px_rgba(0,0,0,0.04)] [backdrop-filter:blur(8px)] focus-visible:border-[rgba(0,0,0,0.3)] focus-visible:ring-[rgba(0,0,0,0.08)] focus-visible:ring-[3px]",
+        // Validation
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}

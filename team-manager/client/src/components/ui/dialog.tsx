@@ -11,9 +11,9 @@ const DialogCompositionContext = React.createContext<{
   markCompositionEnd: () => void;
 }>({
   isComposing: () => false,
-  setComposing: () => {},
+  setComposing: () => { },
   justEndedComposing: () => false,
-  markCompositionEnd: () => {},
+  markCompositionEnd: () => { },
 });
 
 export const useDialogComposition = () =>
@@ -79,7 +79,9 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50",
+        // iOS-style backdrop: a very subtle blurred veil rather than a heavy black overlay
+        "bg-black/30 backdrop-blur-sm dark:bg-black/60",
         className
       )}
       {...props}
@@ -124,7 +126,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          // Base layout
+          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl p-6 duration-200 sm:max-w-lg",
+          // Animations
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          // Dark mode — subtle dark glass
+          "dark:bg-[rgba(28,28,30,0.88)] dark:border dark:border-white/10 dark:shadow-[0_2px_32px_rgba(0,0,0,0.6),0_0_0_0.5px_rgba(255,255,255,0.06)_inset] dark:[backdrop-filter:blur(40px)_saturate(160%)]",
+          // Light mode — frosted white glass
+          "bg-white/80 border border-white/80 shadow-[0_1px_0_rgba(255,255,255,0.95)_inset,0_0_0_0.5px_rgba(255,255,255,0.6)_inset,0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] [backdrop-filter:blur(40px)_saturate(180%)]",
           className
         )}
         onEscapeKeyDown={handleEscapeKeyDown}
@@ -134,7 +143,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-full size-7 flex items-center justify-center opacity-60 transition-all hover:opacity-100 hover:bg-foreground/8 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
             <span className="sr-only">Close</span>
@@ -175,7 +184,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("text-lg leading-none font-semibold text-foreground", className)}
       {...props}
     />
   );

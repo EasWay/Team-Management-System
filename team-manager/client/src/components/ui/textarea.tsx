@@ -53,7 +53,11 @@ function Textarea({
     <textarea
       data-slot="textarea"
       className={cn(
-        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "border-input placeholder:text-foreground/50 dark:placeholder:text-white/30 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex field-sizing-content min-h-16 w-full rounded-lg border px-3 py-2 text-base text-slate-900 transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        // Dark mode
+        "dark:bg-white/5 dark:border-white/10 dark:text-slate-100 dark:focus-visible:border-white/30 dark:focus-visible:ring-white/10 dark:focus-visible:ring-[3px]",
+        // Light mode - glass
+        "bg-white/80 border-[rgba(60,60,67,0.15)] shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_1px_3px_rgba(0,0,0,0.04)] [backdrop-filter:blur(8px)] focus-visible:border-[rgba(0,0,0,0.3)] focus-visible:ring-[rgba(0,0,0,0.08)] focus-visible:ring-[3px]",
         className
       )}
       onCompositionStart={handleCompositionStart}

@@ -1,0 +1,1 @@
+ALTER TABLE "teams" ADD COLUMN "github_access_token" text;

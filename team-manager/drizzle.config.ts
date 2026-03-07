@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
@@ -5,11 +6,7 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    host: "localhost",
-    port: 5433, // PostgreSQL 13 is running on port 5433
-    user: "postgres",
-    password: "postgres",
-    database: "team_manager_db", // Updated to match created database name
-    ssl: false, // Disable SSL for local development
+    url: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5433/team_manager_db",
+    ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : false,
   },
 });

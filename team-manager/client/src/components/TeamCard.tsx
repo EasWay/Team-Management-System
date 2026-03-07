@@ -20,7 +20,7 @@ interface Team {
   id: number;
   name: string;
   description: string | null;
-  ownerId: number;
+  createdBy: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,7 +84,7 @@ export function TeamCard({ team }: TeamCardProps) {
               <p className="text-sm text-gray-700 line-clamp-2">{team.description}</p>
             </div>
           )}
-          
+
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500">Team Members</p>
@@ -118,7 +118,7 @@ export function TeamCard({ team }: TeamCardProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"

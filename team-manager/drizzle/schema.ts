@@ -22,30 +22,13 @@ export const teamMembers = pgTable("team_members", {
   email: text("email"),
   phone: text("phone"),
   position: text("position"),
+  duties: text("duties"),
+  pictureFileName: text("picture_file_name"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Departments table
-export const departments = pgTable("departments", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-  parentId: integer("parent_id").references(() => departments.id),
-  managerId: integer("manager_id").references(() => teamMembers.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
 
-// Department Assignments table
-export const departmentAssignments = pgTable("department_assignments", {
-  id: serial("id").primaryKey(),
-  teamMemberId: integer("team_member_id").references(() => teamMembers.id, { onDelete: "cascade" }).notNull(),
-  departmentId: integer("department_id").references(() => departments.id, { onDelete: "cascade" }).notNull(),
-  assignedBy: integer("assigned_by").references(() => teamMembers.id),
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  isActive: boolean("is_active").default(true),
-});
 
 // Audit Logs table
 export const auditLogs = pgTable("audit_logs", {
@@ -66,6 +49,7 @@ export const teams = pgTable("teams", {
   name: text("name").notNull(),
   description: text("description"),
   createdBy: integer("created_by").references(() => teamMembers.id),
+  githubAccessToken: text("github_access_token"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -106,18 +90,42 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Documents table
-export const documents = pgTable("documents", {
+// Clients table
+export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  content: text("content"),
-  type: text("type").default("markdown"), // markdown, text, etc.
   teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
-  createdBy: integer("created_by").references(() => teamMembers.id),
-  lastEditedBy: integer("last_edited_by").references(() => teamMembers.id),
-  isPublic: boolean("is_public").default(false),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Projects table
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // Nature / scope name
+  definition: text("definition"),
+  description: text("description"),
+  dateReceived: timestamp("date_received").defaultNow(),
+  dateEnded: timestamp("date_ended"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Project Files table
+export const projectFiles = pgTable("project_files", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  fileUrl: text("file_url").notNull(),
+  type: text("type").default("document"), // generic document, prd, image, etc.
+  uploadedBy: integer("uploaded_by").references(() => teamMembers.id),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Activities table
@@ -168,49 +176,18 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const teamMembersRelations = relations(teamMembers, ({ many, one }) => ({
-  departmentAssignments: many(departmentAssignments),
-  managedDepartments: many(departments, { relationName: "manager" }),
   createdTeams: many(teams, { relationName: "creator" }),
   teamMemberships: many(teamMembersCollaborative),
   assignedTasks: many(tasks, { relationName: "assignee" }),
   createdTasks: many(tasks, { relationName: "creator" }),
-  createdDocuments: many(documents, { relationName: "creator" }),
-  editedDocuments: many(documents, { relationName: "editor" }),
+  createdProjects: many(projects),
+  uploadedFiles: many(projectFiles),
   activities: many(activities),
   createdRepositories: many(repositories),
   sentInvitations: many(teamInvitations),
   auditLogs: many(auditLogs),
 }));
 
-export const departmentsRelations = relations(departments, ({ many, one }) => ({
-  parent: one(departments, {
-    fields: [departments.parentId],
-    references: [departments.id],
-    relationName: "parent",
-  }),
-  children: many(departments, { relationName: "parent" }),
-  manager: one(teamMembers, {
-    fields: [departments.managerId],
-    references: [teamMembers.id],
-    relationName: "manager",
-  }),
-  assignments: many(departmentAssignments),
-}));
-
-export const departmentAssignmentsRelations = relations(departmentAssignments, ({ one }) => ({
-  teamMember: one(teamMembers, {
-    fields: [departmentAssignments.teamMemberId],
-    references: [teamMembers.id],
-  }),
-  department: one(departments, {
-    fields: [departmentAssignments.departmentId],
-    references: [departments.id],
-  }),
-  assignedByMember: one(teamMembers, {
-    fields: [departmentAssignments.assignedBy],
-    references: [teamMembers.id],
-  }),
-}));
 
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   creator: one(teamMembers, {
@@ -220,7 +197,8 @@ export const teamsRelations = relations(teams, ({ many, one }) => ({
   }),
   members: many(teamMembersCollaborative),
   tasks: many(tasks),
-  documents: many(documents),
+  clients: many(clients),
+  projects: many(projects),
   repositories: many(repositories),
   invitations: many(teamInvitations),
   activities: many(activities),
@@ -265,20 +243,34 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   }),
 }));
 
-export const documentsRelations = relations(documents, ({ one }) => ({
-  creator: one(teamMembers, {
-    fields: [documents.createdBy],
-    references: [teamMembers.id],
-    relationName: "creator",
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+  team: one(teams, {
+    fields: [clients.teamId],
+    references: [teams.id],
   }),
-  lastEditor: one(teamMembers, {
-    fields: [documents.lastEditedBy],
-    references: [teamMembers.id],
-    relationName: "editor",
+  projects: many(projects),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [projects.clientId],
+    references: [clients.id],
   }),
   team: one(teams, {
-    fields: [documents.teamId],
+    fields: [projects.teamId],
     references: [teams.id],
+  }),
+  files: many(projectFiles),
+}));
+
+export const projectFilesRelations = relations(projectFiles, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectFiles.projectId],
+    references: [projects.id],
+  }),
+  uploader: one(teamMembers, {
+    fields: [projectFiles.uploadedBy],
+    references: [teamMembers.id],
   }),
 }));
 
@@ -325,11 +317,6 @@ export type User = typeof users.$inferSelect;
 export type InsertTeamMember = typeof teamMembers.$inferInsert;
 export type TeamMember = typeof teamMembers.$inferSelect;
 
-export type InsertDepartment = typeof departments.$inferInsert;
-export type Department = typeof departments.$inferSelect;
-
-export type InsertDepartmentAssignment = typeof departmentAssignments.$inferInsert;
-export type DepartmentAssignment = typeof departmentAssignments.$inferSelect;
 
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
 export type AuditLog = typeof auditLogs.$inferSelect;
@@ -346,8 +333,14 @@ export type TeamInvitation = typeof teamInvitations.$inferSelect;
 export type InsertTask = typeof tasks.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 
-export type InsertDocument = typeof documents.$inferInsert;
-export type Document = typeof documents.$inferSelect;
+export type InsertClient = typeof clients.$inferInsert;
+export type Client = typeof clients.$inferSelect;
+
+export type InsertProject = typeof projects.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+
+export type InsertProjectFile = typeof projectFiles.$inferInsert;
+export type ProjectFile = typeof projectFiles.$inferSelect;
 
 export type InsertActivity = typeof activities.$inferInsert;
 export type Activity = typeof activities.$inferSelect;

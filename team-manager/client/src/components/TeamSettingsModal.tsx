@@ -58,6 +58,7 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
       toast.success("Team updated successfully");
       utils.teams.list.invalidate();
       utils.teams.getById.invalidate({ id: team.id });
+      onClose(); // Auto-close modal on success
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to update team";
       toast.error(errorMessage);
@@ -70,7 +71,7 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Team Settings - {team.name}</DialogTitle>
+          <DialogTitle className="text-slate-900 dark:text-slate-100">Team Settings - {team.name}</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -91,9 +92,9 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
                     <FormItem>
                       <FormLabel>Team Name</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., Frontend Team, Backend Team" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., Frontend Team, Backend Team"
+                          {...field}
                           disabled={isLoading}
                         />
                       </FormControl>
@@ -109,7 +110,7 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
                     <FormItem>
                       <FormLabel>Description (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="Describe the team's purpose and responsibilities..."
                           rows={3}
                           {...field}

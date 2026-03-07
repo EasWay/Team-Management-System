@@ -29,8 +29,8 @@ export function InvitationList({ teamId }: InvitationListProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-500">Loading invitations...</p>
+          <Loader2 className="h-8 w-8 text-slate-500 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-600 dark:text-slate-400">Loading invitations...</p>
         </div>
       </div>
     );
@@ -40,7 +40,7 @@ export function InvitationList({ teamId }: InvitationListProps) {
     return (
       <Card>
         <CardContent className="pt-12 text-center">
-          <p className="text-red-600 mb-4">Failed to load invitations: {error.message}</p>
+          <p className="text-red-600 dark:text-red-400 mb-4">Failed to load invitations: {error.message}</p>
         </CardContent>
       </Card>
     );
@@ -50,8 +50,8 @@ export function InvitationList({ teamId }: InvitationListProps) {
     return (
       <Card>
         <CardContent className="pt-12 text-center">
-          <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">No pending invitations.</p>
+          <Mail className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 mb-4">No pending invitations.</p>
         </CardContent>
       </Card>
     );
@@ -61,21 +61,20 @@ export function InvitationList({ teamId }: InvitationListProps) {
     <div className="space-y-3">
       {invitations.map((invitation) => {
         const isExpired = new Date(invitation.expiresAt) < new Date();
-        const isAccepted = !!invitation.acceptedAt;
-        const isPending = !isAccepted && !isExpired;
+        const isAccepted = invitation.status === 'accepted';
+        const isPending = invitation.status === 'pending' && !isExpired;
 
         return (
           <Card key={invitation.id}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-gray-600" />
+                  <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                    <Mail className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium">{invitation.email}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{invitation.email}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline">{invitation.role}</Badge>
                       {isPending && (
                         <Badge className="bg-yellow-100 text-yellow-800">
                           <Clock className="h-3 w-3 mr-1" />
@@ -95,7 +94,7 @@ export function InvitationList({ teamId }: InvitationListProps) {
                         </Badge>
                       )}
                       <span className="text-xs text-gray-500">
-                        Sent {new Date(invitation.createdAt).toLocaleDateString()}
+                        Sent {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : 'Unknown date'}
                       </span>
                     </div>
                   </div>

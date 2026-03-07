@@ -1,108 +1,91 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Users } from "lucide-react";
-import { trpc } from "@/lib/trpc";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { CreateTaskForm } from "@/components/CreateTaskForm";
-import { Card, CardContent } from "@/components/ui/card";
+import { useTeamContext } from "@/contexts/TeamContext";
+import { Loader2 } from "lucide-react";
 
 export default function Tasks() {
-  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-
-  const { data: teams, isLoading: teamsLoading } = trpc.teams.list.useQuery();
+  const { selectedTeamId, teams, isLoading: teamsLoading } = useTeamContext();
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
   };
 
-  // Auto-select first team if none selected
-  if (teams && teams.length > 0 && !selectedTeamId) {
-    setSelectedTeamId(teams[0].id);
-  }
+  const selectedTeamName = teams?.find(t => t.id === selectedTeamId)?.name || "Task Board";
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center flex-wrap gap-4">
+      <div className="flex-1 max-w-[1600px] w-full p-6 mx-auto flex flex-col h-full overflow-hidden">
+        {/* Header Section */}
+        <header className="flex justify-between items-center mb-6 shrink-0 pt-2">
           <div>
-            <h1 className="text-3xl font-bold">Task Board</h1>
-            <p className="text-gray-600 mt-2">Manage tasks with Kanban boards</p>
+            <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2">
+              <span>{selectedTeamId ? selectedTeamName : "ALPHA GROUP"}</span>
+              <span className="size-1 rounded-full bg-foreground/20"></span>
+              <span>TASKS</span>
+            </div>
+            <h2 className="text-4xl font-light tracking-tight text-foreground">{selectedTeamName}</h2>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Team Selector */}
-            {teamsLoading ? (
-              <div className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading teams...</span>
-              </div>
-            ) : teams && teams.length > 0 ? (
-              <Select 
-                value={selectedTeamId?.toString() || ""} 
-                onValueChange={(value) => setSelectedTeamId(parseInt(value))}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select a team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id.toString()}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : null}
 
-            {/* Create Task Button */}
+          <div className="flex items-center gap-6">
+            <div className="flex -space-x-2">
+              <div className="size-8 rounded-full border border-background bg-foreground/10 flex items-center justify-center text-[10px] font-bold text-foreground shadow-sm z-30">AL</div>
+              <div className="size-8 rounded-full border border-background bg-foreground/20 flex items-center justify-center text-[10px] font-bold text-foreground shadow-sm z-20">MR</div>
+              <div className="size-8 rounded-full border border-background bg-foreground/5 flex items-center justify-center text-[10px] font-bold text-muted-foreground shadow-sm z-10">+4</div>
+            </div>
+
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2" disabled={!selectedTeamId}>
-                  <Plus className="h-4 w-4" />
-                  Create Task
-                </Button>
+                <button
+                  disabled={!selectedTeamId}
+                  className="px-6 py-2.5 bg-foreground text-background text-[10px] font-bold tracking-widest uppercase hover:bg-foreground/80 transition-colors rounded disabled:opacity-50"
+                >
+                  Create Issue
+                </button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create Task</DialogTitle>
-                  <DialogDescription>
-                    Add a new task to the selected team's board.
+              <DialogContent className="sm:max-w-md bg-background text-foreground border-border">
+                <div className="absolute inset-0 bg-primary/5 blur-[100px] pointer-events-none" />
+                <DialogHeader className="relative z-10">
+                  <DialogTitle className="text-foreground font-display text-xl">Create Task</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    Add a new task to {selectedTeamName}'s board.
                   </DialogDescription>
                 </DialogHeader>
-                {selectedTeamId && (
-                  <CreateTaskForm teamId={selectedTeamId} onSuccess={handleCreateSuccess} />
-                )}
+                <div className="relative z-10">
+                  {selectedTeamId && (
+                    <CreateTaskForm teamId={selectedTeamId} onSuccess={handleCreateSuccess} />
+                  )}
+                </div>
               </DialogContent>
             </Dialog>
           </div>
-        </div>
+        </header>
 
         {/* Task Board Content */}
         {teamsLoading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex justify-center items-center flex-1">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-              <p className="text-gray-500">Loading teams...</p>
+              <Loader2 className="size-12 text-muted-foreground/30 mb-4 animate-spin text-center mx-auto" />
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Loading workspace...</p>
             </div>
           </div>
         ) : !teams || teams.length === 0 ? (
-          <Card>
-            <CardContent className="pt-12 text-center">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">No teams yet. Create a team first to start managing tasks.</p>
-            </CardContent>
-          </Card>
+          <div className="flex justify-center items-center flex-1">
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4">No squads found. Create a squad to start.</p>
+            </div>
+          </div>
         ) : selectedTeamId ? (
-          <KanbanBoard teamId={selectedTeamId} />
+          <div className="flex-1 overflow-hidden">
+            <KanbanBoard teamId={selectedTeamId} />
+          </div>
         ) : (
-          <Card>
-            <CardContent className="pt-12 text-center">
-              <p className="text-gray-600">Select a team to view its task board</p>
-            </CardContent>
-          </Card>
+          <div className="flex justify-center items-center flex-1">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Select a squad to view flow</p>
+          </div>
         )}
       </div>
     </DashboardLayout>

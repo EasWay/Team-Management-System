@@ -1,0 +1,38 @@
+
+> team-manager@1.0.0 test
+> vitest run server/realtime-sync.test.ts
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Godfred/Downloads/Team-manager/team-manager[39m
+
+[90mstdout[2m | server/realtime-sync.test.ts[2m > [22m[2mReal-time Synchronization Property Tests[2m > [22m[2mProperty 11: Task updates are broadcast to all team members in real-time
+[22m[39m[Database] Connected to PostgreSQL successfully
+
+ [31mÔØ»[39m server/realtime-sync.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[33m 3066[2mms[22m[39m
+[31m   [31m├ù[31m Real-time Synchronization Property Tests[2m > [22mProperty 11: Task updates are broadcast to all team members in real-time[33m 382[2mms[22m[31m[39m
+[31m     ÔåÆ userId is not defined[39m
+[31m   [31m├ù[31m Real-time Synchronization Property Tests[2m > [22mshould broadcast task updates to all team members regardless of role[90m 59[2mms[22m[31m[39m
+[31m     ÔåÆ userId is not defined[39m
+[31m   [31m├ù[31m Real-time Synchronization Property Tests[2m > [22mProperty 11: Task assignments are broadcast to all team members[90m 43[2mms[22m[31m[39m
+[31m     ÔåÆ userId is not defined[39m
+   [33m[2mÔ£ô[22m[39m Real-time Synchronization Property Tests[2m > [22mProperty 11: Task detail updates (priority, due date, description) are broadcast [33m1518[2mms[22m[39m
+[31m   [31m├ù[31m Real-time Synchronization Property Tests[2m > [22mProperty 11: Multiple users viewing same board receive synchronized updates[33m 845[2mms[22m[31m[39m
+[31m     ÔåÆ Property failed after 1 tests
+{ seed: -1998898736, path: "0:0:0:0:0:0:0:0:0", endOnFailure: true }
+Counterexample: [{"numViewers":2,"taskTitle":"!","operationType":"create"}]
+Shrunk 8 time(s)
+
+Hint: Enable verbose mode in order to have the list of all failing values encountered during the run[39m
+[31m   [31m├ù[31m Real-time Synchronization Property Tests[2m > [22mProperty 11: Task movements between columns broadcast correct state[90m 96[2mms[22m[31m[39m
+[31m     ÔåÆ Property failed after 1 tests
+{ seed: 2051516110, path: "0", endOnFailure: true }
+Counterexample: [{"fromStatus":"in_progress","toStatus":"todo","position":0}]
+Shrunk 0 time(s)
+
+Hint: Enable verbose mode in order to have the list of all failing values encountered during the run[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 23:03:45
+[2m   Duration [22m 11.88s[2m (transform 513ms, setup 460ms, collect 3.04s, tests 3.07s, environment 3.89s, prepare 552ms)[22m
+

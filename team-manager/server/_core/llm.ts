@@ -19,7 +19,7 @@ export type FileContent = {
   type: "file_url";
   file_url: {
     url: string;
-    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4" ;
+    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4";
   };
 };
 
@@ -210,13 +210,14 @@ const normalizeToolChoice = (
 };
 
 const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+  ENV.groqApiKey ? "https://api.groq.com/openai/v1/chat/completions" :
+    (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+      ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
+      : "https://forge.manus.im/v1/chat/completions");
 
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (!ENV.groqApiKey && !ENV.forgeApiKey) {
+    throw new Error("GROQ_API_KEY or OPENAI_API_KEY is not configured");
   }
 };
 
@@ -251,6 +252,12 @@ const normalizeResponseFormat = ({
   const schema = outputSchema || output_schema;
   if (!schema) return undefined;
 
+  if (ENV.groqApiKey) {
+    // Groq doesn't support json_schema response format yet in the same way, 
+    // but supports json_object. We'll fallback to json_object for Groq if schema is provided.
+    return { type: "json_object" };
+  }
+
   if (!schema.name || !schema.schema) {
     throw new Error("outputSchema requires both name and schema");
   }
@@ -280,7 +287,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: ENV.groqApiKey ? "llama-3.3-70b-versatile" : "gemini-2.5-flash",
     messages: messages.map(normalizeMessage),
   };
 
@@ -296,9 +303,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
+  if (!ENV.groqApiKey) {
+    payload.max_tokens = 32768;
+    payload.thinking = {
+      "budget_tokens": 128
+    };
   }
 
   const normalizedResponseFormat = normalizeResponseFormat({
@@ -316,7 +325,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${ENV.groqApiKey || ENV.forgeApiKey}`,
     },
     body: JSON.stringify(payload),
   });

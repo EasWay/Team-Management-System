@@ -1,0 +1,1399 @@
+
+> team-manager@1.0.0 test C:\Users\Godfred\Downloads\Team-manager\team-manager
+> vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/Godfred/Downloads/Team-manager/team-manager[39m
+
+ [31mÔØ»[39m server/auth-middleware.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/github-integration.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/realtime-sync.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/realtime-sync-integration.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/collaborative-editor.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/team.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/auth.edge-cases.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/auth-refresh.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/task.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m server/data-model-integrity.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 1500[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Data Model Integrity - Property 36: JSON Round-trip Consistency[2m > [22mTask model should survive JSON round-trip [33m1303[2mms[22m[39m
+ [32mÔ£ô[39m client/src/pages/Login.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 8196[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould render form with email and password fields [33m1002[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould prevent submission with invalid email [33m1359[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould prevent submission with missing password [33m534[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould store tokens in localStorage on successful login [33m869[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould redirect to dashboard on successful login [33m843[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould display error message on login failure [33m743[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould preserve email field on error [33m788[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould handle generic error messages without revealing email existence [33m947[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Login Page Component[2m > [22mshould handle server errors gracefully [33m773[2mms[22m[39m
+ [31mÔØ»[39m server/auth-login.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/oauth-token-security.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31mÔØ»[39m server/auth-register.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m server/auth-password.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 1750[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m AuthService - Password Hashing and Validation[2m > [22mPassword Hashing (hashPassword)[2m > [22mshould produce different hashes for the same password (due to salt) [33m344[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m AuthService - Password Hashing and Validation[2m > [22mPassword Verification (verifyPassword)[2m > [22mshould reject incorrect password [33m354[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m AuthService - Password Hashing and Validation[2m > [22mPassword Verification (verifyPassword)[2m > [22mshould handle empty password verification [33m436[2mms[22m[39m
+ [31mÔØ»[39m server/auth.logout.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m server/minimal.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 15[2mms[22m[39m
+ [31mÔØ»[39m client/src/pages/Register.test.tsx [2m([22m[2m15 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 16303[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould render form with email, password, and confirm password fields [33m1067[2mms[22m[39m
+[31m   [31m├ù[31m Register Page Component[2m > [22mshould prevent submission with invalid email[33m 2591[2mms[22m[31m[39m
+[31m     ÔåÆ Unable to find an element with the text: /please enter a valid email address/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"w-full max-w-md"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"[31m
+          [33mdata-slot[31m=[32m"card"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"[31m
+            [33mdata-slot[31m=[32m"card-header"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"font-semibold text-2xl"[31m
+              [33mdata-slot[31m=[32m"card-title"[31m
+            [36m>[31m
+              [0mCreate Account[0m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"text-muted-foreground text-sm"[31m
+              [33mdata-slot[31m=[32m"card-description"[31m
+            [36m>[31m
+              [0mEnter your details to create a new account[0m
+            [36m</div>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"px-6"[31m
+            [33mdata-slot[31m=[32m"card-content"[31m
+          [36m>[31m
+            [36m<form[31m
+              [33mclass[31m=[32m"space-y-4"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"grid gap-2"[31m
+                [33mdata-slot[31m=[32m"form-item"[31m
+              [36m>[31m
+                [36m<label[31m
+                  [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                  [33mdata-error[31m=[32m"false"[31m
+                  [33mdata-slot[31m=[32m"form-label"[31m
+                  [33mfor[31m=[32m"_r_6_-form-item"[31m
+                [36m>[31m
+                  [0mEmail[0m
+                [36m</label>[31m
+                [36m<input[31m
+                  [33maria-describedby[31m=[32m"_r_6_-form-item-description"[31m
+                  [33maria-invalid[31m=[32m"false"[31m
+                  [33mautocomplete[31m=[32m"email"[31m
+                  [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                  [33mdata-slot[31m=[32m"form-control"[31m
+                  [33mid[31m=[32m"_r_6_-form-item"[31m
+                  [33mname[31m=[32m"email"[31m
+                  [33mplaceholder[31m=[32m"you@example.com"[31m
+                  [33mtype[31m=[32m"email"[31m
+                  [33mvalue[31m=[32m"invalid-email"[31m
+                [36m/>[31m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"grid gap-2"[31m
+                [33mdata-slot[31m=[32m"form-item"[31m
+              [36m>[31m
+                [36m<label[31m
+                  [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                  [33mdata-error[31m=[32m"false"[31m
+                  [33mdata-slot[31m=[32m"form-label"[31m
+                  [33mfor[31m=[32m"_r_7_-form-item"[31m
+                [36m>[31m
+                  [0mPassword[0m
+                [36m</label>[31m
+                [36m<input[31m
+                  [33maria-describedby[31m=[32m"_r_7_-form-item-description"[31m
+                  [33maria-invalid[31m=[32m"false"[31m
+                  [33mautocomplete[31m=[32m"new-password"[31m
+                  [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                  [33mdata-slot[31m=[32m"form-control"[31m
+                  [33mid[31m=[32m"_r_7_-form-item"[31m
+                  [33mname[31m=[32m"password"[31m
+                  [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                  [33mtype[31m=[32m"password"[31m
+                  [33mvalue[31m=[32m"password123"[31m
+                [36m/>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"text-sm text-gray-600 mt-1"[31m
+                [36m>[31m
+                  [0mPassword must be at least 8 characters long[0m
+                [36m</div>[31m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"grid gap-2"[31m
+                [33mdata-slot[31m=[32m"form-item"[31m
+              [36m>[31m
+                [36m<label[31m
+                  [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                  [33mdata-error[31m=[32m"false"[31m
+                  [33mdata-slot[31m=[32m"form-label"[31m
+                  [33mfor[31m=[32m"_r_8_-form-item"[31m
+                [36m>[31m
+                  [0mConfirm Password[0m
+                [36m</label>[31m
+                [36m<input[31m
+                  [33maria-describedby[31m=[32m"_r_8_-form-item-description"[31m
+                  [33maria-invalid[31m=[32m"false"[31m
+                  [33mautocomplete[31m=[32m"new-password"[31m
+                  [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                  [33mdata-slot[31m=[32m"form-control"[31m
+                  [33mid[31m=[32m"_r_8_-form-item"[31m
+                  [33mname[31m=[32m"confirmPassword"[31m
+                  [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                  [33mtype[31m=[32m"password"[31m
+                  [33mvalue[31m=[32m"password123"[31m
+                [36m/>[31m
+              [36m</div>[31m
+              [36m<button[31m
+                [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"[31m
+                [33mdata-slot[31m=[32m"button"[31m
+                [33mtype[31m=[32m"submit"[31m
+              [36m>[31m
+                [0mCreate Account[0m
+              [36m</button>[31m
+            [36m</form>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"mt-6 text-center text-sm"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"text-gray-600"[31m
+              [36m>[31m
+                [0mAlready have an account? [0m
+              [36m</span>[31m
+              [36m<button[31m
+                [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"[31m
+                [33mdata-slot[31m=[32m"button"[31m
+              [36m>[31m
+                [0mSign in[0m
+              [36m</button>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m
+
+Ignored nodes: comments, script, style
+[36m<html>[31m
+  [36m<head />[31m
+  [36m<body>[31m
+    [36m<div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"w-full max-w-md"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"[31m
+            [33mdata-slot[31m=[32m"card"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"[31m
+              [33mdata-slot[31m=[32m"card-header"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"font-semibold text-2xl"[31m
+                [33mdata-slot[31m=[32m"card-title"[31m
+              [36m>[31m
+                [0mCreate Account[0m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"text-muted-foreground text-sm"[31m
+                [33mdata-slot[31m=[32m"card-description"[31m
+              [36m>[31m
+                [0mEnter your details to create a new account[0m
+              [36m</div>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"px-6"[31m
+              [33mdata-slot[31m=[32m"card-content"[31m
+            [36m>[31m
+              [36m<form[31m
+                [33mclass[31m=[32m"space-y-4"[31m
+              [36m>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"grid gap-2"[31m
+                  [33mdata-slot[31m=[32m"form-item"[31m
+                [36m>[31m
+                  [36m<label[31m
+                    [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                    [33mdata-error[31m=[32m"false"[31m
+                    [33mdata-slot[31m=[32m"form-label"[31m
+                    [33mfor[31m=[32m"_r_6_-form-item"[31m
+                  [36m>[31m
+                    [0mEmail[0m
+                  [36m</label>[31m
+                  [36m<input[31m
+                    [33maria-describedby[31m=[32m"_r_6_-form-item-description"[31m
+                    [33maria-invalid[31m=[32m"false"[31m
+                    [33mautocomplete[31m=[32m"email"[31m
+                    [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                    [33mdata-slot[31m=[32m"form-control"[31m
+                    [33mid[31m=[32m"_r_6_-form-item"[31m
+                    [33mname[31m=[32m"email"[31m
+                    [33mplaceholder[31m=[32m"you@example.com"[31m
+                    [33mtype[31m=[32m"email"[31m
+                    [33mvalue[31m=[32m"invalid-email"[31m
+                  [36m/>[31m
+                [36m</div>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"grid gap-2"[31m
+                  [33mdata-slot[31m=[32m"form-item"[31m
+                [36m>[31m
+                  [36m<label[31m
+                    [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                    [33mdata-error[31m=[32m"false"[31m
+                    [33mdata-slot[31m=[32m"form-label"[31m
+                    [33mfor[31m=[32m"_r_7_-form-item"[31m
+                  [36m>[31m
+                    [0mPassword[0m
+                  [36m</label>[31m
+                  [36m<input[31m
+                    [33maria-describedby[31m=[32m"_r_7_-form-item-description"[31m
+                    [33maria-invalid[31m=[32m"false"[31m
+                    [33mautocomplete[31m=[32m"new-password"[31m
+                    [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                    [33mdata-slot[31m=[32m"form-control"[31m
+                    [33mid[31m=[32m"_r_7_-form-item"[31m
+                    [33mname[31m=[32m"password"[31m
+                    [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                    [33mtype[31m=[32m"password"[31m
+                    [33mvalue[31m=[32m"password123"[31m
+                  [36m/>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"text-sm text-gray-600 mt-1"[31m
+                  [36m>[31m
+                    [0mPassword must be at least 8 characters long[0m
+                  [36m</div>[31m
+                [36m</div>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"grid gap-2"[31m
+                  [33mdata-slot[31m=[32m"form-item"[31m
+                [36m>[31m
+                  [36m<label[31m
+                    [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                    [33mdata-error[31m=[32m"false"[31m
+                    [33mdata-slot[31m=[32m"form-label"[31m
+                    [33mfor[31m=[32m"_r_8_-form-item"[31m
+                  [36m>[31m
+                    [0mConfirm Password[0m
+                  [36m</label>[31m
+                  [36m<input[31m
+                    [33maria-describedby[31m=[32m"_r_8_-form-item-description"[31m
+                    [33maria-invalid[31m=[32m"false"[31m
+                    [33mautocomplete[31m=[32m"new-password"[31m
+                    [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                    [33mdata-slot[31m=[32m"form-control"[31m
+                    [33mid[31m=[32m"_r_8_-form-item"[31m
+                    [33mname[31m=[32m"confirmPassword"[31m
+                    [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                    [33mtype[31m=[32m"password"[31m
+                    [33mvalue[31m=[32m"password123"[31m
+                  [36m/>[31m
+                [36m</div>[31m
+                [36m<button[31m
+                  [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"[31m
+                  [33mdata-slot[31m=[32m"button"[31m
+                  [33mtype[31m=[32m"submit"[31m
+                [36m>[31m
+                  [0mCreate Account[0m
+                [36m</button>[31m
+              [36m</form>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"mt-6 text-center text-sm"[31m
+              [36m>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"text-gray-600"[31m
+                [36m>[31m
+                  [0mAlready have an account? [0m
+                [36m</span>[31m
+                [36m<button[31m
+                  [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"[31m
+                  [33mdata-slot[31m=[32m"button"[31m
+                [36m>[31m
+                  [0mSign in[0m
+                [36m</button>[31m
+              [36m</div>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</body>[31m
+[36m</html>[31m[39m
+[31m   [31m├ù[31m Register Page Component[2m > [22mshould prevent submission with password less than 8 characters[33m 2030[2mms[22m[31m[39m
+[31m     ÔåÆ Found multiple elements with the text: /password must be at least 8 characters long/i
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+[36m<p[31m
+  [33mclass[31m=[32m"text-destructive text-sm"[31m
+  [33mdata-slot[31m=[32m"form-message"[31m
+  [33mid[31m=[32m"_r_a_-form-item-message"[31m
+[36m>[31m
+  [0mPassword must be at least 8 characters long[0m
+[36m</p>[31m
+
+Ignored nodes: comments, script, style
+[36m<div[31m
+  [33mclass[31m=[32m"text-sm text-gray-600 mt-1"[31m
+[36m>[31m
+  [0mPassword must be at least 8 characters long[0m
+[36m</div>[31m
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"[31m
+    [36m>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"w-full max-w-md"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"[31m
+          [33mdata-slot[31m=[32m"card"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"[31m
+            [33mdata-slot[31m=[32m"card-header"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"font-semibold text-2xl"[31m
+              [33mdata-slot[31m=[32m"card-title"[31m
+            [36m>[31m
+              [0mCreate Account[0m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"text-muted-foreground text-sm"[31m
+              [33mdata-slot[31m=[32m"card-description"[31m
+            [36m>[31m
+              [0mEnter your details to create a new account[0m
+            [36m</div>[31m
+          [36m</div>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"px-6"[31m
+            [33mdata-slot[31m=[32m"card-content"[31m
+          [36m>[31m
+            [36m<form[31m
+              [33mclass[31m=[32m"space-y-4"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"grid gap-2"[31m
+                [33mdata-slot[31m=[32m"form-item"[31m
+              [36m>[31m
+                [36m<label[31m
+                  [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                  [33mdata-error[31m=[32m"false"[31m
+                  [33mdata-slot[31m=[32m"form-label"[31m
+                  [33mfor[31m=[32m"_r_9_-form-item"[31m
+                [36m>[31m
+                  [0mEmail[0m
+                [36m</label>[31m
+                [36m<input[31m
+                  [33maria-describedby[31m=[32m"_r_9_-form-item-description"[31m
+                  [33maria-invalid[31m=[32m"false"[31m
+                  [33mautocomplete[31m=[32m"email"[31m
+                  [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                  [33mdata-slot[31m=[32m"form-control"[31m
+                  [33mid[31m=[32m"_r_9_-form-item"[31m
+                  [33mname[31m=[32m"email"[31m
+                  [33mplaceholder[31m=[32m"you@example.com"[31m
+                  [33mtype[31m=[32m"email"[31m
+                  [33mvalue[31m=[32m"user@example.com"[31m
+                [36m/>[31m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"grid gap-2"[31m
+                [33mdata-slot[31m=[32m"form-item"[31m
+              [36m>[31m
+                [36m<label[31m
+                  [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                  [33mdata-error[31m=[32m"true"[31m
+                  [33mdata-slot[31m=[32m"form-label"[31m
+                  [33mfor[31m=[32m"_r_a_-form-item"[31m
+                [36m>[31m
+                  [0mPassword[0m
+                [36m</label>[31m
+                [36m<input[31m
+                  [33maria-describedby[31m=[32m"_r_a_-form-item-description _r_a_-form-item-message"[31m
+                  [33maria-invalid[31m=[32m"true"[31m
+                  [33mautocomplete[31m=[32m"new-password"[31m
+                  [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                  [33mdata-slot[31m=[32m"form-control"[31m
+                  [33mid[31m=[32m"_r_a_-form-item"[31m
+                  [33mname[31m=[32m"password"[31m
+                  [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                  [33mtype[31m=[32m"password"[31m
+                  [33mvalue[31m=[32m"short"[31m
+                [36m/>[31m
+                [36m<p[31m
+                  [33mclass[31m=[32m"text-destructive text-sm"[31m
+                  [33mdata-slot[31m=[32m"form-message"[31m
+                  [33mid[31m=[32m"_r_a_-form-item-message"[31m
+                [36m>[31m
+                  [0mPassword must be at least 8 characters long[0m
+                [36m</p>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"text-sm text-gray-600 mt-1"[31m
+                [36m>[31m
+                  [0mPassword must be at least 8 characters long[0m
+                [36m</div>[31m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"grid gap-2"[31m
+                [33mdata-slot[31m=[32m"form-item"[31m
+              [36m>[31m
+                [36m<label[31m
+                  [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                  [33mdata-error[31m=[32m"false"[31m
+                  [33mdata-slot[31m=[32m"form-label"[31m
+                  [33mfor[31m=[32m"_r_b_-form-item"[31m
+                [36m>[31m
+                  [0mConfirm Password[0m
+                [36m</label>[31m
+                [36m<input[31m
+                  [33maria-describedby[31m=[32m"_r_b_-form-item-description"[31m
+                  [33maria-invalid[31m=[32m"false"[31m
+                  [33mautocomplete[31m=[32m"new-password"[31m
+                  [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                  [33mdata-slot[31m=[32m"form-control"[31m
+                  [33mid[31m=[32m"_r_b_-form-item"[31m
+                  [33mname[31m=[32m"confirmPassword"[31m
+                  [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                  [33mtype[31m=[32m"password"[31m
+                  [33mvalue[31m=[32m"short"[31m
+                [36m/>[31m
+              [36m</div>[31m
+              [36m<button[31m
+                [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"[31m
+                [33mdata-slot[31m=[32m"button"[31m
+                [33mtype[31m=[32m"submit"[31m
+              [36m>[31m
+                [0mCreate Account[0m
+              [36m</button>[31m
+            [36m</form>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"mt-6 text-center text-sm"[31m
+            [36m>[31m
+              [36m<span[31m
+                [33mclass[31m=[32m"text-gray-600"[31m
+              [36m>[31m
+                [0mAlready have an account? [0m
+              [36m</span>[31m
+              [36m<button[31m
+                [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"[31m
+                [33mdata-slot[31m=[32m"button"[31m
+              [36m>[31m
+                [0mSign in[0m
+              [36m</button>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m
+
+Ignored nodes: comments, script, style
+[36m<html>[31m
+  [36m<head />[31m
+  [36m<body>[31m
+    [36m<div>[31m
+      [36m<div[31m
+        [33mclass[31m=[32m"min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"[31m
+      [36m>[31m
+        [36m<div[31m
+          [33mclass[31m=[32m"w-full max-w-md"[31m
+        [36m>[31m
+          [36m<div[31m
+            [33mclass[31m=[32m"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"[31m
+            [33mdata-slot[31m=[32m"card"[31m
+          [36m>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"[31m
+              [33mdata-slot[31m=[32m"card-header"[31m
+            [36m>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"font-semibold text-2xl"[31m
+                [33mdata-slot[31m=[32m"card-title"[31m
+              [36m>[31m
+                [0mCreate Account[0m
+              [36m</div>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"text-muted-foreground text-sm"[31m
+                [33mdata-slot[31m=[32m"card-description"[31m
+              [36m>[31m
+                [0mEnter your details to create a new account[0m
+              [36m</div>[31m
+            [36m</div>[31m
+            [36m<div[31m
+              [33mclass[31m=[32m"px-6"[31m
+              [33mdata-slot[31m=[32m"card-content"[31m
+            [36m>[31m
+              [36m<form[31m
+                [33mclass[31m=[32m"space-y-4"[31m
+              [36m>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"grid gap-2"[31m
+                  [33mdata-slot[31m=[32m"form-item"[31m
+                [36m>[31m
+                  [36m<label[31m
+                    [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                    [33mdata-error[31m=[32m"false"[31m
+                    [33mdata-slot[31m=[32m"form-label"[31m
+                    [33mfor[31m=[32m"_r_9_-form-item"[31m
+                  [36m>[31m
+                    [0mEmail[0m
+                  [36m</label>[31m
+                  [36m<input[31m
+                    [33maria-describedby[31m=[32m"_r_9_-form-item-description"[31m
+                    [33maria-invalid[31m=[32m"false"[31m
+                    [33mautocomplete[31m=[32m"email"[31m
+                    [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                    [33mdata-slot[31m=[32m"form-control"[31m
+                    [33mid[31m=[32m"_r_9_-form-item"[31m
+                    [33mname[31m=[32m"email"[31m
+                    [33mplaceholder[31m=[32m"you@example.com"[31m
+                    [33mtype[31m=[32m"email"[31m
+                    [33mvalue[31m=[32m"user@example.com"[31m
+                  [36m/>[31m
+                [36m</div>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"grid gap-2"[31m
+                  [33mdata-slot[31m=[32m"form-item"[31m
+                [36m>[31m
+                  [36m<label[31m
+                    [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                    [33mdata-error[31m=[32m"true"[31m
+                    [33mdata-slot[31m=[32m"form-label"[31m
+                    [33mfor[31m=[32m"_r_a_-form-item"[31m
+                  [36m>[31m
+                    [0mPassword[0m
+                  [36m</label>[31m
+                  [36m<input[31m
+                    [33maria-describedby[31m=[32m"_r_a_-form-item-description _r_a_-form-item-message"[31m
+                    [33maria-invalid[31m=[32m"true"[31m
+                    [33mautocomplete[31m=[32m"new-password"[31m
+                    [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                    [33mdata-slot[31m=[32m"form-control"[31m
+                    [33mid[31m=[32m"_r_a_-form-item"[31m
+                    [33mname[31m=[32m"password"[31m
+                    [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                    [33mtype[31m=[32m"password"[31m
+                    [33mvalue[31m=[32m"short"[31m
+                  [36m/>[31m
+                  [36m<p[31m
+                    [33mclass[31m=[32m"text-destructive text-sm"[31m
+                    [33mdata-slot[31m=[32m"form-message"[31m
+                    [33mid[31m=[32m"_r_a_-form-item-message"[31m
+                  [36m>[31m
+                    [0mPassword must be at least 8 characters long[0m
+                  [36m</p>[31m
+                  [36m<div[31m
+                    [33mclass[31m=[32m"text-sm text-gray-600 mt-1"[31m
+                  [36m>[31m
+                    [0mPassword must be at least 8 characters long[0m
+                  [36m</div>[31m
+                [36m</div>[31m
+                [36m<div[31m
+                  [33mclass[31m=[32m"grid gap-2"[31m
+                  [33mdata-slot[31m=[32m"form-item"[31m
+                [36m>[31m
+                  [36m<label[31m
+                    [33mclass[31m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"[31m
+                    [33mdata-error[31m=[32m"false"[31m
+                    [33mdata-slot[31m=[32m"form-label"[31m
+                    [33mfor[31m=[32m"_r_b_-form-item"[31m
+                  [36m>[31m
+                    [0mConfirm Password[0m
+                  [36m</label>[31m
+                  [36m<input[31m
+                    [33maria-describedby[31m=[32m"_r_b_-form-item-description"[31m
+                    [33maria-invalid[31m=[32m"false"[31m
+                    [33mautocomplete[31m=[32m"new-password"[31m
+                    [33mclass[31m=[32m"file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"[31m
+                    [33mdata-slot[31m=[32m"form-control"[31m
+                    [33mid[31m=[32m"_r_b_-form-item"[31m
+                    [33mname[31m=[32m"confirmPassword"[31m
+                    [33mplaceholder[31m=[32m"ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"[31m
+                    [33mtype[31m=[32m"password"[31m
+                    [33mvalue[31m=[32m"short"[31m
+                  [36m/>[31m
+                [36m</div>[31m
+                [36m<button[31m
+                  [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"[31m
+                  [33mdata-slot[31m=[32m"button"[31m
+                  [33mtype[31m=[32m"submit"[31m
+                [36m>[31m
+                  [0mCreate Account[0m
+                [36m</button>[31m
+              [36m</form>[31m
+              [36m<div[31m
+                [33mclass[31m=[32m"mt-6 text-center text-sm"[31m
+              [36m>[31m
+                [36m<span[31m
+                  [33mclass[31m=[32m"text-gray-600"[31m
+                [36m>[31m
+                  [0mAlready have an account? [0m
+                [36m</span>[31m
+                [36m<button[31m
+                  [33mclass[31m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"[31m
+                  [33mdata-slot[31m=[32m"button"[31m
+                [36m>[31m
+                  [0mSign in[0m
+                [36m</button>[31m
+              [36m</div>[31m
+            [36m</div>[31m
+          [36m</div>[31m
+        [36m</div>[31m
+      [36m</div>[31m
+    [36m</div>[31m
+  [36m</body>[31m
+[36m</html>[31m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould prevent submission if passwords don't match [33m1298[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould store tokens in localStorage on successful registration [33m1078[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould redirect to dashboard on successful registration [33m1406[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould display duplicate email error [33m2037[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould display server errors in alert banner [33m1368[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould show loading state during submission [33m312[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould preserve form data on error except passwords [33m1538[2mms[22m[39m
+   [33m[2mÔ£ô[22m[39m Register Page Component[2m > [22mshould handle generic server errors gracefully [33m1108[2mms[22m[39m
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Suites 13 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  server/auth-login.test.ts [ server/auth-login.test.ts ]
+ FAIL  server/auth-refresh.test.ts [ server/auth-refresh.test.ts ]
+ FAIL  server/auth-register.test.ts [ server/auth-register.test.ts ]
+ FAIL  server/auth.edge-cases.test.ts [ server/auth.edge-cases.test.ts ]
+ FAIL  server/auth.logout.test.ts [ server/auth.logout.test.ts ]
+ FAIL  server/collaborative-editor.test.ts [ server/collaborative-editor.test.ts ]
+ FAIL  server/github-integration.test.ts [ server/github-integration.test.ts ]
+ FAIL  server/oauth-token-security.test.ts [ server/oauth-token-security.test.ts ]
+ FAIL  server/realtime-sync-integration.test.ts [ server/realtime-sync-integration.test.ts ]
+ FAIL  server/realtime-sync.test.ts [ server/realtime-sync.test.ts ]
+ FAIL  server/task.test.ts [ server/task.test.ts ]
+ FAIL  server/team.test.ts [ server/team.test.ts ]
+Error: Transform failed with 1 error:
+C:/Users/Godfred/Downloads/Team-manager/team-manager/server/db.ts:526:6: ERROR: Unexpected "."
+  Plugin: vite:esbuild
+  File: C:/Users/Godfred/Downloads/Team-manager/team-manager/server/db.ts:526:6
+  
+  Unexpected "."
+  524|          if (!parentDepartment) {
+  525|            throw new NotFoundError(
+  526|        .select()
+     |        ^
+  527|        .from(teamMembersCollaborative)
+  528|        .where(
+  
+ ÔØ» failureErrorWithLog node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:1472:15
+ ÔØ» node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:755:50
+ ÔØ» responseCallbacks.<computed> node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:622:9
+ ÔØ» handleIncomingPacket node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:677:12
+ ÔØ» Socket.readFromStdout node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:600:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/15]ÔÄ»
+
+ FAIL  server/auth-middleware.test.ts [ server/auth-middleware.test.ts ]
+Error: Transform failed with 1 error:
+C:/Users/Godfred/Downloads/Team-manager/team-manager/server/auth-middleware.test.ts:39:12: ERROR: The symbol "ctx" has already been declared
+  Plugin: vite:esbuild
+  File: C:/Users/Godfred/Downloads/Team-manager/team-manager/server/auth-middleware.test.ts:39:12
+  
+  The symbol "ctx" has already been declared
+  37 |  
+  38 |        // Create context with Bearer token
+  39 |        const ctx = createContextWithToken(loginResult.accessToken);
+     |              ^
+  40 |        const protectedCaller = appRouter.createCaller(ctx);
+  41 |  
+  
+ ÔØ» failureErrorWithLog node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:1472:15
+ ÔØ» node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:755:50
+ ÔØ» responseCallbacks.<computed> node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:622:9
+ ÔØ» handleIncomingPacket node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:677:12
+ ÔØ» Socket.readFromStdout node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild/lib/main.js:600:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[2/15]ÔÄ»
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 2 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  client/src/pages/Register.test.tsx > Register Page Component > should prevent submission with invalid email
+TestingLibraryElementError: Unable to find an element with the text: /please enter a valid email address/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div
+        class="w-full max-w-md"
+      >
+        <div
+          class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+          data-slot="card"
+        >
+          <div
+            class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"
+            data-slot="card-header"
+          >
+            <div
+              class="font-semibold text-2xl"
+              data-slot="card-title"
+            >
+              Create Account
+            </div>
+            <div
+              class="text-muted-foreground text-sm"
+              data-slot="card-description"
+            >
+              Enter your details to create a new account
+            </div>
+          </div>
+          <div
+            class="px-6"
+            data-slot="card-content"
+          >
+            <form
+              class="space-y-4"
+            >
+              <div
+                class="grid gap-2"
+                data-slot="form-item"
+              >
+                <label
+                  class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                  data-error="false"
+                  data-slot="form-label"
+                  for="_r_6_-form-item"
+                >
+                  Email
+                </label>
+                <input
+                  aria-describedby="_r_6_-form-item-description"
+                  aria-invalid="false"
+                  autocomplete="email"
+                  class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                  data-slot="form-control"
+                  id="_r_6_-form-item"
+                  name="email"
+                  placeholder="you@example.com"
+                  type="email"
+                  value="invalid-email"
+                />
+              </div>
+              <div
+                class="grid gap-2"
+                data-slot="form-item"
+              >
+                <label
+                  class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                  data-error="false"
+                  data-slot="form-label"
+                  for="_r_7_-form-item"
+                >
+                  Password
+                </label>
+                <input
+                  aria-describedby="_r_7_-form-item-description"
+                  aria-invalid="false"
+                  autocomplete="new-password"
+                  class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                  data-slot="form-control"
+                  id="_r_7_-form-item"
+                  name="password"
+                  placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                  type="password"
+                  value="password123"
+                />
+                <div
+                  class="text-sm text-gray-600 mt-1"
+                >
+                  Password must be at least 8 characters long
+                </div>
+              </div>
+              <div
+                class="grid gap-2"
+                data-slot="form-item"
+              >
+                <label
+                  class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                  data-error="false"
+                  data-slot="form-label"
+                  for="_r_8_-form-item"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  aria-describedby="_r_8_-form-item-description"
+                  aria-invalid="false"
+                  autocomplete="new-password"
+                  class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                  data-slot="form-control"
+                  id="_r_8_-form-item"
+                  name="confirmPassword"
+                  placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                  type="password"
+                  value="password123"
+                />
+              </div>
+              <button
+                class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"
+                data-slot="button"
+                type="submit"
+              >
+                Create Account
+              </button>
+            </form>
+            <div
+              class="mt-6 text-center text-sm"
+            >
+              <span
+                class="text-gray-600"
+              >
+                Already have an account? 
+              </span>
+              <button
+                class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"
+                data-slot="button"
+              >
+                Sign in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body>
+    <div>
+      <div
+        class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="w-full max-w-md"
+        >
+          <div
+            class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+            data-slot="card"
+          >
+            <div
+              class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"
+              data-slot="card-header"
+            >
+              <div
+                class="font-semibold text-2xl"
+                data-slot="card-title"
+              >
+                Create Account
+              </div>
+              <div
+                class="text-muted-foreground text-sm"
+                data-slot="card-description"
+              >
+                Enter your details to create a new account
+              </div>
+            </div>
+            <div
+              class="px-6"
+              data-slot="card-content"
+            >
+              <form
+                class="space-y-4"
+              >
+                <div
+                  class="grid gap-2"
+                  data-slot="form-item"
+                >
+                  <label
+                    class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                    data-error="false"
+                    data-slot="form-label"
+                    for="_r_6_-form-item"
+                  >
+                    Email
+                  </label>
+                  <input
+                    aria-describedby="_r_6_-form-item-description"
+                    aria-invalid="false"
+                    autocomplete="email"
+                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    data-slot="form-control"
+                    id="_r_6_-form-item"
+                    name="email"
+                    placeholder="you@example.com"
+                    type="email"
+                    value="invalid-email"
+                  />
+                </div>
+                <div
+                  class="grid gap-2"
+                  data-slot="form-item"
+                >
+                  <label
+                    class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                    data-error="false"
+                    data-slot="form-label"
+                    for="_r_7_-form-item"
+                  >
+                    Password
+                  </label>
+                  <input
+                    aria-describedby="_r_7_-form-item-description"
+                    aria-invalid="false"
+                    autocomplete="new-password"
+                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    data-slot="form-control"
+                    id="_r_7_-form-item"
+                    name="password"
+                    placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                    type="password"
+                    value="password123"
+                  />
+                  <div
+                    class="text-sm text-gray-600 mt-1"
+                  >
+                    Password must be at least 8 characters long
+                  </div>
+                </div>
+                <div
+                  class="grid gap-2"
+                  data-slot="form-item"
+                >
+                  <label
+                    class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                    data-error="false"
+                    data-slot="form-label"
+                    for="_r_8_-form-item"
+                  >
+                    Confirm Password
+                  </label>
+                  <input
+                    aria-describedby="_r_8_-form-item-description"
+                    aria-invalid="false"
+                    autocomplete="new-password"
+                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    data-slot="form-control"
+                    id="_r_8_-form-item"
+                    name="confirmPassword"
+                    placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                    type="password"
+                    value="password123"
+                  />
+                </div>
+                <button
+                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"
+                  data-slot="button"
+                  type="submit"
+                >
+                  Create Account
+                </button>
+              </form>
+              <div
+                class="mt-6 text-center text-sm"
+              >
+                <span
+                  class="text-gray-600"
+                >
+                  Already have an account? 
+                </span>
+                <button
+                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"
+                  data-slot="button"
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+ ÔØ» Proxy.waitForWrapper node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ÔØ» client/src/pages/Register.test.tsx:138:11
+    136| 
+    137|     // Check that validation error is displayed
+    138|     await waitFor(() => {
+       |           ^
+    139|       const errorMessage = screen.getByText(/please enter a valid emaiÔÇª
+    140|       expect(errorMessage).toBeDefined();
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[3/15]ÔÄ»
+
+ FAIL  client/src/pages/Register.test.tsx > Register Page Component > should prevent submission with password less than 8 characters
+TestingLibraryElementError: Found multiple elements with the text: /password must be at least 8 characters long/i
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+<p
+  class="text-destructive text-sm"
+  data-slot="form-message"
+  id="_r_a_-form-item-message"
+>
+  Password must be at least 8 characters long
+</p>
+
+Ignored nodes: comments, script, style
+<div
+  class="text-sm text-gray-600 mt-1"
+>
+  Password must be at least 8 characters long
+</div>
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div
+        class="w-full max-w-md"
+      >
+        <div
+          class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+          data-slot="card"
+        >
+          <div
+            class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"
+            data-slot="card-header"
+          >
+            <div
+              class="font-semibold text-2xl"
+              data-slot="card-title"
+            >
+              Create Account
+            </div>
+            <div
+              class="text-muted-foreground text-sm"
+              data-slot="card-description"
+            >
+              Enter your details to create a new account
+            </div>
+          </div>
+          <div
+            class="px-6"
+            data-slot="card-content"
+          >
+            <form
+              class="space-y-4"
+            >
+              <div
+                class="grid gap-2"
+                data-slot="form-item"
+              >
+                <label
+                  class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                  data-error="false"
+                  data-slot="form-label"
+                  for="_r_9_-form-item"
+                >
+                  Email
+                </label>
+                <input
+                  aria-describedby="_r_9_-form-item-description"
+                  aria-invalid="false"
+                  autocomplete="email"
+                  class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                  data-slot="form-control"
+                  id="_r_9_-form-item"
+                  name="email"
+                  placeholder="you@example.com"
+                  type="email"
+                  value="user@example.com"
+                />
+              </div>
+              <div
+                class="grid gap-2"
+                data-slot="form-item"
+              >
+                <label
+                  class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                  data-error="true"
+                  data-slot="form-label"
+                  for="_r_a_-form-item"
+                >
+                  Password
+                </label>
+                <input
+                  aria-describedby="_r_a_-form-item-description _r_a_-form-item-message"
+                  aria-invalid="true"
+                  autocomplete="new-password"
+                  class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                  data-slot="form-control"
+                  id="_r_a_-form-item"
+                  name="password"
+                  placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                  type="password"
+                  value="short"
+                />
+                <p
+                  class="text-destructive text-sm"
+                  data-slot="form-message"
+                  id="_r_a_-form-item-message"
+                >
+                  Password must be at least 8 characters long
+                </p>
+                <div
+                  class="text-sm text-gray-600 mt-1"
+                >
+                  Password must be at least 8 characters long
+                </div>
+              </div>
+              <div
+                class="grid gap-2"
+                data-slot="form-item"
+              >
+                <label
+                  class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                  data-error="false"
+                  data-slot="form-label"
+                  for="_r_b_-form-item"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  aria-describedby="_r_b_-form-item-description"
+                  aria-invalid="false"
+                  autocomplete="new-password"
+                  class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                  data-slot="form-control"
+                  id="_r_b_-form-item"
+                  name="confirmPassword"
+                  placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                  type="password"
+                  value="short"
+                />
+              </div>
+              <button
+                class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"
+                data-slot="button"
+                type="submit"
+              >
+                Create Account
+              </button>
+            </form>
+            <div
+              class="mt-6 text-center text-sm"
+            >
+              <span
+                class="text-gray-600"
+              >
+                Already have an account? 
+              </span>
+              <button
+                class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"
+                data-slot="button"
+              >
+                Sign in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body>
+    <div>
+      <div
+        class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="w-full max-w-md"
+        >
+          <div
+            class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+            data-slot="card"
+          >
+            <div
+              class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-2"
+              data-slot="card-header"
+            >
+              <div
+                class="font-semibold text-2xl"
+                data-slot="card-title"
+              >
+                Create Account
+              </div>
+              <div
+                class="text-muted-foreground text-sm"
+                data-slot="card-description"
+              >
+                Enter your details to create a new account
+              </div>
+            </div>
+            <div
+              class="px-6"
+              data-slot="card-content"
+            >
+              <form
+                class="space-y-4"
+              >
+                <div
+                  class="grid gap-2"
+                  data-slot="form-item"
+                >
+                  <label
+                    class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                    data-error="false"
+                    data-slot="form-label"
+                    for="_r_9_-form-item"
+                  >
+                    Email
+                  </label>
+                  <input
+                    aria-describedby="_r_9_-form-item-description"
+                    aria-invalid="false"
+                    autocomplete="email"
+                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    data-slot="form-control"
+                    id="_r_9_-form-item"
+                    name="email"
+                    placeholder="you@example.com"
+                    type="email"
+                    value="user@example.com"
+                  />
+                </div>
+                <div
+                  class="grid gap-2"
+                  data-slot="form-item"
+                >
+                  <label
+                    class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                    data-error="true"
+                    data-slot="form-label"
+                    for="_r_a_-form-item"
+                  >
+                    Password
+                  </label>
+                  <input
+                    aria-describedby="_r_a_-form-item-description _r_a_-form-item-message"
+                    aria-invalid="true"
+                    autocomplete="new-password"
+                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    data-slot="form-control"
+                    id="_r_a_-form-item"
+                    name="password"
+                    placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                    type="password"
+                    value="short"
+                  />
+                  <p
+                    class="text-destructive text-sm"
+                    data-slot="form-message"
+                    id="_r_a_-form-item-message"
+                  >
+                    Password must be at least 8 characters long
+                  </p>
+                  <div
+                    class="text-sm text-gray-600 mt-1"
+                  >
+                    Password must be at least 8 characters long
+                  </div>
+                </div>
+                <div
+                  class="grid gap-2"
+                  data-slot="form-item"
+                >
+                  <label
+                    class="flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 data-[error=true]:text-destructive"
+                    data-error="false"
+                    data-slot="form-label"
+                    for="_r_b_-form-item"
+                  >
+                    Confirm Password
+                  </label>
+                  <input
+                    aria-describedby="_r_b_-form-item-description"
+                    aria-invalid="false"
+                    autocomplete="new-password"
+                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+                    data-slot="form-control"
+                    id="_r_b_-form-item"
+                    name="confirmPassword"
+                    placeholder="ÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇóÔÇó"
+                    type="password"
+                    value="short"
+                  />
+                </div>
+                <button
+                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[>svg]:px-3 w-full"
+                  data-slot="button"
+                  type="submit"
+                >
+                  Create Account
+                </button>
+              </form>
+              <div
+                class="mt-6 text-center text-sm"
+              >
+                <span
+                  class="text-gray-600"
+                >
+                  Already have an account? 
+                </span>
+                <button
+                  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary underline-offset-4 hover:underline has-[>svg]:px-3 p-0 h-auto font-semibold"
+                  data-slot="button"
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+ ÔØ» Proxy.waitForWrapper node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ÔØ» client/src/pages/Register.test.tsx:164:11
+    162| 
+    163|     // Check that validation error is displayed
+    164|     await waitFor(() => {
+       |           ^
+    165|       const errorMessage = screen.getByText(/password must be at leastÔÇª
+    166|       expect(errorMessage).toBeDefined();
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[4/15]ÔÄ»
+
+[2m Test Files [22m [1m[31m14 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (18)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m55 passed[39m[22m[90m (57)[39m
+[2m   Start at [22m 20:36:40
+[2m   Duration [22m 26.01s[2m (transform 3.47s, setup 11.79s, collect 8.00s, tests 27.76s, environment 80.60s, prepare 12.14s)[22m
+
+ÔÇëELIFECYCLEÔÇë Test failed. See above for more details.

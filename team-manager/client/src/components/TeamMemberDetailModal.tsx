@@ -6,32 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, MapPin, Mail, Phone, Briefcase, Building2, History, UserCheck } from "lucide-react";
-import { DepartmentAssignmentModal } from "./DepartmentAssignmentModal";
-import { toast } from "sonner";
 import type { TeamMember } from "@shared/types";
 
 interface TeamMemberDetailModalProps {
-  member: TeamMember & { currentDepartment?: any };
+  member: TeamMember;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
 }
 
 export function TeamMemberDetailModal({ member, isOpen, onClose, onUpdate }: TeamMemberDetailModalProps) {
-  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
-  const { data: memberWithHistory, refetch } = trpc.team.getByIdWithDepartment.useQuery(
-    { id: member.id },
-    { enabled: isOpen }
-  );
 
-  const handleAssignmentSuccess = () => {
-    setIsAssignmentModalOpen(false);
-    refetch();
-    onUpdate();
-    toast.success("Department assignment updated successfully");
-  };
-
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return "Unknown date";
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -46,7 +33,7 @@ export function TeamMemberDetailModal({ member, isOpen, onClose, onUpdate }: Tea
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
               <UserCheck className="h-5 w-5" />
               Team Member Details
             </DialogTitle>
@@ -65,7 +52,7 @@ export function TeamMemberDetailModal({ member, isOpen, onClose, onUpdate }: Tea
                 {member.pictureFileName && (
                   <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden mx-auto">
                     <img
-                      src={`/api/uploads/${member.pictureFileName}`}
+                      src={`/api/uploads/${member.pictureFileName}?t=${Date.now()}`}
                       alt={member.name}
                       className="w-full h-full object-cover"
                     />
@@ -93,116 +80,19 @@ export function TeamMemberDetailModal({ member, isOpen, onClose, onUpdate }: Tea
 
                 {member.duties && (
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Briefcase className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">Duties</span>
+                    <div className="flex items-start gap-2 mb-2">
+                      <Briefcase className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Duties</span>
                     </div>
-                    <p className="text-sm text-gray-700 pl-6">{member.duties}</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 pl-6 whitespace-pre-wrap">{member.duties}</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Current Department Assignment */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Current Department
-                  </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAssignmentModalOpen(true)}
-                  >
-                    {memberWithHistory?.currentDepartment ? "Reassign" : "Assign"}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {memberWithHistory?.currentDepartment ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-green-700 bg-green-100">
-                        Active
-                      </Badge>
-                      <span className="font-medium">{memberWithHistory.currentDepartment.name}</span>
-                    </div>
-                    {memberWithHistory.currentDepartment.description && (
-                      <p className="text-sm text-gray-600">
-                        {memberWithHistory.currentDepartment.description}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">Not assigned to any department</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Department Assignment History */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Assignment History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {memberWithHistory?.departmentHistory && memberWithHistory.departmentHistory.length > 0 ? (
-                  <div className="space-y-3">
-                    {memberWithHistory.departmentHistory
-                      .sort((a, b) => new Date(b.assignment.assignedAt).getTime() - new Date(a.assignment.assignedAt).getTime())
-                      .map((historyItem, index) => (
-                        <div key={historyItem.assignment.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
-                          <div className="flex-shrink-0 mt-1">
-                            <Badge variant={historyItem.assignment.isActive ? "default" : "secondary"}>
-                              {historyItem.assignment.isActive ? "Current" : "Past"}
-                            </Badge>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">
-                              {historyItem.department?.name || "Unknown Department"}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Assigned on {formatDate(historyItem.assignment.assignedAt)}
-                            </p>
-                            {historyItem.assignment.assignedBy && (
-                              <p className="text-xs text-gray-500">
-                                Assigned by user ID: {historyItem.assignment.assignedBy}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <History className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">No assignment history available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Department Assignment Modal */}
-      <DepartmentAssignmentModal
-        isOpen={isAssignmentModalOpen}
-        onClose={() => {
-          setIsAssignmentModalOpen(false);
-          // Refetch data when modal closes (it handles success internally)
-          refetch();
-          onUpdate();
-        }}
-        selectedTeamMember={member}
-      />
     </>
   );
 }

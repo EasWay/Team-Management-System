@@ -4,7 +4,6 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { jwtVerify } from 'jose';
 import { ENV } from './_core/env';
-import { initializeYjsProvider } from './yjs-provider';
 
 // Socket.io server instance
 let io: Server | null = null;
@@ -27,7 +26,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
   // Create Socket.io server with CORS configuration
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.NODE_ENV === 'development' 
+      origin: process.env.NODE_ENV === 'development'
         ? ['http://localhost:3000', 'http://localhost:5173']
         : process.env.ALLOWED_ORIGINS?.split(',') || [],
       credentials: true,
@@ -137,9 +136,6 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     console.error('[Socket.io] Server error:', error);
   });
 
-  // Initialize Yjs provider for collaborative editing
-  initializeYjsProvider(io);
-
   console.log('[Socket.io] Server initialized successfully');
   return io;
 }
@@ -157,7 +153,7 @@ export function getSocketServer(): Server | null {
  */
 export function broadcastTaskCreated(teamId: number, task: any) {
   if (!io) return;
-  
+
   const roomName = `team:${teamId}`;
   io.to(roomName).emit('taskCreated', task);
   console.log(`[Socket.io] Broadcast taskCreated to ${roomName}`);
@@ -169,7 +165,7 @@ export function broadcastTaskCreated(teamId: number, task: any) {
  */
 export function broadcastTaskUpdated(teamId: number, task: any) {
   if (!io) return;
-  
+
   const roomName = `team:${teamId}`;
   io.to(roomName).emit('taskUpdated', task);
   console.log(`[Socket.io] Broadcast taskUpdated to ${roomName}`);
@@ -181,7 +177,7 @@ export function broadcastTaskUpdated(teamId: number, task: any) {
  */
 export function broadcastTaskMoved(teamId: number, taskId: number, newStatus: string, newPosition: number) {
   if (!io) return;
-  
+
   const roomName = `team:${teamId}`;
   io.to(roomName).emit('taskMoved', { taskId, newStatus, newPosition });
   console.log(`[Socket.io] Broadcast taskMoved to ${roomName}`);
@@ -193,7 +189,7 @@ export function broadcastTaskMoved(teamId: number, taskId: number, newStatus: st
  */
 export function broadcastTaskDeleted(teamId: number, taskId: number) {
   if (!io) return;
-  
+
   const roomName = `team:${teamId}`;
   io.to(roomName).emit('taskDeleted', { taskId });
   console.log(`[Socket.io] Broadcast taskDeleted to ${roomName}`);
@@ -205,7 +201,7 @@ export function broadcastTaskDeleted(teamId: number, taskId: number) {
  */
 export function broadcastActivityCreated(teamId: number, activity: any) {
   if (!io) return;
-  
+
   const roomName = `team:${teamId}`;
   io.to(roomName).emit('activityCreated', activity);
   console.log(`[Socket.io] Broadcast activityCreated to ${roomName}`);

@@ -5,13 +5,13 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SocketProvider, ConnectionStatus } from "./contexts/SocketContext";
+import { TeamProvider } from "./contexts/TeamContext";
 import Home from "./pages/Home";
 import TeamMembers from "./pages/TeamMembers";
-import Departments from "./pages/Departments";
 import Teams from "./pages/Teams";
 import Tasks from "./pages/Tasks";
 import Repositories from "./pages/Repositories";
-import Editor from "./pages/Editor";
+import Projects from "./pages/Projects";
 import Login from "./pages/Login";
 
 function Router() {
@@ -21,11 +21,10 @@ function Router() {
       <Route path={"/login"} component={Login} />
       <Route path={"/"} component={Home} />
       <Route path={"/team"} component={TeamMembers} />
-      <Route path={"/departments"} component={Departments} />
       <Route path={"/teams"} component={Teams} />
       <Route path={"/tasks"} component={Tasks} />
       <Route path={"/repositories"} component={Repositories} />
-      <Route path={"/editor"} component={Editor} />
+      <Route path={"/projects"} component={Projects} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -41,16 +40,15 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark" switchable>
         <SocketProvider>
-          <TooltipProvider>
-            <Toaster />
-            <ConnectionStatus />
-            <Router />
-          </TooltipProvider>
+          <TeamProvider>
+            <TooltipProvider>
+              <Toaster />
+              <ConnectionStatus />
+              <Router />
+            </TooltipProvider>
+          </TeamProvider>
         </SocketProvider>
       </ThemeProvider>
     </ErrorBoundary>

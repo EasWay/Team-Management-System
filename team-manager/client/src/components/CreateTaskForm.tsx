@@ -36,7 +36,7 @@ const formSchema = z.object({
     .min(1, "Title is required")
     .max(200, "Title must be less than 200 characters"),
   description: z.string().optional(),
-  assigneeId: z.number().optional(),
+  assignedTo: z.number().optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   status: z.enum(["todo", "in_progress", "review", "done"]),
   dueDate: z.date().optional(),
@@ -64,10 +64,10 @@ export function CreateTaskForm({
   const members = membersData as Array<{
     id: number;
     teamId: number;
-    userId: number;
+    memberId: number;
     role: string;
     joinedAt: Date;
-    user: {
+    member: {
       id: number;
       name: string | null;
       email: string | null;
@@ -112,7 +112,7 @@ export function CreateTaskForm({
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Title</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Title</FormLabel>
               <FormControl>
                 <Input
                   placeholder="e.g., Implement user authentication"
@@ -130,7 +130,7 @@ export function CreateTaskForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (Optional)</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Description (Optional)</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Describe the task in detail..."
@@ -150,7 +150,7 @@ export function CreateTaskForm({
             name="priority"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Priority</FormLabel>
+                <FormLabel className="text-foreground/90 font-semibold">Priority</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -178,7 +178,7 @@ export function CreateTaskForm({
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel className="text-foreground/90 font-semibold">Status</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -204,10 +204,10 @@ export function CreateTaskForm({
 
         <FormField
           control={form.control}
-          name="assigneeId"
+          name="assignedTo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assignee (Optional)</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Assignee (Optional)</FormLabel>
               <Select
                 onValueChange={(value) => field.onChange(Number(value))}
                 disabled={isLoading}
@@ -219,8 +219,8 @@ export function CreateTaskForm({
                 </FormControl>
                 <SelectContent>
                   {members?.map((member) => (
-                    <SelectItem key={member.userId} value={String(member.userId)}>
-                      {member.user?.name || member.user?.email || `User ${member.userId}`}
+                    <SelectItem key={member.memberId} value={String(member.memberId)}>
+                      {member.member?.name || member.member?.email || `User ${member.memberId}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -235,7 +235,7 @@ export function CreateTaskForm({
           name="dueDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Due Date (Optional)</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Due Date (Optional)</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -245,11 +245,11 @@ export function CreateTaskForm({
                       disabled={isLoading}
                     >
                       {field.value ? (
-                        format(field.value, "PPP")
+                        <span className="text-foreground font-medium">{format(field.value, "PPP")}</span>
                       ) : (
-                        <span>Pick a date</span>
+                        <span className="text-foreground/75">Pick a date</span>
                       )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-70" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -275,7 +275,7 @@ export function CreateTaskForm({
           name="githubPrUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>GitHub PR URL (Optional)</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">GitHub PR URL (Optional)</FormLabel>
               <FormControl>
                 <Input
                   placeholder="https://github.com/owner/repo/pull/123"
@@ -298,6 +298,7 @@ export function CreateTaskForm({
               variant="outline"
               onClick={onCancel}
               disabled={isLoading}
+              className="bg-foreground/[0.03] hover:bg-foreground/5 border-border/50 text-foreground"
             >
               Cancel
             </Button>

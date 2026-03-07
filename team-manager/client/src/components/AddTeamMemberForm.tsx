@@ -94,7 +94,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Name</FormLabel>
               <FormControl>
                 <Input placeholder="John Doe" {...field} />
               </FormControl>
@@ -108,7 +108,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
           name="position"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Position</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Position</FormLabel>
               <FormControl>
                 <Input placeholder="Senior Developer" {...field} />
               </FormControl>
@@ -122,7 +122,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Email</FormLabel>
               <FormControl>
                 <Input placeholder="john@example.com" type="email" {...field} />
               </FormControl>
@@ -136,7 +136,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Phone</FormLabel>
               <FormControl>
                 <Input placeholder="+1 (555) 123-4567" {...field} />
               </FormControl>
@@ -150,7 +150,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
           name="duties"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Duties</FormLabel>
+              <FormLabel className="text-foreground/90 font-semibold">Duties</FormLabel>
               <FormControl>
                 <Textarea placeholder="Describe their main responsibilities..." {...field} />
               </FormControl>
@@ -160,10 +160,10 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
         />
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Profile Picture</label>
+          <label className="text-sm font-semibold text-foreground/90">Profile Picture</label>
           <Input type="file" accept="image/*" onChange={handlePictureChange} />
           {picturePreview && (
-            <div className="relative w-full h-32 bg-gray-100 rounded-md overflow-hidden">
+            <div className="relative w-full h-32 bg-muted rounded-md overflow-hidden">
               <img src={picturePreview} alt="Preview" className="w-full h-full object-cover" />
             </div>
           )}
