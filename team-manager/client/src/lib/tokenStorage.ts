@@ -29,7 +29,7 @@ export const tokenStorage = {
 
   setTokensFromUrl(): boolean {
     if (typeof window === 'undefined') return false;
-    
+
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
@@ -37,9 +37,13 @@ export const tokenStorage = {
     if (accessToken && refreshToken) {
       this.setAccessToken(accessToken);
       this.setRefreshToken(refreshToken);
-      
+
       // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      let cleanPath = window.location.pathname;
+      if (cleanPath.startsWith('//')) {
+        cleanPath = '/' + cleanPath.replace(/^\/+/, '');
+      }
+      window.history.replaceState({}, document.title, cleanPath || '/');
       return true;
     }
 

@@ -255,7 +255,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
     console.log('[OAuth] JWT tokens generated');
 
     // Redirect to frontend with tokens in URL (will be stored in localStorage)
-    const redirectUrl = `https://team-management-system-zq6x.onrender.com//?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
+    const redirectUrl = `https://team-management-system-zq6x.onrender.com/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
     console.log('[OAuth] Redirecting to:', redirectUrl);
     res.redirect(302, redirectUrl);
   } catch (error) {
