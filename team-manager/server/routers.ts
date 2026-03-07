@@ -1,7 +1,7 @@
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { authService } from "./_core/auth";
-import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken } from "./db";
+import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam } from "./db";
 import { parsePRDText } from "./_core/prdParser";
 import { GitHubService, parseGitHubUrl } from "./github-service";
 import { z } from "zod";
@@ -286,6 +286,67 @@ export const appRouter = router({
         throw new Error(error instanceof Error ? error.message : 'Failed to get teams');
       }
     }),
+
+    listAll: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        return await getAllTeams(ctx.user?.id);
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : 'Failed to get all teams');
+      }
+    }),
+
+    requestJoin: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          return await requestToJoinTeam(input.teamId, ctx.user.id);
+        } catch (error) {
+          handleDatabaseError(error);
+        }
+      }),
+
+    approveJoin: protectedProcedure
+      .input(z.object({ teamId: z.number(), memberId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          return await approveJoinRequest(input.teamId, input.memberId, ctx.user.id);
+        } catch (error) {
+          handleDatabaseError(error);
+        }
+      }),
+
+    addMember: protectedProcedure
+      .input(z.object({ teamId: z.number(), memberId: z.number(), role: z.enum(['admin', 'team_lead', 'developer', 'viewer']).optional() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          // Permission check for the requester
+          const canAdd = await checkTeamPermission(input.teamId, ctx.user.id, 'invite_member');
+          if (!canAdd) throw new Error("Insufficient permissions");
+
+          return await addMemberToTeam(input.teamId, input.memberId, input.role as any);
+        } catch (error) {
+          handleDatabaseError(error);
+        }
+      }),
+
+    searchGlobalMembers: protectedProcedure
+      .input(z.object({ query: z.string() }))
+      .query(async ({ input }) => {
+        try {
+          return await searchGlobalTeamMembers(input.query);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to search members');
+        }
+      }),
 
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))

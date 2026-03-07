@@ -42,36 +42,49 @@ function getRoleStyles(position: string) {
 }
 
 export default function TeamMembers() {
-  const { data: members, isLoading, refetch } = trpc.team.list.useQuery();
-  const deleteMutation = trpc.team.delete.useMutation();
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const { selectedTeamId, teams } = useTeamContext();
+  const { data: members, isLoading, refetch } = trpc.teams.getMembers.useQuery({ teamId: selectedTeamId || 0 }, { enabled: !!selectedTeamId });
+  const approveMutation = trpc.teams.approveJoin.useMutation();
+  const removeMutation = trpc.teams.removeMember.useMutation();
+
+  const [selectedMember, setSelectedMember] = useState<any>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const { selectedTeamId, teams } = useTeamContext();
+  const [view, setView] = useState<'active' | 'pending'>('active');
 
   const currentTeamName = teams?.find(t => t.id === selectedTeamId)?.name || 'NO ACTIVE TEAM';
 
   const handleDelete = async () => {
-    if (!memberToDelete) return;
+    if (!memberToDelete || !selectedTeamId) return;
     try {
-      await deleteMutation.mutateAsync({ id: memberToDelete });
-      toast.success("Team member deleted successfully");
+      await removeMutation.mutateAsync({ teamId: selectedTeamId, userId: memberToDelete });
+      toast.success("Team member removed successfully");
       refetch();
       setIsDeleteDialogOpen(false);
       setMemberToDelete(null);
     } catch (error) {
-      toast.error("Failed to delete team member");
+      toast.error("Failed to remove team member");
+    }
+  };
+
+  const handleApprove = async (memberId: number) => {
+    if (!selectedTeamId) return;
+    try {
+      await approveMutation.mutateAsync({ teamId: selectedTeamId, memberId });
+      toast.success("Member approved!");
+      refetch();
+    } catch (error) {
+      toast.error("Failed to approve member");
     }
   };
 
   const handleAddSuccess = () => {
     setIsAddDialogOpen(false);
     refetch();
-    toast.success("Team member added successfully");
   };
 
   const handleEditSuccess = () => {
@@ -81,11 +94,15 @@ export default function TeamMembers() {
     toast.success("Team member updated successfully");
   };
 
-  const filteredMembers = members?.filter((member) => {
+  const activeMembers = members?.filter(m => m.status === 'active') || [];
+  const pendingMembers = members?.filter(m => m.status === 'pending') || [];
+
+  const displayMembers = view === 'active' ? activeMembers : pendingMembers;
+
+  const filteredMembers = displayMembers?.filter(({ member }) => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (member.position?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.duties?.toLowerCase().includes(searchTerm.toLowerCase());
+      member.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });
@@ -113,10 +130,30 @@ export default function TeamMembers() {
             <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2">
               <span>{currentTeamName}</span>
               <span className="size-1 rounded-full bg-foreground/20"></span>
-              <span>TEAM</span>
+              <span>{view === 'active' ? 'REGISTRY' : 'REQUESTS'}</span>
             </div>
             <h2 className="text-4xl font-light tracking-tight text-foreground mb-2">{currentTeamName}</h2>
-            <p className="text-[10px] text-muted-foreground max-w-md font-medium tracking-wide">Manage role assignments and review operational status inside your division grid.</p>
+            <p className="text-[10px] text-muted-foreground max-w-md font-medium tracking-wide">
+              {view === 'active'
+                ? "Manage role assignments and review operational status inside your division grid."
+                : "Review pending join requests from personnel across the global directory."
+              }
+            </p>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setView('active')}
+                className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-bold border transition-all rounded ${view === 'active' ? 'bg-foreground text-background border-foreground' : 'text-muted-foreground border-border hover:border-foreground/30'}`}
+              >
+                Roster ({activeMembers.length})
+              </button>
+              <button
+                onClick={() => setView('pending')}
+                className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-bold border transition-all rounded ${view === 'pending' ? 'bg-foreground text-background border-foreground' : 'text-muted-foreground border-border hover:border-foreground/30'}`}
+              >
+                Requests ({pendingMembers.length})
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-4">
@@ -124,20 +161,17 @@ export default function TeamMembers() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
               <input
                 className="bg-foreground/5 border border-border rounded px-10 py-2.5 text-[10px] uppercase tracking-widest font-bold text-foreground focus:outline-none focus:border-foreground/30 w-full md:w-64 transition-all hover:bg-foreground/10 placeholder:text-muted-foreground"
-                placeholder="Search registry..."
+                placeholder="Search candidates..."
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="px-6 py-2.5 border border-border text-muted-foreground text-[10px] font-bold tracking-widest uppercase hover:text-foreground hover:border-foreground/30 transition-colors rounded">
-              Filters
-            </button>
             <button
               className="px-6 py-2.5 bg-white text-black text-[10px] font-bold tracking-widest uppercase hover:bg-slate-200 transition-colors rounded"
               onClick={() => setIsAddDialogOpen(true)}
             >
-              Recruit Asset
+              Add Global Member
             </button>
           </div>
         </header>
@@ -150,42 +184,54 @@ export default function TeamMembers() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-2">
-              {filteredMembers?.map((member) => (
+              {filteredMembers?.map(({ member, id: membershipId, role, status }) => (
                 <div key={member.id} className="liquid-glass-card rounded-xl overflow-hidden group relative">
 
                   {/* Grid Hovers Action Area */}
                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                    <button
-                      onClick={() => {
-                        setSelectedMember(member);
-                        setIsDetailModalOpen(true);
-                      }}
-                      className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
-                      title="View Bio"
-                    >
-                      <Eye className="size-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedMember(member);
-                        setIsEditDialogOpen(true);
-                      }}
-                      className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
-                      title="Change Assignment"
-                    >
-                      <Edit className="size-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setMemberToDelete(member.id);
-                        setIsDeleteDialogOpen(true);
-                      }}
-                      disabled={deleteMutation.isPending}
-                      className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-red-500 hover:border-red-500 hover:text-white flex items-center justify-center text-muted-foreground transition-colors"
-                      title="Purge Record"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    {status === 'active' ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setSelectedMember(member);
+                            setIsDetailModalOpen(true);
+                          }}
+                          className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
+                          title="View Bio"
+                        >
+                          <Eye className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedMember(member);
+                            setIsEditDialogOpen(true);
+                          }}
+                          className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
+                          title="Change Assignment"
+                        >
+                          <Edit className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMemberToDelete(member.id);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          disabled={removeMutation.isPending}
+                          className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-red-500 hover:border-red-500 hover:text-white flex items-center justify-center text-muted-foreground transition-colors"
+                          title="Purge Record"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => handleDelete()} // Reject is essentially delete membership
+                        className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-red-500 hover:border-red-500 hover:text-white flex items-center justify-center text-muted-foreground transition-colors"
+                        title="Reject Request"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   <div className="h-48 relative overflow-hidden bg-white/5">
@@ -206,24 +252,36 @@ export default function TeamMembers() {
                         <h3 className="text-sm font-bold text-white tracking-wide">{member.name}</h3>
                         <p className="text-[10px] text-white/60 uppercase tracking-widest">{member.position || 'Operative'}</p>
                       </div>
-                      <div className="size-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"></div>
+                      <div className={`size-2 rounded-full ${status === 'active' ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]'}`}></div>
                     </div>
                   </div>
 
-                  <div className="p-4 grid grid-cols-3 gap-2 border-t border-border bg-muted/30">
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Fitness</p>
-                      <p className="text-xs text-foreground font-mono">100%</p>
+                  {status === 'active' ? (
+                    <div className="p-4 grid grid-cols-3 gap-2 border-t border-border bg-muted/30">
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Fitness</p>
+                        <p className="text-xs text-foreground font-mono">100%</p>
+                      </div>
+                      <div className="text-center border-x border-border">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Velocity</p>
+                        <p className="text-xs text-foreground font-mono">1.0x</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Health</p>
+                        <p className="text-xs text-foreground font-mono">OPT</p>
+                      </div>
                     </div>
-                    <div className="text-center border-x border-border">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Velocity</p>
-                      <p className="text-xs text-foreground font-mono">1.0x</p>
+                  ) : (
+                    <div className="p-4 border-t border-border bg-yellow-500/5">
+                      <button
+                        onClick={() => handleApprove(member.id)}
+                        disabled={approveMutation.isPending}
+                        className="w-full py-2 bg-yellow-500 text-black text-[10px] font-bold tracking-widest uppercase hover:bg-yellow-400 transition-colors rounded"
+                      >
+                        {approveMutation.isPending ? "Confirming..." : "Approve Access"}
+                      </button>
                     </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Health</p>
-                      <p className="text-xs text-foreground font-mono">OPT</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>

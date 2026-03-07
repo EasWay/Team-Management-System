@@ -60,6 +60,7 @@ export const teamMembersCollaborative = pgTable("team_members_collaborative", {
   teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
   memberId: integer("member_id").references(() => teamMembers.id, { onDelete: "cascade" }).notNull(),
   role: text("role").default("member"),
+  status: text("status").default("active"), // 'active', 'pending'
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 

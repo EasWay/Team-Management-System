@@ -3,8 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users, Loader2 } from "lucide-react";
 import { TeamCard } from "./TeamCard";
 
-export function TeamList() {
-  const { data: teams, isLoading, error } = trpc.teams.list.useQuery();
+export function TeamList({ discover = false }: { discover?: boolean }) {
+  const { data: teams, isLoading, error } = discover
+    ? trpc.teams.listAll.useQuery()
+    : trpc.teams.list.useQuery();
 
   if (isLoading) {
     return (
@@ -41,7 +43,7 @@ export function TeamList() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {teams.map((team) => (
-        <TeamCard key={team.id} team={team} />
+        <TeamCard key={team.id} team={team} discover={discover} />
       ))}
     </div>
   );

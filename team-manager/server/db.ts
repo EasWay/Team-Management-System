@@ -504,7 +504,7 @@ export async function getUserTeams(userId: number): Promise<(Team & { memberRole
       memberCount: sql<number>`count(distinct ${teamMembersCollaborative.memberId})`,
     })
     .from(teams)
-    .innerJoin(teamMembersCollaborative, eq(teams.id, teamMembersCollaborative.teamId))
+    .innerJoin(teamMembersCollaborative, and(eq(teams.id, teamMembersCollaborative.teamId), eq(teamMembersCollaborative.status, 'active')))
     .where(eq(teamMembersCollaborative.memberId, userId))
     .groupBy(teams.id, teamMembersCollaborative.role);
 
@@ -543,7 +543,8 @@ export async function getTeamById(
       teamMembersCollaborative,
       and(
         eq(teams.id, teamMembersCollaborative.teamId),
-        eq(teamMembersCollaborative.memberId, userId)
+        eq(teamMembersCollaborative.memberId, userId),
+        eq(teamMembersCollaborative.status, 'active')
       )
     )
     .where(eq(teams.id, teamId))
@@ -639,6 +640,7 @@ export async function getCollaborativeTeamMembers(
       teamId: teamMembersCollaborative.teamId,
       memberId: teamMembersCollaborative.memberId,
       role: teamMembersCollaborative.role,
+      status: teamMembersCollaborative.status,
       joinedAt: teamMembersCollaborative.joinedAt,
       member: teamMembers,
     })
@@ -647,6 +649,114 @@ export async function getCollaborativeTeamMembers(
     .where(eq(teamMembersCollaborative.teamId, teamId));
 
   return result;
+}
+
+/**
+ * Get all teams in the system for discovery
+ */
+export async function getAllTeams(userId?: number): Promise<(Team & { memberStatus?: string; memberRole?: string })[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (!userId) {
+    return await db.select().from(teams).orderBy(desc(teams.createdAt));
+  }
+
+  const result = await db
+    .select({
+      id: teams.id,
+      name: teams.name,
+      description: teams.description,
+      createdBy: teams.createdBy,
+      createdAt: teams.createdAt,
+      updatedAt: teams.updatedAt,
+      memberStatus: teamMembersCollaborative.status,
+      memberRole: teamMembersCollaborative.role,
+    })
+    .from(teams)
+    .leftJoin(
+      teamMembersCollaborative,
+      and(
+        eq(teams.id, teamMembersCollaborative.teamId),
+        eq(teamMembersCollaborative.memberId, userId)
+      )
+    )
+    .orderBy(desc(teams.createdAt));
+
+  return result as (Team & { memberStatus?: string; memberRole?: string })[];
+}
+
+/**
+ * Request to join a team (creates pending membership)
+ */
+export async function requestToJoinTeam(teamId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(teamMembersCollaborative).values({
+    teamId,
+    memberId: userId,
+    role: 'developer', // Default role for new joiners
+    status: 'pending'
+  }).onConflictDoNothing();
+}
+
+/**
+ * Directly add a member to a team (for admins)
+ */
+export async function addMemberToTeam(teamId: number, memberId: number, role: TeamRole = 'developer'): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(teamMembersCollaborative).values({
+    teamId,
+    memberId,
+    role,
+    status: 'active'
+  }).onConflictDoNothing();
+}
+
+/**
+ * Approve a join request
+ */
+export async function approveJoinRequest(teamId: number, memberId: number, approvedBy: number): Promise<void> {
+  return await withTransaction(async (db) => {
+    // Check permission of approver
+    const [approverMembership] = await db
+      .select()
+      .from(teamMembersCollaborative)
+      .where(and(
+        eq(teamMembersCollaborative.teamId, teamId),
+        eq(teamMembersCollaborative.memberId, approvedBy),
+        eq(teamMembersCollaborative.status, 'active')
+      ))
+      .limit(1);
+
+    if (!approverMembership || !hasPermission(approverMembership.role as TeamRole, 'invite_member')) {
+      throw new ValidationError('Insufficient permissions to approve join requests');
+    }
+
+    await db.update(teamMembersCollaborative)
+      .set({ status: 'active' })
+      .where(and(
+        eq(teamMembersCollaborative.teamId, teamId),
+        eq(teamMembersCollaborative.memberId, memberId)
+      ));
+  });
+}
+
+/**
+ * Search all team members (users) globally
+ */
+export async function searchGlobalTeamMembers(query: string): Promise<TeamMember[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const searchPattern = `%${query}%`;
+  return await db.select()
+    .from(teamMembers)
+    .where(sql`${teamMembers.name} ILIKE ${searchPattern} OR ${teamMembers.email} ILIKE ${searchPattern}`)
+    .limit(20);
 }
 
 // Team Invitation System
@@ -968,7 +1078,8 @@ export async function checkTeamPermission(
     .where(
       and(
         eq(teamMembersCollaborative.teamId, teamId),
-        eq(teamMembersCollaborative.memberId, userId)
+        eq(teamMembersCollaborative.memberId, userId),
+        eq(teamMembersCollaborative.status, 'active')
       )
     )
     .limit(1);
@@ -2015,7 +2126,7 @@ export async function createProjectFile(
   if (!db) throw new Error("Database uninitialized");
   const [created] = await db.insert(projectFiles).values(fileData).returning();
 
-  if (fileData.uploadedBy) {
+  if (fileData.uploadedBy && fileData.projectId) {
     // Get project to find teamId
     const [project] = await db.select().from(projects).where(eq(projects.id, fileData.projectId)).limit(1);
     if (project) {
@@ -2040,7 +2151,11 @@ export async function deleteProjectFile(fileId: number, userId?: number): Promis
   const [file] = await db.select().from(projectFiles).where(eq(projectFiles.id, fileId)).limit(1);
   if (!file) return false;
 
-  const [project] = await db.select().from(projects).where(eq(projects.id, file.projectId)).limit(1);
+  let project = null;
+  if (file.projectId) {
+    const [foundProject] = await db.select().from(projects).where(eq(projects.id, file.projectId)).limit(1);
+    project = foundProject;
+  }
 
   await db.delete(projectFiles).where(eq(projectFiles.id, fileId));
 

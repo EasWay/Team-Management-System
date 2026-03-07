@@ -21,26 +21,41 @@ interface Team {
   name: string;
   description: string | null;
   createdBy: number | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string | null;
+  updatedAt: Date | string | null;
+  memberStatus?: string;
+  memberRole?: string;
 }
 
 interface TeamCardProps {
   team: Team;
+  discover?: boolean;
 }
 
-export function TeamCard({ team }: TeamCardProps) {
+export function TeamCard({ team, discover = false }: TeamCardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { data: members } = trpc.teams.getMembers.useQuery({ teamId: team.id });
   const deleteMutation = trpc.teams.delete.useMutation();
+  const joinMutation = trpc.teams.requestJoin.useMutation();
   const utils = trpc.useUtils();
+
+  const handleJoin = async () => {
+    try {
+      await joinMutation.mutateAsync({ teamId: team.id });
+      toast.success("Join request sent!");
+      utils.teams.listAll.invalidate();
+    } catch (error) {
+      toast.error("Failed to join team");
+    }
+  };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync({ id: team.id });
       toast.success("Team deleted successfully");
       utils.teams.list.invalidate();
+      utils.teams.listAll.invalidate();
       setIsDeleteDialogOpen(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to delete team";
@@ -49,6 +64,8 @@ export function TeamCard({ team }: TeamCardProps) {
   };
 
   const memberCount = members?.length || 0;
+  const isMember = team.memberStatus === 'active';
+  const isPending = team.memberStatus === 'pending';
 
   return (
     <>
@@ -58,23 +75,25 @@ export function TeamCard({ team }: TeamCardProps) {
             <div className="flex-1">
               <CardTitle className="text-lg">{team.name}</CardTitle>
             </div>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSettingsOpen(true)}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                disabled={deleteMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </Button>
-            </div>
+            {!discover && (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -93,11 +112,25 @@ export function TeamCard({ team }: TeamCardProps) {
                 <p className="text-sm font-medium">{memberCount}</p>
               </div>
             </div>
+
+            {discover && (
+              <div>
+                {isMember ? (
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">Member</span>
+                ) : isPending ? (
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">Pending Approval</span>
+                ) : (
+                  <Button size="sm" onClick={handleJoin} disabled={joinMutation.isPending}>
+                    Join Team
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="pt-2 border-t">
             <p className="text-xs text-gray-500">
-              Created: {new Date(team.createdAt).toLocaleDateString()}
+              Created: {team.createdAt ? new Date(team.createdAt).toLocaleDateString() : 'N/A'}
             </p>
           </div>
         </CardContent>

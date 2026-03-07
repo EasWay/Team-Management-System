@@ -2,9 +2,10 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import { TeamList } from "@/components/TeamList";
 import { CreateTeamForm } from "@/components/CreateTeamForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Teams() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -40,7 +41,26 @@ export default function Teams() {
           </Dialog>
         </div>
 
-        <TeamList />
+        <Tabs defaultValue="my-teams" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="my-teams" className="gap-2">
+              <Users className="h-4 w-4" />
+              My Teams
+            </TabsTrigger>
+            <TabsTrigger value="discover" className="gap-2">
+              <Search className="h-4 w-4" />
+              Discover
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="my-teams">
+            <TeamList />
+          </TabsContent>
+
+          <TabsContent value="discover">
+            <TeamList discover />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
