@@ -85,8 +85,8 @@ export const appRouter = router({
         }
 
         // Generate tokens
-        const accessToken = await authService.generateAccessToken(user.id, user.email!);
-        const refreshToken = await authService.generateRefreshToken(user.id, user.email!);
+        const accessToken = await authService.generateAccessToken(user.id, user.email!, user.name || undefined);
+        const refreshToken = await authService.generateRefreshToken(user.id, user.email!, user.name || undefined);
 
         // Return user data and tokens (exclude passwordHash)
         return {
@@ -142,8 +142,8 @@ export const appRouter = router({
         await updateUserLastSignedIn(user.id);
 
         // Generate access token (7-day expiration) and refresh token (30-day expiration)
-        const accessToken = await authService.generateAccessToken(user.id, user.email!);
-        const refreshToken = await authService.generateRefreshToken(user.id, user.email!);
+        const accessToken = await authService.generateAccessToken(user.id, user.email!, user.name || undefined);
+        const refreshToken = await authService.generateRefreshToken(user.id, user.email!, user.name || undefined);
 
         // Return user data and tokens (exclude passwordHash)
         return {
@@ -188,13 +188,15 @@ export const appRouter = router({
         // Generate new access token (7-day expiration)
         const accessToken = await authService.generateAccessToken(
           payload.userId,
-          payload.email
+          payload.email,
+          payload.name as string | undefined
         );
 
         // Optionally generate new refresh token (30-day expiration)
         const refreshToken = await authService.generateRefreshToken(
           payload.userId,
-          payload.email
+          payload.email,
+          payload.name as string | undefined
         );
 
         return {

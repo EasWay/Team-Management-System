@@ -10,7 +10,7 @@ import axios from 'axios';
 import { getProvider, type OAuthProviderConfig } from './oauth-providers';
 import { storeOAuthToken, deleteAllOAuthTokens } from './oauth-token-service';
 import { getDb, upsertUser, getUserByOpenId } from './db';
-import { users } from '../drizzle/schema';
+import { users, teamMembers } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { authService } from './_core/auth';
 
@@ -209,7 +209,6 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
 
     if (!user) {
       console.log('[OAuth] Creating new user...');
-      // Create new user
       const [newUser] = await db
         .insert(users)
         .values({
@@ -224,7 +223,6 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       console.log('[OAuth] New user created:', user.id);
     } else {
       console.log('[OAuth] Updating existing user:', user.id);
-      // Update existing user
       await db
         .update(users)
         .set({
@@ -234,6 +232,14 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
         })
         .where(eq(users.id, user.id));
     }
+
+    // Ensure user is in teamMembers table (prevents foreign key errors)
+    await db.insert(teamMembers).values({
+      id: user.id,
+      name: user.name || user.email?.split('@')[0] || 'Unknown User',
+      email: user.email,
+      position: 'Member',
+    }).onConflictDoNothing({ target: teamMembers.id });
 
     // Store OAuth token
     console.log('[OAuth] Storing OAuth token...');
@@ -250,8 +256,8 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
 
     // Generate JWT tokens
     console.log('[OAuth] Generating JWT tokens...');
-    const accessToken = await authService.generateAccessToken(user.id, user.email || '');
-    const refreshToken = await authService.generateRefreshToken(user.id, user.email || '');
+    const accessToken = await authService.generateAccessToken(user.id, user.email || '', user.name || undefined);
+    const refreshToken = await authService.generateRefreshToken(user.id, user.email || '', user.name || undefined);
     console.log('[OAuth] JWT tokens generated');
 
     // Redirect to frontend with tokens in URL (will be stored in localStorage)
@@ -338,6 +344,14 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
         .where(eq(users.id, user.id));
     }
 
+    // Ensure user is in teamMembers table (prevents foreign key errors)
+    await db.insert(teamMembers).values({
+      id: user.id,
+      name: user.name || user.email?.split('@')[0] || 'Unknown User',
+      email: user.email,
+      position: 'Member',
+    }).onConflictDoNothing({ target: teamMembers.id });
+
     // Store OAuth token
     const expiresAt = tokenResponse.expires_in
       ? new Date(Date.now() + tokenResponse.expires_in * 1000)
@@ -350,8 +364,8 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
     });
 
     // Generate JWT tokens
-    const accessToken = await authService.generateAccessToken(user.id, user.email || '');
-    const refreshToken = await authService.generateRefreshToken(user.id, user.email || '');
+    const accessToken = await authService.generateAccessToken(user.id, user.email || '', user.name || undefined);
+    const refreshToken = await authService.generateRefreshToken(user.id, user.email || '', user.name || undefined);
 
     // Redirect to frontend with tokens in URL (will be stored in localStorage)
     const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;

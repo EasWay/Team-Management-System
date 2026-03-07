@@ -6,15 +6,27 @@ import { notInArray } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+import { ENV } from '../server/_core/env';
+
 async function backfill() {
-    const _pool = new Pool({
-        host: 'localhost',
-        port: 5433,
-        database: 'team_manager_db',
-        user: 'postgres',
-        password: 'postgres',
-        ssl: false,
-    });
+    const connectionString = ENV.databaseUrl;
+    let _pool;
+
+    if (connectionString) {
+        _pool = new Pool({
+            connectionString,
+            ssl: connectionString.includes('neon.tech') ? { rejectUnauthorized: false } : false,
+        });
+    } else {
+        _pool = new Pool({
+            host: 'localhost',
+            port: 5433,
+            database: 'team_manager_db',
+            user: 'postgres',
+            password: 'postgres',
+            ssl: false,
+        });
+    }
     const db = drizzle(_pool, { schema });
 
     console.log("Connected to DB, finding missing team members...");

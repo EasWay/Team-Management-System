@@ -15,7 +15,7 @@ let subClient: Redis | null = null;
 // Extended socket interface with user data
 interface AuthenticatedSocket extends Socket {
   userId?: number;
-  username?: string;
+  name?: string;
 }
 
 /**
@@ -65,8 +65,8 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       const { payload } = await jwtVerify(token, secret);
 
       // Attach user data to socket
-      socket.userId = payload.userId as number;
-      socket.username = payload.username as string;
+      socket.userId = Number(payload.userId);
+      socket.name = payload.name as string;
 
       next();
     } catch (error) {
@@ -77,18 +77,18 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
 
   // Connection event handler
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`[Socket.io] User connected: ${socket.username} (ID: ${socket.userId})`);
+    console.log(`[Socket.io] User connected: ${socket.name} (ID: ${socket.userId})`);
 
     // Handle team room joining
     socket.on('joinTeam', (teamId: number) => {
       const roomName = `team:${teamId}`;
       socket.join(roomName);
-      console.log(`[Socket.io] User ${socket.username} joined team room: ${roomName}`);
+      console.log(`[Socket.io] User ${socket.name} joined team room: ${roomName}`);
 
       // Notify other team members
       socket.to(roomName).emit('userJoined', {
         userId: socket.userId,
-        username: socket.username,
+        username: socket.name,
         teamId,
       });
     });
@@ -97,7 +97,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     socket.on('leaveTeam', (teamId: number) => {
       const roomName = `team:${teamId}`;
       socket.leave(roomName);
-      console.log(`[Socket.io] User ${socket.username} left team room: ${roomName}`);
+      console.log(`[Socket.io] User ${socket.name} left team room: ${roomName}`);
 
       // Notify other team members
       socket.to(roomName).emit('userLeft', {
@@ -110,24 +110,24 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     socket.on('joinDocument', (documentId: string) => {
       const roomName = `doc:${documentId}`;
       socket.join(roomName);
-      console.log(`[Socket.io] User ${socket.username} joined document room: ${roomName}`);
+      console.log(`[Socket.io] User ${socket.name} joined document room: ${roomName}`);
     });
 
     // Handle document room leaving
     socket.on('leaveDocument', (documentId: string) => {
       const roomName = `doc:${documentId}`;
       socket.leave(roomName);
-      console.log(`[Socket.io] User ${socket.username} left document room: ${roomName}`);
+      console.log(`[Socket.io] User ${socket.name} left document room: ${roomName}`);
     });
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {
-      console.log(`[Socket.io] User disconnected: ${socket.username} (Reason: ${reason})`);
+      console.log(`[Socket.io] User disconnected: ${socket.name} (Reason: ${reason})`);
     });
 
     // Error handling
     socket.on('error', (error) => {
-      console.error(`[Socket.io] Socket error for user ${socket.username}:`, error);
+      console.error(`[Socket.io] Socket error for user ${socket.name}:`, error);
     });
   });
 

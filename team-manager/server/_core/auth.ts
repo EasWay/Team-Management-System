@@ -9,6 +9,7 @@ const BCRYPT_SALT_ROUNDS = 10;
 interface TokenPayload extends Record<string, unknown> {
   userId: string;
   email: string;
+  name?: string;
   type: 'access' | 'refresh';
 }
 
@@ -27,13 +28,14 @@ export class AuthService {
     return new TextEncoder().encode(ENV.jwtSecret);
   }
 
-  async generateAccessToken(userId: string | number, email: string): Promise<string> {
+  async generateAccessToken(userId: string | number, email: string, name?: string): Promise<string> {
     const secret = this.getSecret();
-    
-    return await new SignJWT({ 
-      userId: String(userId), 
+
+    return await new SignJWT({
+      userId: String(userId),
       email,
-      type: 'access' 
+      name,
+      type: 'access'
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
@@ -41,13 +43,14 @@ export class AuthService {
       .sign(secret);
   }
 
-  async generateRefreshToken(userId: string | number, email: string): Promise<string> {
+  async generateRefreshToken(userId: string | number, email: string, name?: string): Promise<string> {
     const secret = this.getSecret();
-    
-    return await new SignJWT({ 
-      userId: String(userId), 
+
+    return await new SignJWT({
+      userId: String(userId),
       email,
-      type: 'refresh' 
+      name,
+      type: 'refresh'
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
@@ -71,12 +74,12 @@ export class AuthService {
 
   extractTokenFromHeader(authHeader: string | undefined): string | null {
     if (!authHeader) return null;
-    
+
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
       return null;
     }
-    
+
     return parts[1];
   }
 
