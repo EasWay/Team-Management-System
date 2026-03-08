@@ -776,6 +776,7 @@ export async function createTeamInvitation(
   invitation: {
     teamId: number;
     email: string;
+    role?: string;
     invitedBy: number;
   }
 ): Promise<TeamInvitation> {
@@ -830,6 +831,7 @@ export async function createTeamInvitation(
       .values({
         teamId: invitation.teamId,
         email: invitation.email,
+        role: invitation.role || 'member',
         invitedBy: invitation.invitedBy,
         token,
         expiresAt,

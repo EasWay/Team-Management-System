@@ -43,9 +43,13 @@ function getRoleStyles(position: string) {
 
 export default function TeamMembers() {
   const { selectedTeamId, teams } = useTeamContext();
+  const { user } = useAuth();
   const { data: members, isLoading, refetch } = trpc.teams.getMembers.useQuery({ teamId: selectedTeamId || 0 }, { enabled: !!selectedTeamId });
   const approveMutation = trpc.teams.approveJoin.useMutation();
   const removeMutation = trpc.teams.removeMember.useMutation();
+
+  const userMembership = members?.find(m => m.member.id === user?.id);
+  const isAdmin = userMembership?.role === 'admin' || userMembership?.role === 'team_lead';
 
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -147,12 +151,14 @@ export default function TeamMembers() {
               >
                 Roster ({activeMembers.length})
               </button>
-              <button
-                onClick={() => setView('pending')}
-                className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-bold border transition-all rounded ${view === 'pending' ? 'bg-foreground text-background border-foreground' : 'text-muted-foreground border-border hover:border-foreground/30'}`}
-              >
-                Requests ({pendingMembers.length})
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setView('pending')}
+                  className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-bold border transition-all rounded ${view === 'pending' ? 'bg-foreground text-background border-foreground' : 'text-muted-foreground border-border hover:border-foreground/30'}`}
+                >
+                  Requests ({pendingMembers.length})
+                </button>
+              )}
             </div>
           </div>
 

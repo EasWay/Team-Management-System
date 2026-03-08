@@ -70,6 +70,7 @@ export const teamInvitations = pgTable("team_invitations", {
   teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
   email: text("email").notNull(),
   invitedBy: integer("invited_by").references(() => teamMembers.id).notNull(),
+  role: text("role").default("member"),
   token: text("token").notNull().unique(),
   status: text("status").default("pending"), // pending, accepted, expired
   expiresAt: timestamp("expires_at").notNull(),

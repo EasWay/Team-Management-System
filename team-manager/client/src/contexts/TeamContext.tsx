@@ -15,12 +15,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
     const { data: teams, isLoading } = trpc.teams.list.useQuery();
 
-    // Auto-select first team if available and none selected
-    useEffect(() => {
-        if (teams && teams.length > 0 && selectedTeamId === null) {
-            setSelectedTeamId(teams[0].id);
-        }
-    }, [teams, selectedTeamId]);
+    // Auto-selection removed to support landing dashboard
 
     return (
         <TeamContext.Provider

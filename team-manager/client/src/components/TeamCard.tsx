@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Users, Settings, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTeamContext } from "@/contexts/TeamContext";
 import { TeamSettingsModal } from "./TeamSettingsModal";
+import { useLocation } from "wouter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +40,8 @@ export function TeamCard({ team, discover = false }: TeamCardProps) {
   const { data: members } = trpc.teams.getMembers.useQuery({ teamId: team.id });
   const deleteMutation = trpc.teams.delete.useMutation();
   const joinMutation = trpc.teams.requestJoin.useMutation();
+  const { setSelectedTeamId } = useTeamContext();
+  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
   const handleJoin = async () => {
@@ -132,6 +136,19 @@ export function TeamCard({ team, discover = false }: TeamCardProps) {
             <p className="text-xs text-gray-500">
               Created: {team.createdAt ? new Date(team.createdAt).toLocaleDateString() : 'N/A'}
             </p>
+            {isMember && !discover && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-2 gap-2"
+                onClick={() => {
+                  setSelectedTeamId(team.id);
+                  setLocation("/");
+                }}
+              >
+                Open Workspace
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

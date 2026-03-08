@@ -3,17 +3,28 @@ import { getLoginUrl } from "@/const";
 import { Button } from "./ui/button";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
-import { LogOut, BarChart, Sun, Moon } from "lucide-react";
+import { LogOut, BarChart, Sun, Moon, ChevronDown, LayoutDashboard } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTeamContext } from "@/contexts/TeamContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
-const menuItems = [
+const workspaceMenuItems = [
   { label: "Home", path: "/" },
   { label: "Tasks", path: "/tasks" },
   { label: "Team Members", path: "/team" },
-  { label: "Teams", path: "/teams" },
   { label: "Projects", path: "/projects" },
   { label: "Repositories", path: "/repositories" }
+];
+
+const globalMenuItems = [
+  { label: "Teams", path: "/teams" }
 ];
 
 export default function DashboardLayout({
@@ -24,9 +35,12 @@ export default function DashboardLayout({
   const { loading, user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { selectedTeamId, teams } = useTeamContext();
+  const { selectedTeamId, setSelectedTeamId, teams } = useTeamContext();
 
-  const currentTeamName = teams?.find(t => t.id === selectedTeamId)?.name || 'NO ACTIVE TEAM';
+  const currentTeam = teams?.find(t => t.id === selectedTeamId);
+  const currentTeamName = currentTeam?.name || 'NO ACTIVE TEAM';
+
+  const menuItems = selectedTeamId ? workspaceMenuItems : globalMenuItems;
 
   if (loading) {
     return <DashboardLayoutSkeleton />
@@ -63,14 +77,52 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-background font-display text-foreground antialiased overflow-hidden">
       {/* Sidebar Navigation */}
       <aside className="w-72 flex flex-col border-r border-border px-6 py-8 h-screen sticky top-0 shrink-0">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="size-10 bg-foreground rounded-full flex items-center justify-center">
-            <BarChart className="text-background size-5" />
-          </div>
-          <div className="overflow-hidden">
-            <h1 className="text-lg font-bold tracking-tight text-foreground truncate">{currentTeamName}</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Workspace</p>
-          </div>
+        <div className="mb-8">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center gap-4 cursor-pointer hover:bg-foreground/5 p-2 -m-2 rounded-lg transition-colors group">
+                <div className="size-10 bg-foreground rounded-full flex items-center justify-center shrink-0">
+                  <BarChart className="text-background size-5" />
+                </div>
+                <div className="overflow-hidden flex-1">
+                  <h1 className="text-lg font-bold tracking-tight text-foreground truncate">{selectedTeamId ? currentTeamName : 'Dashboard'}</h1>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">
+                    {selectedTeamId ? 'Workspace' : 'Management'}
+                  </p>
+                </div>
+                <ChevronDown className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64" align="start">
+              <DropdownMenuLabel>Switch Workspace</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {teams?.map((team) => (
+                <DropdownMenuItem
+                  key={team.id}
+                  onClick={() => {
+                    setSelectedTeamId(team.id);
+                    setLocation("/");
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <div className="size-2 rounded-full bg-blue-500" />
+                  <span className="truncate">{team.name}</span>
+                  {selectedTeamId === team.id && <span className="ml-auto text-[10px] font-bold uppercase text-blue-500">Active</span>}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedTeamId(null);
+                  setLocation("/teams");
+                }}
+                className="flex items-center gap-2"
+              >
+                <LayoutDashboard className="size-4" />
+                <span>Teams Dashboard</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <nav className="flex flex-col gap-1 flex-grow overflow-y-auto no-scrollbar -mx-2 px-2 pb-4">

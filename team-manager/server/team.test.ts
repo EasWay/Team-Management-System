@@ -16,7 +16,7 @@ import {
   type TeamRole,
 } from './db';
 import { getDb } from './db';
-import { users, teams, teamMembersCollaborative, teamInvitations } from '../drizzle/schema';
+import { users, teams, teamMembersCollaborative, teamInvitations, activities, auditLogs, teamMembers } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -30,9 +30,12 @@ async function cleanupTestData() {
   if (!db) return;
 
   try {
+    await db.delete(activities);
+    await db.delete(auditLogs);
     await db.delete(teamInvitations);
     await db.delete(teamMembersCollaborative);
     await db.delete(teams);
+    await db.delete(teamMembers);
     // Clean up test users by email pattern
     await db.delete(users).where(eq(users.email, 'test@example.com'));
     await db.delete(users).where(eq(users.email, 'test2@example.com'));
@@ -69,7 +72,17 @@ async function createTestUser(email: string, name: string): Promise<number> {
     })
     .returning();
 
-  return user.id;
+  // Create corresponding team member for FK relations
+  const [member] = await db
+    .insert(teamMembers)
+    .values({
+      name,
+      email,
+      position: 'Operative',
+    })
+    .returning();
+
+  return member.id;
 }
 
 describe('Team Collaboration Property Tests', () => {
@@ -119,12 +132,12 @@ describe('Team Collaboration Property Tests', () => {
 
             // Verify in database
             const members = await getCollaborativeTeamMembers(team.id);
-            const creatorMembership = members.find((m) => m.userId === userId);
+            const creatorMembership = members.find((m) => m.memberId === userId);
 
             // Debug logging if member not found
             if (!creatorMembership) {
               console.error('Members found:', members);
-              console.error('Looking for userId:', userId);
+              console.error('Looking for memberId:', userId);
               console.error('Team ID:', team.id);
             }
 
@@ -222,7 +235,7 @@ describe('Team Collaboration Property Tests', () => {
 
     await db.insert(teamMembersCollaborative).values({
       teamId: team.id,
-      userId: developerId,
+      memberId: developerId,
       role: 'developer',
     });
 
@@ -325,7 +338,7 @@ describe('Team Workflow Property Tests', () => {
 
     expect(membership).toBeDefined();
     expect(membership.teamId).toBe(team.id);
-    expect(membership.userId).toBe(inviteeId);
+    expect(membership.memberId).toBe(inviteeId);
     expect(membership.role).toBe('developer');
 
     await cleanupTestData();
@@ -347,7 +360,7 @@ describe('Team Workflow Property Tests', () => {
 
     await db.insert(teamMembersCollaborative).values({
       teamId: team.id,
-      userId: memberId,
+      memberId: memberId,
       role: 'viewer',
     });
 
@@ -381,7 +394,7 @@ describe('Team Workflow Property Tests', () => {
 
     await db.insert(teamMembersCollaborative).values({
       teamId: team.id,
-      userId: memberId,
+      memberId: memberId,
       role: 'developer',
     });
 
