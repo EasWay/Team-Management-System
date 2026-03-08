@@ -156,10 +156,10 @@ export default function Landing() {
                 </div>
                 <Button
                     variant="outline"
-                    className="bg-white text-black hover:bg-white/90 border-transparent rounded-full px-8 h-10 text-xs font-bold"
+                    className="bg-black text-white hover:bg-black/90 border-white/20 rounded-full px-8 h-10 text-xs font-bold shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02]"
                     onClick={() => window.location.href = '/api/oauth/github'}
                 >
-                    <Github className="mr-2 size-4" /> Sign In with GitHub
+                    <Github className="mr-2 size-4 fill-white" /> Sign In with GitHub
                 </Button>
             </nav>
 

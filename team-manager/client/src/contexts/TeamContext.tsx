@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
+import { tokenStorage } from "@/lib/tokenStorage";
 import type { Team } from "@shared/types";
 
 interface TeamContextType {
@@ -13,7 +14,9 @@ const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
 export function TeamProvider({ children }: { children: ReactNode }) {
     const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
-    const { data: teams, isLoading } = trpc.teams.list.useQuery();
+    const { data: teams, isLoading } = trpc.teams.list.useQuery(undefined, {
+        enabled: !!tokenStorage.getAccessToken()
+    });
 
     // Auto-selection removed to support landing dashboard
 
