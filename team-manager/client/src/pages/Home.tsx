@@ -19,11 +19,7 @@ export default function Home() {
 
   const currentTeamName = teams?.find((t: any) => t.id === selectedTeamId)?.name || 'Select a Team';
 
-  // Redirect to teams dashboard if no team is selected
-  if (!selectedTeamId && teams !== undefined) {
-    window.location.href = "/teams";
-    return null;
-  }
+  // Dashboard metrics will show empty states if no team is selected
   return (
     <DashboardLayout>
       <div className="flex-1 max-w-7xl mx-auto w-full p-8 space-y-12 pb-20 overflow-y-auto custom-scrollbar">

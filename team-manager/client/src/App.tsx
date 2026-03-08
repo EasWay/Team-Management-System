@@ -14,7 +14,6 @@ import Repositories from "./pages/Repositories";
 import Projects from "./pages/Projects";
 import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
-import Register from "./pages/Register";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -22,9 +21,6 @@ function Router() {
     <Switch>
       <Route path={"/"}>
         {() => (tokenStorage.getAccessToken() ? <Home /> : <Landing />)}
-      </Route>
-      <Route path={"/register"}>
-        {() => (tokenStorage.getAccessToken() ? <Home /> : <Register />)}
       </Route>
       <Route path={"/login"} component={Landing} />
       <Route path={"/team"} component={TeamMembers} />

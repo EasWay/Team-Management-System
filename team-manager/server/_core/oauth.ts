@@ -5,6 +5,8 @@ import { authService } from "./auth";
 import { sdk } from "./sdk";
 import { handleGitHubCallback, handleGoogleCallback, handleLogout } from "../oauth-callbacks";
 import { storeOAuthToken } from "../oauth-token-service";
+import { getProvider, generateAuthorizationUrl } from "../oauth-providers";
+import crypto from "crypto";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -38,7 +40,7 @@ export function registerOAuthRoutes(app: Express) {
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
         lastSignedIn: new Date(),
       });
-      
+
       // Get the user to store OAuth token
       const user = await db.getUserByOpenId(userInfo.openId);
       if (user) {
@@ -48,11 +50,11 @@ export function registerOAuthRoutes(app: Express) {
           refreshToken: tokenResponse.refreshToken,
           expiresAt: tokenResponse.expiresIn ? new Date(Date.now() + tokenResponse.expiresIn * 1000) : undefined,
         });
-        
+
         // Generate JWT tokens
         const accessToken = await authService.generateAccessToken(user.id, user.email || '');
         const refreshToken = await authService.generateRefreshToken(user.id, user.email || '');
-        
+
         // Redirect to frontend with tokens in URL (will be stored in localStorage)
         const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
         res.redirect(302, redirectUrl);
@@ -64,13 +66,24 @@ export function registerOAuthRoutes(app: Express) {
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });
-  
+
+  // GitHub OAuth initiation
+  app.get("/api/oauth/github", (req, res) => {
+    const provider = getProvider('github');
+    if (!provider) {
+      return res.status(500).json({ error: "GitHub OAuth not configured" });
+    }
+    const state = crypto.randomBytes(16).toString('hex');
+    const url = generateAuthorizationUrl(provider, state);
+    res.redirect(url);
+  });
+
   // GitHub OAuth callback
   app.get("/api/oauth/github/callback", handleGitHubCallback);
-  
+
   // Google OAuth callback
   app.get("/api/oauth/google/callback", handleGoogleCallback);
-  
+
   // Logout endpoint
   app.post("/api/oauth/logout", handleLogout);
 }
