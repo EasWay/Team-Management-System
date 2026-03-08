@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AddTeamMemberForm } from "@/components/AddTeamMemberForm";
@@ -126,172 +127,205 @@ export default function TeamMembers() {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 max-w-[1600px] mx-auto w-full p-8 flex flex-col h-screen overflow-hidden text-foreground font-body">
+      <div className="flex-1 w-full flex flex-col h-screen overflow-hidden text-foreground bg-background custom-scrollbar">
 
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:justify-between md:items-end mb-12 shrink-0 pt-4 gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-bold mb-2">
-              <span>{currentTeamName}</span>
-              <span className="size-1 rounded-full bg-foreground/20"></span>
-              <span>{view === 'active' ? 'REGISTRY' : 'REQUESTS'}</span>
-            </div>
-            <h2 className="text-4xl font-light tracking-tight text-foreground mb-2">{currentTeamName}</h2>
-            <p className="text-[10px] text-muted-foreground max-w-md font-medium tracking-wide">
-              {view === 'active'
-                ? "Manage role assignments and review operational status inside your division grid."
-                : "Review pending join requests from personnel across the global directory."
-              }
-            </p>
+        {/* Main Scrollable Area */}
+        <div className="flex-1 overflow-y-auto pt-16 pb-32 px-8 lg:px-16 custom-scrollbar scroll-smooth">
 
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => setView('active')}
-                className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-bold border transition-all rounded ${view === 'active' ? 'bg-foreground text-background border-foreground' : 'text-muted-foreground border-border hover:border-foreground/30'}`}
-              >
-                Roster ({activeMembers.length})
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setView('pending')}
-                  className={`px-4 py-1.5 text-[10px] uppercase tracking-widest font-bold border transition-all rounded ${view === 'pending' ? 'bg-foreground text-background border-foreground' : 'text-muted-foreground border-border hover:border-foreground/30'}`}
-                >
-                  Requests ({pendingMembers.length})
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+          <div className="max-w-5xl mx-auto flex flex-col items-center text-center">
+            {/* Search Bar (Top) */}
+            <div className="w-full max-w-xl relative group mb-20">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 size-4" />
               <input
-                className="bg-foreground/5 border border-border rounded px-10 py-2.5 text-[10px] uppercase tracking-widest font-bold text-foreground focus:outline-none focus:border-foreground/30 w-full md:w-64 transition-all hover:bg-foreground/10 placeholder:text-muted-foreground"
-                placeholder="Search candidates..."
+                className="w-full bg-white/5 border border-white/10 rounded-full px-12 py-3 text-xs tracking-wide text-foreground focus:outline-none focus:border-white/20 transition-all placeholder:text-muted-foreground/30 shadow-2xl shadow-black/20"
+                placeholder="Search team members..."
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                <div className="size-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">Live Directory</span>
+              </div>
             </div>
-            <button
-              className="px-6 py-2.5 bg-white text-black text-[10px] font-bold tracking-widest uppercase hover:bg-slate-200 transition-colors rounded"
-              onClick={() => setIsAddDialogOpen(true)}
+
+            {/* Hero Quote */}
+            <div className="space-y-6 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+              <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-white leading-tight">
+                Quality is at the heart of <br /> everything we do
+              </h1>
+              <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto font-light leading-relaxed">
+                At {currentTeamName}, quality defines us. Precision, passion, perfection - it's in every detail we create.
+              </p>
+              <div className="pt-4">
+                <button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="px-8 py-3 bg-white text-black text-[10px] font-bold tracking-[0.2em] uppercase rounded-full hover:bg-slate-200 transition-all duration-300 shadow-xl shadow-white/5"
+                >
+                  SEE OPEN POSITION
+                </button>
+              </div>
+            </div>
+
+            {/* Banner Box */}
+            <div
+              className="w-full aspect-[21/9] bg-[#1A1A1A] rounded-[2rem] mb-24 relative overflow-hidden flex flex-col items-center justify-center border border-white/5"
+              style={{
+                backgroundImage: 'url("https://www.saasable.io/assets/images/team/team-member-2.jpg")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center 20%'
+              }}
             >
-              Add Global Member
-            </button>
-          </div>
-        </header>
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/[0.05] to-transparent"></div>
 
-        {/* Scrollable Grid Container */}
-        <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
-          {filteredMembers && filteredMembers.length === 0 ? (
-            <div className="flex items-center justify-center flex-1 h-[400px]">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">No personnel match parameters.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pr-2">
-              {filteredMembers?.map(({ member, id: membershipId, role, status }) => (
-                <div key={member.id} className="liquid-glass-card rounded-xl overflow-hidden group relative">
-
-                  {/* Grid Hovers Action Area */}
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                    {status === 'active' ? (
-                      <>
-                        <button
-                          onClick={() => {
-                            setSelectedMember(member);
-                            setIsDetailModalOpen(true);
-                          }}
-                          className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
-                          title="View Bio"
-                        >
-                          <Eye className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedMember(member);
-                            setIsEditDialogOpen(true);
-                          }}
-                          className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-foreground hover:text-background flex items-center justify-center text-muted-foreground transition-colors"
-                          title="Change Assignment"
-                        >
-                          <Edit className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setMemberToDelete(member.id);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          disabled={removeMutation.isPending}
-                          className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-red-500 hover:border-red-500 hover:text-white flex items-center justify-center text-muted-foreground transition-colors"
-                          title="Purge Record"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => handleDelete()} // Reject is essentially delete membership
-                        className="size-8 rounded bg-background/80 backdrop-blur-md border border-border hover:bg-red-500 hover:border-red-500 hover:text-white flex items-center justify-center text-muted-foreground transition-colors"
-                        title="Reject Request"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="h-48 relative overflow-hidden bg-white/5">
-                    {member.pictureFileName ? (
-                      <img
-                        alt={member.name}
-                        className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
-                        src={`/api/uploads/${member.pictureFileName}?t=${Date.now()}`}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-3xl font-light text-muted-foreground/30 bg-muted grayscale group-hover:grayscale-0 group-hover:text-foreground/40 transition-all duration-500">
-                        {member.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                      <div>
-                        <h3 className="text-sm font-bold text-white tracking-wide">{member.name}</h3>
-                        <p className="text-[10px] text-white/60 uppercase tracking-widest">{member.position || 'Operative'}</p>
-                      </div>
-                      <div className={`size-2 rounded-full ${status === 'active' ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]'}`}></div>
+              <div className="relative z-10 flex flex-col items-center">
+                <h2 className="text-white/40 text-4xl font-serif italic tracking-[0.3em] font-light uppercase">{currentTeamName}</h2>
+                <div className="mt-8 flex gap-8">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="text-left space-y-2 opacity-50 group">
+                      <p className="text-[8px] uppercase tracking-widest font-bold text-white/60">Stat {i + 1}</p>
+                      <div className="h-[1px] w-12 bg-white/20"></div>
+                      <p className="text-[10px] text-white font-mono">0.00{i}</p>
                     </div>
-                  </div>
-
-                  {status === 'active' ? (
-                    <div className="p-4 grid grid-cols-3 gap-2 border-t border-border bg-muted/30">
-                      <div className="text-center">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Fitness</p>
-                        <p className="text-xs text-foreground font-mono">100%</p>
-                      </div>
-                      <div className="text-center border-x border-border">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Velocity</p>
-                        <p className="text-xs text-foreground font-mono">1.0x</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">Health</p>
-                        <p className="text-xs text-foreground font-mono">OPT</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 border-t border-border bg-yellow-500/5">
-                      <button
-                        onClick={() => handleApprove(member.id)}
-                        disabled={approveMutation.isPending}
-                        className="w-full py-2 bg-yellow-500 text-black text-[10px] font-bold tracking-widest uppercase hover:bg-yellow-400 transition-colors rounded"
-                      >
-                        {approveMutation.isPending ? "Confirming..." : "Approve Access"}
-                      </button>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+                <p className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">REDACTED LOGISTICS DIV.</p>
+              </div>
             </div>
-          )}
+
+            {/* Sub-header */}
+            <div className="w-full flex flex-col items-center mb-16">
+              <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6"></div>
+              <h3 className="text-[10px] font-bold tracking-[0.5em] uppercase text-white/40">OUR DEDICATED TEAM</h3>
+
+              {isAdmin && (
+                <div className="flex gap-4 mt-8">
+                  <button
+                    onClick={() => setView('active')}
+                    className={`px-6 py-1 text-[9px] uppercase tracking-widest font-bold transition-all rounded-full ${view === 'active' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+                  >
+                    ROSTER ({activeMembers.length})
+                  </button>
+                  <button
+                    onClick={() => setView('pending')}
+                    className={`px-6 py-1 text-[9px] uppercase tracking-widest font-bold transition-all rounded-full ${view === 'pending' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+                  >
+                    REQUESTS ({pendingMembers.length})
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Squad Grid */}
+            {filteredMembers && filteredMembers.length === 0 ? (
+              <div className="py-20">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold">No records found in current sector</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-20 w-full mb-32">
+                {filteredMembers?.map(({ member, id: membershipId, role, status }) => (
+                  <div key={member.id} className="group relative flex flex-col items-center text-center">
+
+                    {/* Circle Avatar */}
+                    <div className="relative mb-6">
+                      <div className="size-40 rounded-full overflow-hidden border border-white/10 p-1 bg-gradient-to-b from-white/10 to-transparent group-hover:from-white/20 transition-all duration-500">
+                        <div className="size-full rounded-full overflow-hidden bg-[#222]">
+                          {member.pictureFileName ? (
+                            <img
+                              alt={member.name}
+                              className="size-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-700 pointer-events-none"
+                              src={`/api/uploads/${member.pictureFileName}`}
+                            />
+                          ) : (
+                            <div className="size-full flex items-center justify-center text-5xl font-serif italic text-white/10 group-hover:text-white/20 transition-colors">
+                              {member.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Floating Action Menu (Glass) */}
+                      <div className="absolute top-0 right-0 md:-right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-50">
+                        {status === 'active' ? (
+                          <>
+                            <button
+                              onClick={() => { setSelectedMember(member); setIsDetailModalOpen(true); }}
+                              className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                            >
+                              <Eye className="size-3" />
+                            </button>
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => { setSelectedMember(member); setIsEditDialogOpen(true); }}
+                                  className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                                >
+                                  <Edit className="size-3" />
+                                </button>
+                                <button
+                                  onClick={() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }}
+                                  className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-red-500 hover:text-white transition-all"
+                                >
+                                  <Trash2 className="size-3" />
+                                </button>
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => handleApprove(member.id)}
+                              className="size-8 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/20 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                              title="Approve"
+                            >
+                              <RefreshCw className="size-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete()}
+                              className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-red-500 transition-all"
+                              title="Reject"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Member Info */}
+                    <div className="space-y-1">
+                      <h4 className="text-xl font-serif italic text-white/90 group-hover:text-white transition-colors">{member.name}</h4>
+                      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/40">{member.position || 'Operative'}</p>
+                    </div>
+
+                    {/* Status Dot */}
+                    {status === 'pending' && (
+                      <div className="mt-4 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full">
+                        <p className="text-[8px] text-yellow-500 font-bold uppercase tracking-widest">Awaiting Clearance</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Footer Text */}
+            <div className="pt-20 pb-10 flex flex-col items-center">
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-white/5 to-transparent mb-8"></div>
+              <div className="flex justify-between w-full text-[9px] uppercase tracking-[0.3em] font-medium text-white/20 px-4">
+                <span>© 2026 BLACKOUT TEAM SYSTEMS LTD.</span>
+                <div className="flex gap-8">
+                  <span className="hover:text-white/40 cursor-pointer transition-colors">DATA PRIVACY</span>
+                  <span className="hover:text-white/40 cursor-pointer transition-colors">TERMINALS</span>
+                  <span className="hover:text-white/40 cursor-pointer transition-colors">SUPPORT</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 
