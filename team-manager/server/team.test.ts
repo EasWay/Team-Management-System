@@ -125,7 +125,7 @@ describe('Team Collaboration Property Tests', () => {
             // Verify team was created
             expect(team).toBeDefined();
             expect(team.name).toBe(teamName);
-            expect(team.ownerId).toBe(userId);
+            expect(team.createdBy).toBe(userId);
 
             // Verify creator has admin role
             expect(team.memberRole).toBe('admin');
