@@ -567,7 +567,7 @@ export const appRouter = router({
         id: z.number(),
         title: z.string().min(1).max(200).optional(),
         description: z.string().optional(),
-        assigneeId: z.number().optional(),
+        assignedTo: z.number().optional(),
         priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
         status: z.enum(['todo', 'in_progress', 'review', 'done']).optional(),
         dueDate: z.date().optional(),

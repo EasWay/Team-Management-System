@@ -31,65 +31,66 @@ export function TeamMemberDetailModal({ member, isOpen, onClose, onUpdate }: Tea
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-              <UserCheck className="h-5 w-5" />
-              Team Member Details
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background text-foreground border-border liquid-glass-card rounded-3xl p-0 overflow-hidden">
+          <div className="relative p-8">
+            <DialogHeader className="mb-8 border-b border-border pb-6">
+              <DialogTitle className="flex items-center gap-2 text-2xl font-serif italic text-foreground tracking-tight">
+                <UserCheck className="h-6 w-6 text-primary" />
+                Personnel File
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{member.name}</CardTitle>
-                <CardDescription className="text-blue-600 font-medium">
-                  {member.position}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
                 {member.pictureFileName && (
-                  <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden mx-auto">
+                  <div className="relative w-40 h-40 bg-muted rounded-full overflow-hidden border border-border shadow-xl">
                     <img
-                      src={`/api/uploads/${member.pictureFileName}?t=${Date.now()}`}
+                      src={`/api/uploads/${member.pictureFileName}`}
                       alt={member.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover grayscale brightness-90 hover:grayscale-0 hover:brightness-100 transition-all duration-700"
                     />
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {member.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{member.email}</span>
+                <div className="space-y-4 flex-1">
+                  <div className="space-y-1">
+                    <h3 className="text-3xl font-serif italic text-foreground leading-tight">{member.name}</h3>
+                    <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-primary">{member.position || 'Operative'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {member.email && (
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <Mail className="h-4 w-4 text-primary/60" />
+                        <span className="text-xs font-medium tracking-wide">{member.email}</span>
+                      </div>
+                    )}
+                    {member.phone && (
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <Phone className="h-4 w-4 text-primary/60" />
+                        <span className="text-xs font-medium tracking-wide">{member.phone}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Calendar className="h-4 w-4 text-primary/60" />
+                      <span className="text-xs font-medium tracking-wide uppercase tracking-[0.1em]">Joined {formatDate(member.createdAt)}</span>
                     </div>
-                  )}
-                  {member.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{member.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm">Joined {formatDate(member.createdAt)}</span>
                   </div>
                 </div>
+              </div>
 
-                {member.duties && (
-                  <div>
-                    <div className="flex items-start gap-2 mb-2">
-                      <Briefcase className="h-4 w-4 text-gray-500 mt-0.5 shrink-0" />
-                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Duties</span>
-                    </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 pl-6 whitespace-pre-wrap">{member.duties}</p>
+              {member.duties && (
+                <div className="mt-12 bg-foreground/[0.03] rounded-2xl p-6 border border-border">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Briefcase className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">Operational Duties</span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-sm text-foreground/80 leading-relaxed font-light whitespace-pre-wrap">{member.duties}</p>
+                </div>
+              )}
 
+            </div>
           </div>
         </DialogContent>
       </Dialog>

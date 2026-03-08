@@ -136,7 +136,7 @@ export function EditTeamMemberForm({ member, onSuccess }: EditTeamMemberFormProp
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-foreground/90 font-semibold">Phone</FormLabel>
+              <FormLabel className="text-foreground/90 font-bold text-[10px] uppercase tracking-widest">Phone</FormLabel>
               <FormControl>
                 <Input placeholder="+1 (555) 123-4567" {...field} />
               </FormControl>
@@ -150,7 +150,7 @@ export function EditTeamMemberForm({ member, onSuccess }: EditTeamMemberFormProp
           name="duties"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-foreground/90 font-semibold">Duties</FormLabel>
+              <FormLabel className="text-foreground/90 font-bold text-[10px] uppercase tracking-widest">Duties</FormLabel>
               <FormControl>
                 <Textarea placeholder="Describe their main responsibilities..." {...field} />
               </FormControl>
@@ -160,10 +160,10 @@ export function EditTeamMemberForm({ member, onSuccess }: EditTeamMemberFormProp
         />
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-foreground/90">Profile Picture</label>
+          <label className="text-[10px] uppercase tracking-widest font-bold text-foreground/90">Profile Picture</label>
           <div className="flex gap-4 items-center">
             {member.pictureFileName && !picturePreview && (
-              <div className="relative w-16 h-16 bg-gray-100 rounded-full overflow-hidden shrink-0">
+              <div className="relative w-16 h-16 bg-muted rounded-full overflow-hidden shrink-0 border border-border">
                 <img
                   src={`/api/uploads/${member.pictureFileName}`}
                   alt={member.name}
@@ -172,7 +172,7 @@ export function EditTeamMemberForm({ member, onSuccess }: EditTeamMemberFormProp
               </div>
             )}
             {picturePreview && (
-              <div className="relative w-16 h-16 bg-gray-100 rounded-full overflow-hidden shrink-0">
+              <div className="relative w-16 h-16 bg-muted rounded-full overflow-hidden shrink-0 border border-border">
                 <img src={picturePreview} alt="Preview" className="w-full h-full object-cover" />
               </div>
             )}

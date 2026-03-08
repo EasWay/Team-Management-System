@@ -182,7 +182,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 px-3 text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background"
+                  className="h-8 px-3 text-[10px] uppercase tracking-widest font-bold hover:bg-primary hover:text-primary-foreground"
                   onClick={() => handleAddExisting(user.id)}
                   disabled={addMemberMutation.isPending}
                 >

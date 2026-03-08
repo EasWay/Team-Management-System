@@ -2,19 +2,20 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Github, CheckCheck, MessageSquare, User } from "lucide-react";
 
-interface Task {
+export interface Task {
   id: number;
   title: string;
   description: string | null;
   assignedTo: number | null;
-  priority: "low" | "medium" | "high" | "urgent";
-  status: "todo" | "in_progress" | "review" | "done";
+  priority: "low" | "medium" | "high" | "urgent" | null;
+  status: "todo" | "in_progress" | "review" | "done" | null;
   dueDate: Date | null;
   githubPrUrl: string | null;
-  teamId: number;
-  position: number;
-  createdAt: Date;
-  updatedAt: Date;
+  teamId: number | null;
+  position: number | null | undefined;
+  createdBy: number | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 interface TaskCardProps {
@@ -67,7 +68,8 @@ export function TaskCard({ task, onClick, assigneeName, isDone, isInProgress, is
     cardClass += " hover:bg-foreground/[0.04] ";
   }
 
-  const priorityStyle = priorityConfig[task.priority].color;
+  const priority = task.priority || "medium";
+  const priorityStyle = priorityConfig[priority].color;
   const textDecoration = isDone ? "line-through decoration-foreground/20" : "";
 
   return (
@@ -88,7 +90,7 @@ export function TaskCard({ task, onClick, assigneeName, isDone, isInProgress, is
               Task
             </span>
             <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border ${priorityStyle} ${isDone ? 'opacity-50' : ''}`}>
-              {priorityConfig[task.priority].label}
+              {priorityConfig[priority].label}
             </span>
           </div>
           <span className={`font-mono text-[10px] transition-colors ${isDone ? 'text-muted-foreground/40 ' + textDecoration : 'text-muted-foreground/60 group-hover:text-muted-foreground'}`}>

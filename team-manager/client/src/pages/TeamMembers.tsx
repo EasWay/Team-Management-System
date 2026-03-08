@@ -137,7 +137,7 @@ export default function TeamMembers() {
             <div className="w-full max-w-xl relative group mb-20">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 size-4" />
               <input
-                className="w-full bg-white/5 border border-white/10 rounded-full px-12 py-3 text-xs tracking-wide text-foreground focus:outline-none focus:border-white/20 transition-all placeholder:text-muted-foreground/30 shadow-2xl shadow-black/20"
+                className="w-full bg-foreground/[0.03] border border-border rounded-full px-12 py-3 text-xs tracking-wide text-foreground focus:outline-none focus:border-primary/20 transition-all placeholder:text-muted-foreground/30 shadow-2xl shadow-black/5"
                 placeholder="Search team members..."
                 type="text"
                 value={searchTerm}
@@ -151,7 +151,7 @@ export default function TeamMembers() {
 
             {/* Hero Quote */}
             <div className="space-y-6 mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-              <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-white leading-tight">
+              <h1 className="text-5xl md:text-7xl font-serif italic tracking-tight text-foreground leading-tight">
                 Quality is at the heart of <br /> everything we do
               </h1>
               <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto font-light leading-relaxed">
@@ -160,7 +160,7 @@ export default function TeamMembers() {
               <div className="pt-4">
                 <button
                   onClick={() => setIsAddDialogOpen(true)}
-                  className="px-8 py-3 bg-white text-black text-[10px] font-bold tracking-[0.2em] uppercase rounded-full hover:bg-slate-200 transition-all duration-300 shadow-xl shadow-white/5"
+                  className="px-8 py-3 bg-primary text-primary-foreground text-[10px] font-bold tracking-[0.2em] uppercase rounded-full hover:opacity-90 transition-all duration-300 shadow-xl shadow-primary/5"
                 >
                   SEE OPEN POSITION
                 </button>
@@ -169,49 +169,49 @@ export default function TeamMembers() {
 
             {/* Banner Box */}
             <div
-              className="w-full aspect-[21/9] bg-[#1A1A1A] rounded-[2rem] mb-24 relative overflow-hidden flex flex-col items-center justify-center border border-white/5"
+              className="w-full aspect-[21/9] bg-card rounded-[2rem] mb-24 relative overflow-hidden flex flex-col items-center justify-center border border-border"
               style={{
                 backgroundImage: 'url("https://www.saasable.io/assets/images/team/team-member-2.jpg")',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center 20%'
               }}
             >
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/[0.05] to-transparent"></div>
+              <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-foreground/[0.05] to-transparent"></div>
 
               <div className="relative z-10 flex flex-col items-center">
-                <h2 className="text-white/40 text-4xl font-serif italic tracking-[0.3em] font-light uppercase">{currentTeamName}</h2>
+                <h2 className="text-foreground/40 text-4xl font-serif italic tracking-[0.3em] font-light uppercase">{currentTeamName}</h2>
                 <div className="mt-8 flex gap-8">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="text-left space-y-2 opacity-50 group">
-                      <p className="text-[8px] uppercase tracking-widest font-bold text-white/60">Stat {i + 1}</p>
-                      <div className="h-[1px] w-12 bg-white/20"></div>
-                      <p className="text-[10px] text-white font-mono">0.00{i}</p>
+                      <p className="text-[8px] uppercase tracking-widest font-bold text-foreground/60">Stat {i + 1}</p>
+                      <div className="h-[1px] w-12 bg-border"></div>
+                      <p className="text-[10px] text-foreground font-mono">0.00{i}</p>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-                <p className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">REDACTED LOGISTICS DIV.</p>
+                <p className="text-[9px] uppercase tracking-[0.4em] text-foreground/30 font-bold">REDACTED LOGISTICS DIV.</p>
               </div>
             </div>
 
             {/* Sub-header */}
             <div className="w-full flex flex-col items-center mb-16">
-              <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6"></div>
-              <h3 className="text-[10px] font-bold tracking-[0.5em] uppercase text-white/40">OUR DEDICATED TEAM</h3>
+              <div className="h-px w-24 bg-gradient-to-r from-transparent via-border to-transparent mb-6"></div>
+              <h3 className="text-[10px] font-bold tracking-[0.5em] uppercase text-muted-foreground/40">OUR DEDICATED TEAM</h3>
 
               {isAdmin && (
                 <div className="flex gap-4 mt-8">
                   <button
                     onClick={() => setView('active')}
-                    className={`px-6 py-1 text-[9px] uppercase tracking-widest font-bold transition-all rounded-full ${view === 'active' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+                    className={`px-6 py-1 text-[9px] uppercase tracking-widest font-bold transition-all rounded-full ${view === 'active' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground/40 hover:text-foreground'}`}
                   >
                     ROSTER ({activeMembers.length})
                   </button>
                   <button
                     onClick={() => setView('pending')}
-                    className={`px-6 py-1 text-[9px] uppercase tracking-widest font-bold transition-all rounded-full ${view === 'pending' ? 'bg-white text-black' : 'text-white/40 hover:text-white'}`}
+                    className={`px-6 py-1 text-[9px] uppercase tracking-widest font-bold transition-all rounded-full ${view === 'pending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground/40 hover:text-foreground'}`}
                   >
                     REQUESTS ({pendingMembers.length})
                   </button>
@@ -231,8 +231,8 @@ export default function TeamMembers() {
 
                     {/* Circle Avatar */}
                     <div className="relative mb-6">
-                      <div className="size-40 rounded-full overflow-hidden border border-white/10 p-1 bg-gradient-to-b from-white/10 to-transparent group-hover:from-white/20 transition-all duration-500">
-                        <div className="size-full rounded-full overflow-hidden bg-[#222]">
+                      <div className="size-40 rounded-full overflow-hidden border border-border p-1 bg-gradient-to-b from-foreground/10 to-transparent group-hover:from-foreground/20 transition-all duration-500">
+                        <div className="size-full rounded-full overflow-hidden bg-muted">
                           {member.pictureFileName ? (
                             <img
                               alt={member.name}
@@ -240,7 +240,7 @@ export default function TeamMembers() {
                               src={`/api/uploads/${member.pictureFileName}`}
                             />
                           ) : (
-                            <div className="size-full flex items-center justify-center text-5xl font-serif italic text-white/10 group-hover:text-white/20 transition-colors">
+                            <div className="size-full flex items-center justify-center text-5xl font-serif italic text-muted-foreground/20 group-hover:text-muted-foreground/40 transition-colors">
                               {member.name.charAt(0)}
                             </div>
                           )}
@@ -253,7 +253,7 @@ export default function TeamMembers() {
                           <>
                             <button
                               onClick={() => { setSelectedMember(member); setIsDetailModalOpen(true); }}
-                              className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                              className="size-8 rounded-full bg-background/20 backdrop-blur-xl border border-border flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 shadow-lg"
                             >
                               <Eye className="size-3" />
                             </button>
@@ -261,13 +261,13 @@ export default function TeamMembers() {
                               <>
                                 <button
                                   onClick={() => { setSelectedMember(member); setIsEditDialogOpen(true); }}
-                                  className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                                  className="size-8 rounded-full bg-background/20 backdrop-blur-xl border border-border flex items-center justify-center text-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 shadow-lg"
                                 >
                                   <Edit className="size-3" />
                                 </button>
                                 <button
                                   onClick={() => { setMemberToDelete(member.id); setIsDeleteDialogOpen(true); }}
-                                  className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-red-500 hover:text-white transition-all"
+                                  className="size-8 rounded-full bg-background/20 backdrop-blur-xl border border-border flex items-center justify-center text-foreground hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg"
                                 >
                                   <Trash2 className="size-3" />
                                 </button>
@@ -278,14 +278,14 @@ export default function TeamMembers() {
                           <div className="flex flex-col gap-2">
                             <button
                               onClick={() => handleApprove(member.id)}
-                              className="size-8 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/20 border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all"
+                              className="size-8 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/20 border border-border flex items-center justify-center text-white hover:bg-primary hover:text-primary-foreground transition-all duration-300"
                               title="Approve"
                             >
                               <RefreshCw className="size-3" />
                             </button>
                             <button
                               onClick={() => handleDelete()}
-                              className="size-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-red-500 transition-all"
+                              className="size-8 rounded-full bg-background/20 backdrop-blur-xl border border-border flex items-center justify-center text-foreground hover:bg-red-500 hover:text-white transition-all duration-300"
                               title="Reject"
                             >
                               <X className="size-3" />
@@ -297,8 +297,8 @@ export default function TeamMembers() {
 
                     {/* Member Info */}
                     <div className="space-y-1">
-                      <h4 className="text-xl font-serif italic text-white/90 group-hover:text-white transition-colors">{member.name}</h4>
-                      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/40">{member.position || 'Operative'}</p>
+                      <h4 className="text-xl font-serif italic text-foreground/90 group-hover:text-foreground transition-colors">{member.name}</h4>
+                      <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-muted-foreground/40">{member.position || 'Operative'}</p>
                     </div>
 
                     {/* Status Dot */}
@@ -314,13 +314,13 @@ export default function TeamMembers() {
 
             {/* Footer Text */}
             <div className="pt-20 pb-10 flex flex-col items-center">
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-white/5 to-transparent mb-8"></div>
-              <div className="flex justify-between w-full text-[9px] uppercase tracking-[0.3em] font-medium text-white/20 px-4">
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent mb-8"></div>
+              <div className="flex justify-between w-full text-[9px] uppercase tracking-[0.3em] font-medium text-muted-foreground/20 px-4">
                 <span>© 2026 BLACKOUT TEAM SYSTEMS LTD.</span>
                 <div className="flex gap-8">
-                  <span className="hover:text-white/40 cursor-pointer transition-colors">DATA PRIVACY</span>
-                  <span className="hover:text-white/40 cursor-pointer transition-colors">TERMINALS</span>
-                  <span className="hover:text-white/40 cursor-pointer transition-colors">SUPPORT</span>
+                  <span className="hover:text-foreground cursor-pointer transition-colors">DATA PRIVACY</span>
+                  <span className="hover:text-foreground cursor-pointer transition-colors">TERMINALS</span>
+                  <span className="hover:text-foreground cursor-pointer transition-colors">SUPPORT</span>
                 </div>
               </div>
             </div>

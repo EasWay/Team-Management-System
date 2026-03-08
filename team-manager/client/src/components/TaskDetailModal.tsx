@@ -28,6 +28,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Github, Trash2 } from "lucide-react";
 import { TaskHistoryTimeline } from "./TaskHistoryTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { type Task } from "./TaskCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,21 +40,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Task {
-  id: number;
-  title: string;
-  description: string | null;
-  priority: string | null;
-  status: string | null;
-  teamId: number | null;
-  assignedTo: number | null;
-  createdBy: number | null;
-  dueDate: Date | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-  position?: number;
-  githubPrUrl?: string | null;
-}
+
 
 interface TaskDetailModalProps {
   task: Task;
@@ -81,9 +68,10 @@ export function TaskDetailModal({
 
   const updateMutation = trpc.tasks.update.useMutation();
   const deleteMutation = trpc.tasks.delete.useMutation();
-  const { data: members } = trpc.teams.getMembers.useQuery({
-    teamId: task.teamId,
-  });
+  const { data: members } = trpc.teams.getMembers.useQuery(
+    { teamId: task.teamId as number },
+    { enabled: !!task.teamId }
+  );
   const utils = trpc.useUtils();
 
   const handleSave = async () => {
@@ -163,7 +151,7 @@ export function TaskDetailModal({
                   </label>
                   {isEditing ? (
                     <Select
-                      value={editedTask.priority}
+                      value={editedTask.priority || undefined}
                       onValueChange={(value: any) =>
                         setEditedTask({ ...editedTask, priority: value })
                       }
@@ -181,9 +169,9 @@ export function TaskDetailModal({
                   ) : (
                     <Badge
                       variant="outline"
-                      className={priorityColors[task.priority]}
+                      className={priorityColors[task.priority || "medium"]}
                     >
-                      {task.priority}
+                      {task.priority || "medium"}
                     </Badge>
                   )}
                 </div>
@@ -194,7 +182,7 @@ export function TaskDetailModal({
                   </label>
                   {isEditing ? (
                     <Select
-                      value={editedTask.status}
+                      value={editedTask.status || undefined}
                       onValueChange={(value: any) =>
                         setEditedTask({ ...editedTask, status: value })
                       }
@@ -210,7 +198,7 @@ export function TaskDetailModal({
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Badge variant="outline">{task.status.replace(/_/g, " ")}</Badge>
+                    <Badge variant="outline">{(task.status || "todo").replace(/_/g, " ")}</Badge>
                   )}
                 </div>
               </div>

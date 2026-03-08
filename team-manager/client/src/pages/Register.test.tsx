@@ -29,6 +29,7 @@ vi.mock("@/lib/trpc", () => ({
 
 vi.mock("@/lib/tokenStorage", () => ({
   tokenStorage: {
+    getAccessToken: vi.fn(() => null),
     setAccessToken: vi.fn(),
     setRefreshToken: vi.fn(),
   },

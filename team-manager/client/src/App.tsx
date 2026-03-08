@@ -12,14 +12,21 @@ import Teams from "./pages/Teams";
 import Tasks from "./pages/Tasks";
 import Repositories from "./pages/Repositories";
 import Projects from "./pages/Projects";
-import Login from "./pages/Login";
+import { tokenStorage } from "./lib/tokenStorage";
+import Landing from "./pages/Landing";
+import Register from "./pages/Register";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/login"} component={Login} />
-      <Route path={"/"} component={Home} />
+      <Route path={"/"}>
+        {() => (tokenStorage.getAccessToken() ? <Home /> : <Landing />)}
+      </Route>
+      <Route path={"/register"}>
+        {() => (tokenStorage.getAccessToken() ? <Home /> : <Register />)}
+      </Route>
+      <Route path={"/login"} component={Landing} />
       <Route path={"/team"} component={TeamMembers} />
       <Route path={"/teams"} component={Teams} />
       <Route path={"/tasks"} component={Tasks} />

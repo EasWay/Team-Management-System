@@ -9,11 +9,8 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { TaskCard } from "./TaskCard";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { TaskCard, type Task } from "./TaskCard";
 import { TaskDetailModal } from "./TaskDetailModal";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -21,21 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useSocket, useSocketEvent } from "@/contexts/SocketContext";
 import { MoreHorizontal, Users } from "lucide-react";
 
-interface Task {
-  id: number;
-  title: string;
-  description: string | null;
-  priority: "low" | "medium" | "high" | "urgent" | null;
-  status: "todo" | "in_progress" | "review" | "done" | null;
-  teamId: number | null;
-  assigneeId: number | null;
-  createdBy: number | null;
-  dueDate: Date | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-  position?: number;
-  githubPrUrl?: string | null;
-}
+
 
 interface KanbanBoardProps {
   teamId: number;
@@ -67,7 +50,7 @@ export function KanbanBoard({
 
   const { data: tasksData, isLoading } = trpc.tasks.list.useQuery({
     teamId,
-    assigneeId: assigneeFilter,
+    assignedTo: assigneeFilter,
     priority: priorityFilter,
   });
 
@@ -80,13 +63,14 @@ export function KanbanBoard({
   const members = membersData as Array<{
     id: number;
     teamId: number;
-    userId: number;
+    memberId: number;
     role: string;
     joinedAt: Date;
-    user: {
+    member: {
       id: number;
       name: string | null;
       email: string | null;
+      pictureFileName?: string | null;
     };
   }> | undefined;
 
@@ -297,12 +281,12 @@ export function KanbanBoard({
     pendingOperationsRef.current.set(taskId, abortController);
 
     try {
-      const optimisticTask = { ...task, status: newStatus, position: newPosition };
+      const optimisticTask: Task = { ...task, status: newStatus, position: newPosition };
       setOptimisticUpdates((prev) => new Map(prev).set(taskId, optimisticTask));
 
       utils.tasks.list.setData({ teamId }, (old) => {
         if (!old) return old;
-        return old.map((t) =>
+        return (old as Task[]).map((t) =>
           t.id === taskId ? optimisticTask : t
         );
       });
