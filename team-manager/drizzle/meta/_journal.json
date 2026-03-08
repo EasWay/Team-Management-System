@@ -64,6 +64,13 @@
       "when": 1772851425636,
       "tag": "0008_burly_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772982475480,
+      "tag": "0009_empty_katie_power",
+      "breakpoints": true
     }
   ]
 }
