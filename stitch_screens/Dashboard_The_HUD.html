@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Glass &amp; Flow - Team Manager HUD</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366F1", // Indigo Neon from PRD
+                        "background-dark": "#0F1115", // Deep Void from PRD
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                        "glass-surface": "rgba(30, 32, 40, 0.65)",
+                        "accent-success": "#10B981",
+                        "accent-alert": "#F43F5E",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(99, 102, 241, 0.2)',
+                        'neon-sm': '0 0 10px rgba(99, 102, 241, 0.15)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0F1115;
+            color: #F3F4F6;
+        }
+
+        /* Custom Scrollbar for Glass Effect */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-panel {
+            background: rgba(30, 32, 40, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            transform: translateX(-100%);
+            background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0,
+                rgba(255, 255, 255, 0.05) 20%,
+                rgba(255, 255, 255, 0.1) 60%,
+                rgba(255, 255, 255, 0)
+            );
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex font-body text-slate-200 antialiased selection:bg-primary/30 selection:text-white">
+<!-- Ambient Background Glow -->
+<div class="fixed inset-0 pointer-events-none z-0">
+<div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] opacity-40"></div>
+<div class="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px] opacity-30"></div>
+</div>
+<!-- Main Layout Container -->
+<div class="relative z-10 flex w-full h-full p-6 gap-6">
+<!-- Sidebar Navigation (Floating Glass) -->
+<aside class="glass-panel w-[260px] h-full rounded-2xl flex flex-col justify-between p-4 shrink-0 transition-all duration-300">
+<div class="flex flex-col gap-8">
+<!-- Brand -->
+<div class="flex items-center gap-3 px-2">
+<div class="size-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-neon-sm">
+<span class="material-symbols-outlined text-white text-[20px]">blur_on</span>
+</div>
+<div>
+<h1 class="font-display font-bold text-lg leading-tight tracking-tight text-white">Glass &amp; Flow</h1>
+<p class="text-xs text-slate-400 font-medium tracking-wide">TEAM OS v2.4</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-2">
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/20 border border-primary/30 text-white shadow-neon-sm transition-all" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-white transition-colors" data-weight="fill">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">view_kanban</span>
+<span class="text-sm font-medium">Kanban Flow</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">groups</span>
+<span class="text-sm font-medium">Squad Grid</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">description</span>
+<span class="text-sm font-medium">Knowledge Nexus</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Actions / User -->
+<div class="flex flex-col gap-4">
+<button class="flex items-center justify-between w-full px-3 py-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</div>
+</button>
+<div class="pt-4 border-t border-white/10">
+<div class="flex items-center gap-3 px-2">
+<div class="relative">
+<img class="size-9 rounded-full border border-white/10 object-cover" data-alt="User Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxkSS8-NohOM3-00mLGNIpV9eS2wVb2vf8s2E5Ao1OzLeJi1U-e0MsBhdkHEOPA-lek3S5rELr1ySLlch5Bwmx7Wr16tgMRPRDjppms0I38CiUtXGOl1sKH0LTGl43mPG9xF5tyEVo64c0WnGsvD6SbnbZyefuDSazn_rnDayq9CAotkVvtuOM6aUrLD0bCZ33KJvs4Nsa85zLzW1LhJBvJYKVi2jfL8vNNSDpVoS2Q5LY-Z8nr-HEhkuhQ4aUd3CXhUxR6mIFKy39"/>
+<div class="absolute bottom-0 right-0 size-2.5 bg-accent-success rounded-full border-2 border-[#0F1115]"></div>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-white">Alex Chen</span>
+<span class="text-xs text-slate-500">Lead Engineer</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden">
+<!-- Header -->
+<header class="flex justify-between items-end mb-6 px-2 shrink-0">
+<div>
+<h2 class="font-display text-3xl font-bold text-white tracking-tight mb-1">Sprint 24 Overview</h2>
+<div class="flex items-center gap-2 text-slate-400 text-sm">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>Oct 24 - Nov 07</span>
+<span class="text-slate-600 mx-2">|</span>
+<span class="text-accent-success flex items-center gap-1">
+<span class="size-1.5 rounded-full bg-accent-success animate-pulse"></span>
+                            On Track
+                        </span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="h-9 px-4 rounded-lg glass-card flex items-center gap-2 text-xs font-medium text-slate-300 hover:text-white">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+                        Filter View
+                    </button>
+<button class="h-9 px-4 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-neon-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                        New Sprint
+                    </button>
+</div>
+</header>
+<!-- Dashboard Grid -->
+<div class="flex-1 overflow-y-auto pr-2 pb-20 custom-scrollbar">
+<div class="grid grid-cols-12 gap-6 auto-rows-min">
+<!-- Velocity Chart (Wide) -->
+<div class="col-span-12 lg:col-span-8 glass-card rounded-2xl p-6 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Sprint Velocity</h3>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-3xl font-bold text-white">42pts</span>
+<span class="text-accent-success text-sm font-medium flex items-center">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                        +12%
+                                    </span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-1.5 rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Chart Visualization Placeholder -->
+<div class="w-full h-[220px] relative mt-4">
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+<div class="w-full h-px bg-white/5"></div>
+</div>
+<!-- Gradient Area -->
+<div class="absolute bottom-0 left-0 right-0 h-[80%] bg-gradient-to-t from-primary/20 to-transparent clip-path-polygon"></div>
+<!-- Line Path (Simulated with SVG) -->
+<svg class="absolute inset-0 w-full h-full overflow-visible" preserveaspectratio="none">
+<path class="drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]" d="M0,180 C50,160 100,190 150,140 C200,90 250,110 300,80 C350,50 400,70 450,40 C500,10 550,30 600,60 C650,90 700,50 800,20" fill="none" stroke="#6366F1" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+<!-- Interactive Points -->
+<circle class="opacity-0 group-hover:opacity-100 transition-opacity duration-300" cx="150" cy="140" fill="#0F1115" r="4" stroke="#6366F1" stroke-width="2"></circle>
+<circle class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75" cx="300" cy="80" fill="#0F1115" r="4" stroke="#6366F1" stroke-width="2"></circle>
+<circle class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100" cx="450" cy="40" fill="#0F1115" r="4" stroke="#6366F1" stroke-width="2"></circle>
+</svg>
+</div>
+</div>
+<!-- Metrics Column -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<!-- Metric Card 1 -->
+<div class="glass-card rounded-2xl p-5 flex flex-col justify-between h-[160px]">
+<div class="flex justify-between items-start">
+<span class="text-slate-400 text-xs uppercase tracking-wider font-semibold">Cycle Time</span>
+<span class="material-symbols-outlined text-slate-500 text-[20px]">timelapse</span>
+</div>
+<div>
+<span class="font-display text-4xl font-bold text-white">1.2d</span>
+<div class="w-full bg-white/10 h-1 rounded-full mt-4 overflow-hidden">
+<div class="bg-accent-success h-full w-[85%] rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]"></div>
+</div>
+<p class="text-xs text-slate-500 mt-2">Target: &lt; 2.0 days</p>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="glass-card rounded-2xl p-5 flex flex-col justify-between h-[160px]">
+<div class="flex justify-between items-start">
+<span class="text-slate-400 text-xs uppercase tracking-wider font-semibold">Active Blockers</span>
+<div class="size-2 rounded-full bg-accent-success shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></div>
+</div>
+<div>
+<span class="font-display text-4xl font-bold text-white">0</span>
+<div class="mt-2 flex -space-x-2 overflow-hidden py-1">
+<!-- Empty state or good state visualization -->
+<span class="text-sm text-slate-400">All clear. Systems normal.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Log & Live Feed -->
+<div class="col-span-12 glass-card rounded-2xl p-6 min-h-[300px]">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-white font-display font-semibold text-lg">Live Feed</h3>
+<button class="text-xs text-primary hover:text-white transition-colors">View All History</button>
+</div>
+<div class="flex flex-col gap-1">
+<!-- Feed Item 1 -->
+<div class="group flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5">
+<div class="size-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0">
+<span class="material-symbols-outlined text-[20px]">commit</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center gap-2">
+<span class="text-white text-sm font-medium truncate">feat: Add glass morphism to cards</span>
+<span class="text-xs font-mono text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">3f8a1b</span>
+</div>
+<span class="text-slate-500 text-xs">master • pushed by Sarah Jenkins</span>
+</div>
+<span class="text-slate-500 text-xs whitespace-nowrap">2m ago</span>
+</div>
+<!-- Feed Item 2 -->
+<div class="group flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5">
+<div class="size-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 shrink-0">
+<span class="material-symbols-outlined text-[20px]">merge</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center gap-2">
+<span class="text-white text-sm font-medium truncate">Merge pull request #42 from fix/nav-bug</span>
+</div>
+<span class="text-slate-500 text-xs">Main Component • merged by Alex Chen</span>
+</div>
+<span class="text-slate-500 text-xs whitespace-nowrap">15m ago</span>
+</div>
+<!-- Feed Item 3 -->
+<div class="group flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5">
+<div class="size-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-400 shrink-0">
+<span class="material-symbols-outlined text-[20px]">bug_report</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<div class="flex items-center gap-2">
+<span class="text-white text-sm font-medium truncate">JIRA-102: Crash on profile load</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-accent-alert/20 text-accent-alert border border-accent-alert/30">High Priority</span>
+</div>
+<span class="text-slate-500 text-xs">Created by Mike Ross</span>
+</div>
+<span class="text-slate-500 text-xs whitespace-nowrap">1h ago</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button -->
+<div class="absolute bottom-8 right-8 z-50">
+<div class="flex items-center gap-3 bg-glass-surface backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-neon">
+<button class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-full text-sm font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Task
+                    </button>
+<button class="size-9 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit_document</span>
+</button>
+<button class="size-9 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Right Presence Rail -->
+<aside class="w-[80px] hidden xl:flex flex-col gap-6 py-4 items-center shrink-0">
+<div class="flex flex-col items-center gap-4">
+<span class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold rotate-180" style="writing-mode: vertical-rl;">Online Squad</span>
+</div>
+<div class="flex flex-col gap-4 items-center w-full">
+<!-- User 1 -->
+<div class="relative group cursor-pointer">
+<div class="absolute inset-0 bg-primary/50 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img class="relative size-10 rounded-full border border-white/20 object-cover hover:scale-110 transition-transform" data-alt="Team Member 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-twfxdtna9sVQyX6-yRTN-eqTiS_krRtwy4GFadjlvcIMr28BdIMyaHw5qTHhIDoH4ggVv05DINeZodOc_ajDGpwt44OGb_86Ff1y7uTBsHuPC2F-c0P9cdBmIlfIy7kynk98XngR7KeBbNTCILVQouGB1OND54sNKRnEogx1EcSnmYboeBMZ7DCAZw3H12DIGZPZzEZz4o1c7prxJzHmB3dYPnvHsDVXeZwFDU82Q5UOfgadfuSAvP7-zOzw8DmVZGtt2SVaH2dc"/>
+<div class="absolute bottom-0 right-0 size-2.5 bg-accent-success rounded-full border-2 border-[#0F1115]"></div>
+<!-- Tooltip -->
+<div class="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10">
+                        Sarah J.
+                    </div>
+</div>
+<!-- User 2 -->
+<div class="relative group cursor-pointer">
+<img class="relative size-10 rounded-full border border-white/20 object-cover hover:scale-110 transition-transform grayscale hover:grayscale-0" data-alt="Team Member 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqlxiX9MRW0V5GyzmoWoV-uQwAkuyQohIFYmEsnGguA6ggzZI1BtJPBBuu8WErXR7ItfSOFaM95_BpqALaG2CZiBVU8dokA2jby0MD8E8jsRVH9d2IgeFJDesA7K3MhWcS3ru0lXWHfpOtSTMFKn_orZm3-oYBGWhjYSxbCzKh-BqYWI8JOj8uQETTy3aLK9tqvpmBGQOMr1sOIpc0TMb4LZ6Y11YbvGbfIFHjnzSGR18Vf8_8-xDGFemqCGSIPlTBI7w_fxoCppzv"/>
+<div class="absolute bottom-0 right-0 size-2.5 bg-amber-500 rounded-full border-2 border-[#0F1115]"></div>
+<!-- Tooltip -->
+<div class="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10">
+                        Mike R.
+                    </div>
+</div>
+<!-- User 3 -->
+<div class="relative group cursor-pointer">
+<div class="absolute inset-0 bg-primary/50 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img class="relative size-10 rounded-full border border-white/20 object-cover hover:scale-110 transition-transform" data-alt="Team Member 3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFqG6NwpKNNPSbx-6CQY44LEdV6nGBxxnpTHlpHpMFLS1yBKr9gCcgnkoKUS3pAQSJHJKy4SQWjPheV6Ji1DzBr_YWCKWUCnZqJhN1h0Exb-UsG_yGYluOsBXE3nAfpP4DDawYni3rbV71Vq0mKbVmZVVCKibsDvGanUlDveeXgyaxfon5ovRcks1JbdF_Sz4bQmJsCkKjvGJ1h4dgl5YheFJrCpWcJjuj0Q2KsV8w0FXTwyhAmfFRcNfWx8AoM4r-9IT7Qe4CX9qx"/>
+<div class="absolute bottom-0 right-0 size-2.5 bg-accent-success rounded-full border-2 border-[#0F1115]"></div>
+</div>
+<!-- More indicator -->
+<div class="size-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer">
+                    +4
+                 </div>
+</div>
+</aside>
+</div>
+</body></html>

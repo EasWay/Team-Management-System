@@ -20,8 +20,10 @@ const workspaceMenuItems = [
   { label: "Tasks", path: "/tasks" },
   { label: "Team Members", path: "/team" },
   { label: "Projects", path: "/projects" },
-  { label: "Repositories", path: "/repositories" }
+  { label: "Repositories", path: "/repositories" },
+  { label: "Messages", path: "/messages" }
 ];
+
 
 const globalMenuItems = [
   { label: "Teams", path: "/teams" }

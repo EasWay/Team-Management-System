@@ -12,6 +12,7 @@ import Teams from "./pages/Teams";
 import Tasks from "./pages/Tasks";
 import Repositories from "./pages/Repositories";
 import Projects from "./pages/Projects";
+import Messages from "./pages/Messages";
 import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
 
@@ -28,12 +29,14 @@ function Router() {
       <Route path={"/tasks"} component={Tasks} />
       <Route path={"/repositories"} component={Repositories} />
       <Route path={"/projects"} component={Projects} />
+      <Route path={"/messages"} component={Messages} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
 }
+
 
 // NOTE: About Theme
 // - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css

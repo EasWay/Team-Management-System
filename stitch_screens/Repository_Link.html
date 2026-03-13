@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Glass &amp; Flow - Repository Link</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366F1", // Indigo Neon from brief
+                        "primary-glow": "rgba(99, 102, 241, 0.4)",
+                        "background-dark": "#0F1115", // Deep Void
+                        "glass-base": "rgba(30, 32, 40, 0.65)",
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                        "glass-highlight": "rgba(255, 255, 255, 0.08)",
+                        "text-primary": "#F3F4F6",
+                        "text-muted": "#9CA3AF",
+                        "accent-success": "#10B981",
+                        "accent-alert": "#F43F5E",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(99, 102, 241, 0.2)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for the glass look */
+        .glass-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .glass-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .glass-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+        }
+        .glass-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Animation utilities */
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-enter {
+            animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 32, 40, 0.75);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .glass-input:focus-within {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: #6366F1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-text-primary font-body antialiased overflow-hidden min-h-screen relative selection:bg-primary selection:text-white">
+<!-- Background Elements (Abstract Context) -->
+<div class="fixed inset-0 z-0 pointer-events-none">
+<!-- Abstract gradient blob top right -->
+<div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px]"></div>
+<!-- Abstract gradient blob bottom left -->
+<div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent-success/5 rounded-full blur-[100px]"></div>
+<!-- Mock Background UI (Blurred out dashboard to simulate overlay context) -->
+<div class="absolute inset-0 opacity-30 flex gap-6 p-8 filter blur-[4px]">
+<div class="w-[260px] h-full bg-glass-base rounded-2xl border border-glass-border"></div>
+<div class="flex-1 flex flex-col gap-6">
+<div class="flex gap-6 h-40">
+<div class="flex-1 bg-glass-base rounded-2xl border border-glass-border"></div>
+<div class="flex-1 bg-glass-base rounded-2xl border border-glass-border"></div>
+<div class="flex-1 bg-glass-base rounded-2xl border border-glass-border"></div>
+</div>
+<div class="flex-1 bg-glass-base rounded-2xl border border-glass-border"></div>
+</div>
+</div>
+</div>
+<!-- Backdrop Overlay -->
+<div class="fixed inset-0 bg-[#000000]/80 z-40 backdrop-blur-[2px] transition-opacity duration-300"></div>
+<!-- Modal Container -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+<div class="relative w-full max-w-2xl flex flex-col glass-panel rounded-2xl overflow-hidden animate-enter ring-1 ring-white/10">
+<!-- Modal Header -->
+<div class="flex items-center justify-between px-6 py-5 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[20px]">link</span>
+</div>
+<div>
+<h2 class="font-display font-semibold text-lg leading-tight tracking-tight text-white">Link Repository</h2>
+<p class="text-text-muted text-xs">Connect external codebases to Glass &amp; Flow</p>
+</div>
+</div>
+<button class="text-text-muted hover:text-white transition-colors p-1 rounded-md hover:bg-white/5 group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">close</span>
+</button>
+</div>
+<!-- Search Area -->
+<div class="p-6 pb-2">
+<div class="glass-input rounded-xl flex items-center h-14 px-4 group/search">
+<span class="material-symbols-outlined text-text-muted group-focus-within/search:text-primary transition-colors text-[24px]">search</span>
+<input autofocus="" class="w-full bg-transparent border-none text-white placeholder-text-muted/50 focus:ring-0 text-lg font-medium h-full ml-2" placeholder="Search GitHub repositories..." type="text" value="glass-flow"/>
+<div class="flex gap-2">
+<div class="hidden sm:flex items-center px-2 py-1 rounded-md bg-white/5 border border-white/5">
+<span class="text-[10px] font-mono text-text-muted">⌘ K</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Repository List (Virtualized Feel) -->
+<div class="flex-1 overflow-y-auto glass-scroll px-6 py-2 max-h-[400px] min-h-[320px]">
+<h3 class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3 mt-2 px-2">Best Matches</h3>
+<!-- List Item 1: Active/Connecting -->
+<div class="group flex items-center justify-between p-3 mb-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all cursor-pointer">
+<div class="flex items-center gap-4 min-w-0">
+<div class="shrink-0 size-10 rounded-lg bg-[#282839] flex items-center justify-center text-white border border-white/5">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-white font-medium font-mono text-sm truncate">glass-flow/core-engine</span>
+<span class="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-text-muted leading-none">Private</span>
+</div>
+<span class="text-text-muted text-xs truncate">Updated 14m ago • TypeScript</span>
+</div>
+</div>
+<button class="relative overflow-hidden shrink-0 h-8 px-4 rounded-lg bg-primary/20 text-primary border border-primary/20 text-sm font-medium flex items-center gap-2 cursor-wait">
+<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+<span>Syncing...</span>
+</button>
+</div>
+<!-- List Item 2: Connected -->
+<div class="group flex items-center justify-between p-3 mb-2 rounded-xl bg-white/[0.02] border border-white/5 transition-all">
+<div class="flex items-center gap-4 min-w-0">
+<div class="shrink-0 size-10 rounded-lg bg-[#282839] flex items-center justify-center text-white border border-white/5">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-white font-medium font-mono text-sm truncate">glass-flow/frontend-v2</span>
+<span class="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-text-muted leading-none">Private</span>
+</div>
+<span class="text-text-muted text-xs truncate">Updated 2h ago • React</span>
+</div>
+</div>
+<button class="shrink-0 h-8 px-3 rounded-lg bg-accent-success/10 text-accent-success border border-accent-success/20 text-sm font-medium flex items-center gap-1.5 cursor-default">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Linked</span>
+</button>
+</div>
+<!-- List Item 3: Idle -->
+<div class="group flex items-center justify-between p-3 mb-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all cursor-pointer">
+<div class="flex items-center gap-4 min-w-0">
+<div class="shrink-0 size-10 rounded-lg bg-[#282839] flex items-center justify-center text-white border border-white/5">
+<span class="material-symbols-outlined text-[20px]">design_services</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-text-muted group-hover:text-white transition-colors font-medium font-mono text-sm truncate">glass-flow/design-system</span>
+<span class="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-text-muted leading-none">Public</span>
+</div>
+<span class="text-text-muted text-xs truncate">Updated 1d ago • CSS</span>
+</div>
+</div>
+<button class="shrink-0 h-8 px-4 rounded-lg bg-white/5 hover:bg-primary hover:text-white hover:shadow-neon text-text-primary border border-white/5 hover:border-primary/50 text-sm font-medium transition-all duration-200">
+                        Connect
+                    </button>
+</div>
+<!-- List Item 4: Idle -->
+<div class="group flex items-center justify-between p-3 mb-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all cursor-pointer">
+<div class="flex items-center gap-4 min-w-0">
+<div class="shrink-0 size-10 rounded-lg bg-[#282839] flex items-center justify-center text-white border border-white/5">
+<span class="material-symbols-outlined text-[20px]">api</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-text-muted group-hover:text-white transition-colors font-medium font-mono text-sm truncate">glass-flow/api-gateway</span>
+<span class="px-1.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-text-muted leading-none">Private</span>
+</div>
+<span class="text-text-muted text-xs truncate">Updated 3d ago • Go</span>
+</div>
+</div>
+<button class="shrink-0 h-8 px-4 rounded-lg bg-white/5 hover:bg-primary hover:text-white hover:shadow-neon text-text-primary border border-white/5 hover:border-primary/50 text-sm font-medium transition-all duration-200">
+                        Connect
+                    </button>
+</div>
+<!-- Auth Required State (Simulated at bottom for demo purposes) -->
+<div class="mt-6 mb-2 mx-2 p-4 rounded-xl border border-dashed border-white/10 bg-white/[0.02] flex flex-col items-center justify-center gap-3 text-center">
+<div class="p-2 bg-accent-alert/10 rounded-full text-accent-alert">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<div>
+<p class="text-sm font-medium text-white">Can't find a repository?</p>
+<p class="text-xs text-text-muted">Your GitHub token may have expired or is missing scopes.</p>
+</div>
+<button class="mt-1 h-9 px-4 rounded-lg bg-[#24292F] hover:bg-[#2c313a] text-white border border-white/10 text-sm font-medium flex items-center gap-2 transition-colors shadow-lg">
+<svg aria-hidden="true" fill="currentColor" height="20" version="1.1" viewbox="0 0 16 16" width="20"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
+                        Re-authenticate with GitHub
+                    </button>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="bg-black/20 border-t border-white/5 px-6 py-3 flex justify-between items-center text-[11px] text-text-muted/60">
+<div class="flex gap-4">
+<span>Showing 4 of 24 repositories</span>
+</div>
+<div class="flex gap-4">
+<span class="flex items-center gap-1.5"><kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white/80 font-sans">↑↓</kbd> to navigate</span>
+<span class="flex items-center gap-1.5"><kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white/80 font-sans">↵</kbd> to select</span>
+<span class="flex items-center gap-1.5"><kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white/80 font-sans">esc</kbd> to close</span>
+</div>
+</div>
+</div>
+</div>
+</body></html>

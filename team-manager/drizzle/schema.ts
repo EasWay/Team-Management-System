@@ -172,6 +172,16 @@ export const oauthTokens = pgTable("oauth_tokens", {
   uniqueUserProvider: unique().on(table.userId, table.provider),
 }));
 
+// Messages table
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  clientName: text("client_name").notNull(),
+  clientEmail: text("client_email").notNull(),
+  serviceType: text("service_type").notNull(),
+  details: text("details").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   oauthTokens: many(oauthTokens),
@@ -352,3 +362,6 @@ export type Repository = typeof repositories.$inferSelect;
 
 export type InsertOAuthToken = typeof oauthTokens.$inferInsert;
 export type OAuthToken = typeof oauthTokens.$inferSelect;
+
+export type InsertMessage = typeof messages.$inferInsert;
+export type Message = typeof messages.$inferSelect;

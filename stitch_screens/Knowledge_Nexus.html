@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Knowledge Nexus - Glass &amp; Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4343ef",
+                        "primary-glow": "rgba(67, 67, 239, 0.4)",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#0F1115", // Deep Void from prompt
+                        "glass-base": "rgba(30, 32, 40, 0.65)",
+                        "glass-border": "rgba(255, 255, 255, 0.06)",
+                        "dark-paper": "#15171C",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                    boxShadow: {
+                        "neon": "0 0 20px rgba(67, 67, 239, 0.2)",
+                        "glass": "0 4px 30px rgba(0, 0, 0, 0.1)",
+                    },
+                    backdropBlur: {
+                        "glass": "16px",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Cursor glow effect */
+        .cursor-glow {
+            box-shadow: 0 0 10px 1px rgba(67, 67, 239, 0.8);
+        }
+
+        /* Glassmorphism utility class */
+        .glass-panel {
+            background: rgba(30, 32, 40, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        /* Floating selection menu animation */
+        @keyframes float-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-float-up {
+            animation: float-up 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-body antialiased selection:bg-primary/30 selection:text-white h-screen overflow-hidden flex">
+<!-- 1. Side Navigation (Adapted from component list) -->
+<nav class="hidden md:flex flex-col w-[260px] h-full glass-panel z-50 relative shrink-0">
+<!-- Brand -->
+<div class="flex items-center gap-3 px-6 py-6">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-8 relative" data-alt="Abstract geometric glass logo" style="background-image: linear-gradient(135deg, #4343ef 0%, #a5a5f7 100%);">
+<div class="absolute inset-0 bg-white/20 blur-sm rounded-lg"></div>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-display font-bold leading-tight tracking-wide">GLASS &amp; FLOW</h1>
+<p class="text-[#9d9db9] text-xs font-medium">Engineering</p>
+</div>
+</div>
+<!-- Main Links -->
+<div class="flex flex-col gap-1 px-3 mb-6">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#9d9db9] hover:bg-white/5 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#9d9db9] hover:bg-white/5 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">view_kanban</span>
+<span class="text-sm font-medium">Kanban Flow</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#9d9db9] hover:bg-white/5 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">group</span>
+<span class="text-sm font-medium">Squad Grid</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/20 text-white border border-primary/20 shadow-neon" href="#">
+<span class="material-symbols-outlined text-[20px] fill-current">description</span>
+<span class="text-sm font-medium">Knowledge Nexus</span>
+</a>
+</div>
+<!-- File Tree Section -->
+<div class="flex-1 overflow-y-auto px-4 py-2">
+<div class="text-[#6b6b85] text-xs font-bold uppercase tracking-wider mb-3 px-2">Knowledge Base</div>
+<!-- Folder 1: Engineering -->
+<div class="mb-2">
+<div class="flex items-center gap-2 px-2 py-1.5 text-white/80 hover:text-white cursor-pointer group">
+<span class="material-symbols-outlined text-[16px] text-[#9d9db9] group-hover:text-white transition-colors">folder_open</span>
+<span class="text-sm font-medium">Engineering</span>
+</div>
+<div class="ml-2 pl-2 border-l border-white/10 flex flex-col gap-1 mt-1">
+<div class="flex items-center gap-2 px-2 py-1.5 rounded bg-primary/10 text-primary border-l-2 border-primary cursor-pointer relative">
+<span class="material-symbols-outlined text-[16px]">article</span>
+<span class="text-sm font-medium truncate">Architecture V2</span>
+<div class="absolute right-2 w-1.5 h-1.5 rounded-full bg-primary shadow-neon"></div>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 text-[#9d9db9] hover:text-white hover:bg-white/5 rounded cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[16px]">article</span>
+<span class="text-sm font-medium truncate">API Standards</span>
+</div>
+<div class="flex items-center gap-2 px-2 py-1.5 text-[#9d9db9] hover:text-white hover:bg-white/5 rounded cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[16px]">article</span>
+<span class="text-sm font-medium truncate">Deployment Guide</span>
+</div>
+</div>
+</div>
+<!-- Folder 2: Product -->
+<div class="mb-2">
+<div class="flex items-center gap-2 px-2 py-1.5 text-[#9d9db9] hover:text-white cursor-pointer group">
+<span class="material-symbols-outlined text-[16px] group-hover:text-white transition-colors">folder</span>
+<span class="text-sm font-medium">Product Specs</span>
+</div>
+</div>
+<!-- Folder 3: Retros -->
+<div class="mb-2">
+<div class="flex items-center gap-2 px-2 py-1.5 text-[#9d9db9] hover:text-white cursor-pointer group">
+<span class="material-symbols-outlined text-[16px] group-hover:text-white transition-colors">folder</span>
+<span class="text-sm font-medium">Sprint Retros</span>
+</div>
+</div>
+</div>
+<!-- Bottom Action -->
+<div class="p-4 border-t border-white/5">
+<button class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl h-10 px-4 bg-primary hover:bg-primary/90 text-white text-sm font-bold tracking-wide transition-all shadow-lg hover:shadow-neon">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>New Page</span>
+</button>
+</div>
+</nav>
+<!-- 2. Main Editor Area -->
+<main class="flex-1 h-full flex flex-col relative overflow-hidden bg-background-dark">
+<!-- Background Ambient Glow -->
+<div class="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+<!-- Top Header / Breadcrumbs / Presence -->
+<header class="h-16 flex items-center justify-between px-8 shrink-0 z-10">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm">
+<span class="text-[#6b6b85] font-medium hover:text-[#9d9db9] cursor-pointer">Engineering</span>
+<span class="text-[#6b6b85] material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-[#6b6b85] font-medium hover:text-[#9d9db9] cursor-pointer">Architecture</span>
+<span class="text-[#6b6b85] material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-white/80 font-medium">V2 Specification</span>
+<span class="ml-4 text-xs text-[#525266] flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                    Saved just now
+                </span>
+</div>
+<!-- Presence & Actions -->
+<div class="flex items-center gap-4">
+<!-- Avatar Pile -->
+<div class="flex items-center -space-x-3">
+<div class="w-8 h-8 rounded-full border-2 border-background-dark bg-cover bg-center ring-2 ring-primary/20" data-alt="Team member Sarah avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBFPoN2yNAbPB9KB_KafF_wTnNOweQ0Z9G6lokCi8D8x2VTJoCUrpXUJ5jQVa-RhVTfU3fqcimMdw4Igu30lUqNdOLIDed5cElfZV51yWGNhcV34uwHjkvhVY2yTYcGkgRy3l7X-D5ekmw81nhq1qDPl8WQeq8n3Y70IuRFoU0XzwNz4vrIPI8nLpX4IjKJQH7BAnWEOZWkUJ3EafhdJIc6sEBBER7Uu2Zozu7uXqzabXnb2Uo8fTfUUWfMR-D6Ha3q9oF0JduB9VeK');"></div>
+<div class="w-8 h-8 rounded-full border-2 border-background-dark bg-cover bg-center ring-2 ring-primary/20" data-alt="Team member Mike avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC2EfNKRw2jT0aUhum4L_B_6csYPSKQhRBEbeTjjVyQIoIq7JEH6Rxx_YmtYtToI9YZU0fyCIL90i_sNESgS9Qag5iopdcGbDKaI9ZiZMcICpIAOeWx8TsU_-R5RYnvSvQFp5RCKWMJGKm13X_ELp4aUjPTAqb1Kq5yFV4wrXZv30LJUrXyyviw3JD_A2-0VaEnPK_yHgfG3xKZ-qvXRNl-nYP8fxPBXJQMTME22Nbba7BeVDLdt4CbYvrO4NvH5McjEEkU9mxX0Ib-');"></div>
+<div class="w-8 h-8 rounded-full border-2 border-background-dark bg-gray-700 flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-primary/20">
+                        +2
+                    </div>
+</div>
+<div class="h-4 w-[1px] bg-white/10 mx-1"></div>
+<button class="text-[#9d9db9] hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+<button class="bg-white/5 hover:bg-white/10 text-white text-sm font-medium px-4 py-1.5 rounded-lg border border-white/5 transition-colors">
+                    Share
+                </button>
+</div>
+</header>
+<!-- Editor Canvas -->
+<div class="flex-1 overflow-y-auto w-full flex justify-center p-8 relative z-0">
+<!-- The Paper -->
+<div class="w-full max-w-[800px] min-h-[900px] bg-dark-paper rounded-lg shadow-2xl p-16 relative">
+<!-- Document Title -->
+<h1 class="text-4xl md:text-5xl font-display font-bold text-white mb-8 tracking-tight leading-tight outline-none" contenteditable="true">
+                    Architecture V2: <br/><span class="text-white/60">Event Stream Pipeline</span>
+</h1>
+<!-- Document Content -->
+<div class="font-body text-lg leading-relaxed text-[#d1d5db] space-y-6">
+<p>The core objective of the V2 architecture is to decouple the ingestion layer from the processing workers. By introducing a durable event log, we ensure zero data loss during traffic spikes.</p>
+<!-- Active User Cursor indicator -->
+<div class="relative inline">
+<div class="absolute -top-6 -left-2 flex flex-col items-center z-20">
+<div class="bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">Sarah</div>
+</div>
+<div class="absolute top-0 left-0 w-[2px] h-6 bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.8)]"></div>
+</div>
+<p>We are evaluating <span class="text-white font-medium bg-primary/20 px-1 rounded mx-0.5 selection:bg-transparent">Kafka and Redpanda</span> as the primary message brokers. Benchmarks suggest Redpanda offers better tail latency for our specific payload sizes.</p>
+<!-- Text Selection & Floating Toolbar -->
+<div class="relative group">
+<!-- Simulated selected text -->
+<span class="bg-primary/30 text-white rounded px-0.5 relative">
+                            This necessitates a shift from synchronous HTTP calls to asynchronous event publishing.
+                            
+                            <!-- Floating Toolbar (Only visible conceptually for the "selected" state) -->
+<div class="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-lg glass-panel shadow-xl animate-float-up z-30">
+<button class="p-1.5 hover:bg-white/10 rounded text-white/90 hover:text-white transition-colors" title="Bold">
+<span class="material-symbols-outlined text-[18px]">format_bold</span>
+</button>
+<button class="p-1.5 hover:bg-white/10 rounded text-white/90 hover:text-white transition-colors" title="Italic">
+<span class="material-symbols-outlined text-[18px]">format_italic</span>
+</button>
+<button class="p-1.5 hover:bg-white/10 rounded text-white/90 hover:text-white transition-colors" title="Link">
+<span class="material-symbols-outlined text-[18px]">link</span>
+</button>
+<div class="w-[1px] h-4 bg-white/20 mx-1"></div>
+<button class="p-1.5 hover:bg-white/10 rounded text-white/90 hover:text-white transition-colors" title="Code">
+<span class="material-symbols-outlined text-[18px]">code</span>
+</button>
+<button class="p-1.5 hover:bg-white/10 rounded text-amber-400 hover:text-amber-300 transition-colors" title="Comment">
+<span class="material-symbols-outlined text-[18px]">add_comment</span>
+</button>
+</div>
+</span>
+</div>
+<h2 class="text-2xl font-display font-semibold text-white pt-6">Ingestion Layer</h2>
+<p>The ingestion service will act as a dumb pipe, validating schema and pushing to the topic. No business logic should reside here.</p>
+<!-- Code Block -->
+<div class="relative my-6 rounded-lg overflow-hidden border border-white/10 bg-[#0d0e12] font-mono text-sm">
+<div class="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/5">
+<span class="text-[#9d9db9] text-xs">producer.ts</span>
+<button class="text-[#9d9db9] hover:text-white text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">content_copy</span> Copy
+                            </button>
+</div>
+<div class="p-4 text-[#a5a5f7] overflow-x-auto">
+<span class="text-purple-400">const</span> publishEvent = <span class="text-purple-400">async</span> (payload: EventPayload) =&gt; {<br/>
+                              <span class="text-purple-400">await</span> producer.connect();<br/>
+                              <span class="text-purple-400">await</span> producer.send({<br/>
+                                topic: <span class="text-green-400">'user-events'</span>,<br/>
+                                messages: [{ value: JSON.stringify(payload) }],<br/>
+                              });<br/>
+                            };
+                        </div>
+</div>
+<div class="flex items-start gap-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 my-6">
+<span class="material-symbols-outlined text-amber-500 mt-0.5">warning</span>
+<div class="text-sm text-amber-200/90">
+<strong class="text-amber-500 block mb-1">Legacy Dependency</strong>
+                            Ensure we maintain backward compatibility with the V1 REST endpoints until Q4 migration is complete.
+                        </div>
+</div>
+<p>Services consuming these events will need to implement idempotency checks using the `event_id` field.</p>
+<p class="text-white/40 italic">Start typing to add more content...</p>
+</div>
+<!-- Cursor Pulse Animation at the end of content (Concept) -->
+<div class="w-[2px] h-6 bg-primary animate-pulse shadow-neon inline-block align-middle ml-1"></div>
+</div>
+<!-- Contextual Comment Bubble (Floats in margin) -->
+<div class="absolute right-8 top-[360px] hidden xl:block w-[280px]">
+<div class="glass-panel p-3 rounded-xl border-l-4 border-l-amber-400 shadow-xl relative group transition-all hover:-translate-x-1">
+<div class="flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-cover bg-center shrink-0" data-alt="Commenter Mike" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC2xQsNgp6UQV03N-hiJz7saxr9qJO3ZtInnVEyTds3m6wvRkWON_vHELEU_iP34SrVOmeVMqKEaCJ06e2MyUZN82IouHy5ufFR1QE-j60u2CPUbrt0Fu0A0NjG_T0WTfSKGmUQ7ghARRRc1En5a8qI-JLa35VFHf56t4Q5IY5wa_61vcujQaCgjLUg_aIzJ2FDjbqPUzd1h1a8qGw6Ufptj8vtJsdd01rb7Eax2VmUDccbBPA2O1kBbqFQMK_rtfHo9RNvQRqK2tEo');"></div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between w-full">
+<span class="text-white text-xs font-bold">Mike T.</span>
+<span class="text-[#6b6b85] text-[10px]">2m ago</span>
+</div>
+<p class="text-xs text-[#d1d5db] leading-snug">Should we also consider gRPC for internal service comms here?</p>
+</div>
+</div>
+<!-- Resolve Button visible on hover -->
+<button class="absolute -top-2 -right-2 bg-background-dark border border-white/10 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-white hover:text-green-400">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

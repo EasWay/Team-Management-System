@@ -1,0 +1,189 @@
+# Supabase Backend Architecture & Migration Plan
+
+This document outlines the complete system design, architecture, and database schema to migrate the Team-Manager application to a Supabase backend.
+
+## 1. System Architecture Overview
+
+Moving to Supabase allows us to replace the custom Express+Drizzle backend with a scalable, fully-managed PostgreSQL database, built-in Auth, and native Realtime capabilities.
+
+### Core Supabase Services Used:
+1. **Supabase Auth**: Replaces the custom `users` and `oauth_tokens` tables. We will use Supabase's built-in Email/Password and OAuth (GitHub) providers. The GitHub provider will automatically store provider tokens for API interactions.
+2. **Supabase PostgreSQL**: Replaces the Drizzle/Express API layers. The frontend will communicate directly with the database using `@supabase/supabase-js`.
+3. **Row Level Security (RLS)**: Crucial for authorization. Replaces backend middleware to ensure users can only access teams, tasks, and documents they are authorized to see.
+4. **Supabase Realtime**: 
+   - **Postgres Changes**: Real-time sync for the Kanban board (`tasks` table) and Activity feeds.
+   - **Broadcast/Presence**: Real-time cursors and collaborative states for the [Editor.tsx](file:///c:/Users/Godfred/Downloads/Team-manager/team-manager/client/src/pages/Editor.tsx) document editor (Yjs integration).
+5. **Supabase Storage**: For storing user avatars (replacing local file uploads seen in [TeamMembers.tsx](file:///c:/Users/Godfred/Downloads/Team-manager/team-manager/client/src/pages/TeamMembers.tsx)) and document attachments.
+6. **Supabase Edge Functions (Optional for later)**: For secure third-party API interactions. For example, the [RepositoryDashboard.tsx](file:///c:/Users/Godfred/Downloads/Team-manager/team-manager/client/src/components/RepositoryDashboard.tsx) fetches branches, commits, PRs, and issues; we can use Edge Functions to call the GitHub API securely using the tokens from Supabase Auth.
+
+---
+
+## 2. Database Schema Design
+
+This schema is designed to closely match the frontend requirements while aligning with Supabase's `auth.users` system and primary `uuid` keys.
+
+### 2.1 Profiles (Replaces `team_members` & `users`)
+We link a public `profiles` table to the hidden `auth.users` table so we can store schema-specific user details.
+```sql
+CREATE TABLE public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE,
+  phone TEXT,
+  position TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.2 Teams
+Workspaces for organizations/groups.
+```sql
+CREATE TABLE public.teams (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  created_by UUID REFERENCES public.profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.3 Team Members (Replaces `team_members_collaborative`)
+Junction table linking profiles to teams.
+```sql
+CREATE TABLE public.team_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(team_id, user_id)
+);
+```
+
+### 2.3b Team Invitations
+Pending invites to join squads. Used by [InvitationForm.tsx](file:///c:/Users/Godfred/Downloads/Team-manager/team-manager/client/src/components/InvitationForm.tsx) and [InvitationList.tsx](file:///c:/Users/Godfred/Downloads/Team-manager/team-manager/client/src/components/InvitationList.tsx).
+```sql
+CREATE TABLE public.team_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  invited_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'expired')),
+  role TEXT DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.4 Tasks (Kanban Board)
+```sql
+CREATE TABLE public.tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'todo' CHECK (status IN ('todo', 'in-progress', 'done')),
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+  assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES public.profiles(id),
+  due_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.5 Documents (Knowledge Base)
+```sql
+CREATE TABLE public.documents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  content TEXT, -- Markdown
+  yjs_state BYTEA, -- Binary state for Yjs real-time collaborative syncing
+  type TEXT DEFAULT 'markdown',
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES public.profiles(id),
+  last_edited_by UUID REFERENCES public.profiles(id),
+  is_public BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.6 Repositories
+```sql
+CREATE TABLE public.repositories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  description TEXT,
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+  github_id TEXT UNIQUE,
+  is_private BOOLEAN DEFAULT true,
+  default_branch TEXT DEFAULT 'main',
+  created_by UUID REFERENCES public.profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 2.7 Activities & Audit Logs
+**Activities** (Tracks business events for [TaskHistoryTimeline.tsx](file:///c:/Users/Godfred/Downloads/Team-manager/team-manager/client/src/components/TaskHistoryTimeline.tsx))
+```sql
+CREATE TABLE public.activities (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type TEXT NOT NULL,
+  description TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id TEXT, -- Changed to text to accommodate UUIDs
+  user_id UUID REFERENCES public.profiles(id),
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Audit Logs** (Tracks strict operations and API actions)
+```sql
+CREATE TABLE public.audit_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  operation TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  details TEXT, -- JSON string
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  ip_address TEXT,
+  user_agent TEXT
+);
+```
+
+---
+
+## 3. Row Level Security (RLS) Strategy
+
+Implementing RLS is mandatory to ensure users only access their teams' data. Example rules:
+
+- **Profiles**: Users can `SELECT` any profile if they share a team. Users can `UPDATE` their own profile (`id = auth.uid()`).
+- **Teams**: Users can `SELECT` teams where their `auth.uid()` exists in `team_members` for that `team_id`.
+- **Tasks & Documents**: Users can `SELECT`, `INSERT`, `UPDATE`, `DELETE` where the `team_id` of the row exists in `team_members` for their `auth.uid()`.
+
+Example SQL for `tasks` RLS:
+```sql
+ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can access tasks in their teams" ON public.tasks 
+  USING (
+    team_id IN (SELECT team_id FROM public.team_members WHERE user_id = auth.uid())
+  );
+```
+
+## 4. Verification Plan
+- [ ] Run Supabase local dev (`supabase start`) or initialize remote project.
+- [ ] Apply SQL migrations (tables, RLS policies, trigger to auto-create `profiles` on `auth.users` insert).
+- [ ] Replace `trpc` calls in the frontend with Supabase client calls (`supabase.from(..).select()`).
+- [ ] Verify Kanban board loads tasks using Supabase subscription.
+- [ ] Verify Document editor connects to Yjs via Supabase broadcast channel.

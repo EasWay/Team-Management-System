@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Glass &amp; Flow - Kanban</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366F1", // Indigo Neon
+                        "primary-glow": "rgba(99, 102, 241, 0.4)",
+                        "void": "#0F1115",    // Deep Void Background
+                        "glass-base": "rgba(30, 32, 40, 0.65)",
+                        "glass-border": "rgba(255, 255, 255, 0.06)",
+                        "glass-highlight": "rgba(255, 255, 255, 0.08)",
+                        "text-primary": "#F3F4F6",
+                        "text-muted": "#9CA3AF",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(99, 102, 241, 0.15)',
+                        'neon-strong': '0 0 25px rgba(99, 102, 241, 0.3)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for horizontal scrolling */
+        .kanban-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .kanban-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+        }
+        .kanban-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .kanban-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Glass utilities not fully covered by Tailwind standard */
+        .glass-panel {
+            background: rgba(30, 32, 40, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        /* Dragged card state simulation */
+        .card-dragged {
+            transform: rotate(2deg) scale(1.02) !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(99, 102, 241, 0.4) !important;
+            z-index: 50;
+            background: rgba(30, 32, 40, 0.85);
+            cursor: grabbing;
+        }
+        
+        .column-drag-over {
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
+            border-radius: 1rem;
+        }
+
+        body {
+            background-color: #0F1115;
+            color: #F3F4F6;
+        }
+    </style>
+</head>
+<body class="h-screen w-full overflow-hidden flex selection:bg-primary selection:text-white">
+<!-- Ambient Background Glows -->
+<div class="fixed inset-0 pointer-events-none z-0">
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-40 mix-blend-screen"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-purple-500/20 rounded-full blur-[100px] opacity-30 mix-blend-screen"></div>
+<div class="absolute top-[20%] right-[30%] w-[20%] h-[20%] bg-blue-500/10 rounded-full blur-[80px] opacity-20 mix-blend-screen"></div>
+</div>
+<!-- Side Navigation -->
+<aside class="relative z-50 h-full w-[280px] hidden md:flex flex-col p-6 pr-0">
+<div class="glass-panel h-full w-full rounded-2xl flex flex-col justify-between p-4 shadow-glass">
+<!-- Top Section -->
+<div class="flex flex-col gap-6">
+<!-- User Profile / Team -->
+<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="relative size-10 rounded-full overflow-hidden border border-white/10 group-hover:border-primary/50 transition-colors">
+<img alt="Team Manager Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZVCt4v8M93fwJQeViaS2uvf90U4u4OEsuwVpGLra4SeMptXynfeQMgxllNwo2N5WtA80xRJeSPthhJJ4aVgf3UX9IxnYvPQa7vaUpECC4AZ20sAibEV79Pxr2dauK3JUieqnEG07Mn9aJgQugrfiDm4HQ84Xx64fFBwdTQ4OpPF-MWdKWqtdRaUjFsRdnpAv-RiPKKb_N1BgCV0nfL9gfkHLao3w0PxX3zlZUaoa8dnx4Sr5j93VJgUsAeTTBa_9UiS4wzpzlyP0S"/>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white font-display font-bold text-base leading-tight tracking-wide">Glass &amp; Flow</h1>
+<p class="text-text-muted text-xs font-medium">Team Manager</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-white shadow-[0_0_15px_rgba(99,102,241,0.15)] border border-primary/20" href="#">
+<span class="material-symbols-outlined text-[20px] text-primary" style="font-variation-settings: 'FILL' 1;">view_kanban</span>
+<span class="text-sm font-medium">Kanban Flow</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">groups</span>
+<span class="text-sm font-medium">Squad Grid</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">article</span>
+<span class="text-sm font-medium">Knowledge Nexus</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Section -->
+<div class="flex flex-col gap-4">
+<button class="w-full h-10 rounded-lg bg-primary hover:bg-indigo-500 text-white text-sm font-bold tracking-wide shadow-neon transition-all flex items-center justify-center gap-2 group">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>New Project</span>
+</button>
+<div class="pt-4 border-t border-white/5">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="relative z-10 flex-1 flex flex-col h-full overflow-hidden p-6 gap-6">
+<!-- Header & Controls -->
+<header class="flex items-center justify-between shrink-0 glass-panel rounded-2xl px-6 py-3 shadow-glass">
+<!-- Breadcrumbs / Title -->
+<div class="flex items-center gap-4">
+<div class="flex items-center text-text-muted text-sm font-medium">
+<span class="hover:text-white cursor-pointer transition-colors">Project</span>
+<span class="material-symbols-outlined text-[16px] mx-1 opacity-50">chevron_right</span>
+<span class="text-white font-display font-semibold tracking-tight">Sprint 24</span>
+</div>
+<div class="h-4 w-px bg-white/10"></div>
+<div class="flex -space-x-2">
+<img alt="Team Member 1" class="w-7 h-7 rounded-full border-2 border-[#1e2028]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXnLYboZWb1j7gRlOXu44GBYNKSjVvILLUUv67utGf52HcYiGtDR71zNErU9hR5JUluOCjwgzVdFyiHfgxsug6CABttDow67EpULPT-aMqKMenyEtRCcQ8woaxARe6v3tLPsMcujY0fvGc-0rJFk7oMB_gTjyXph_lwD20jB3zOCTQqOwkLB0lSjPJ_EFVvzWHdw4LytO7nwFIVkJDML1atUARxYCbs99Eg5u_QS1GiW2Ej3Uspj35r9KMKcpR72ZNcRQTa4ZaTujw"/>
+<img alt="Team Member 2" class="w-7 h-7 rounded-full border-2 border-[#1e2028]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwstABH1W-nYCq1SZjATIZQD5W4MZPLOQhjeqWu1LSQoyPyU1bc4XVYr0bpTCclc4mqmqJxBWY-y-IEfEYDgN30541x8LAG2r63DxCoVlRBCp-HSuwVwiRi8o1H80an55XDw-Oyf-gqwm1cSNM8O2EFZTLbpkKw6HAyybSxwbczcIFTSbz-iFeD40nBAe-c_YZaNBMCIeh1-gMjJtkCNKhyguJbN_YCFEX0_0U6ML6thhkY2d9vSGsAwx_Sf5oc11p0JB2_oQHZsgb"/>
+<div class="w-7 h-7 rounded-full border-2 border-[#1e2028] bg-white/5 flex items-center justify-center text-[10px] text-white font-mono font-bold">+3</div>
+</div>
+</div>
+<!-- Floating Filter Pill -->
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+<div class="flex items-center bg-[#15171c]/80 backdrop-blur-md border border-white/10 rounded-full p-1 shadow-lg">
+<button class="px-4 py-1.5 rounded-full text-xs font-medium text-white bg-primary/20 border border-primary/30 shadow-[0_0_10px_rgba(99,102,241,0.2)] transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px]">person</span>
+                        All Members
+                    </button>
+<div class="w-px h-4 bg-white/10 mx-1"></div>
+<button class="px-4 py-1.5 rounded-full text-xs font-medium text-text-muted hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px]">sort</span>
+                        Priority
+                    </button>
+<div class="w-px h-4 bg-white/10 mx-1"></div>
+<button class="size-7 rounded-full flex items-center justify-center text-text-muted hover:text-white hover:bg-white/5 transition-all">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-3">
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-text-muted text-[18px]">search</span>
+</span>
+<input class="bg-[#0F1115]/50 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-sm text-white placeholder-text-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 w-48 transition-all hover:bg-[#0F1115]/80" placeholder="Filter tasks..." type="text"/>
+</div>
+<button class="h-9 px-4 rounded-lg bg-primary hover:bg-indigo-500 text-white text-sm font-bold tracking-wide shadow-neon transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>New Issue</span>
+</button>
+</div>
+</header>
+<!-- Kanban Board Area -->
+<div class="flex-1 overflow-x-auto kanban-scroll pb-2">
+<div class="inline-flex h-full gap-6 min-w-full px-2">
+<!-- Column: To Do -->
+<div class="w-[340px] flex flex-col shrink-0 h-full rounded-2xl glass-panel border-none bg-transparent">
+<!-- Column Header -->
+<div class="p-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-20 rounded-t-2xl border-b border-white/5 bg-[#15171C]/40">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-slate-500 shadow-[0_0_8px_rgba(148,163,184,0.4)]"></div>
+<h3 class="font-display font-semibold text-white tracking-wide">To Do</h3>
+<span class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-mono text-text-muted">3</span>
+</div>
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+<!-- Cards List -->
+<div class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto kanban-scroll">
+<!-- Card 1 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-grab active:cursor-grabbing">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Feature</span>
+</div>
+<span class="font-mono text-xs text-text-muted group-hover:text-white transition-colors">GLS-42</span>
+</div>
+<p class="font-body text-sm text-text-primary leading-snug">Implement Auth0 integration for enterprise SSO login flow.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-text-muted text-xs hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">call_merge</span>
+<span class="font-mono">PR-892</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe1KxRB-ojHooqFgFn9dVEDcxDwk4ybMeH8oQQIN-otvrchFM0oVfv7YPCm0yMdLTx4LpII1Cyu2NpaKFyhAtNH3SVOsTAUMNlwB5Ms4WMTmMzOe7yV_LbIurZ_BWqO63ZnUdHntl1kxBiKNT41U2kmsTumqWYMPpXNNzy2nwJqqY5Ew9bi1nPdmcL5ni5Fa2ITTdgL6uE9f1xcLpDXQRLPG_JDOTHpfARGDHD5-r_BuUOVXZQIpd3N3H-E4cb00zD9yAojtw5Kbni"/>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-grab active:cursor-grabbing">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Design</span>
+</div>
+<span class="font-mono text-xs text-text-muted group-hover:text-white transition-colors">GLS-45</span>
+</div>
+<p class="font-body text-sm text-text-primary leading-snug">Finalize database schema for user roles and permissions.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-text-muted text-xs hover:text-primary transition-colors cursor-pointer opacity-50">
+<span class="material-symbols-outlined text-[14px]">link_off</span>
+<span class="font-mono">No PR</span>
+</div>
+<div class="size-6 rounded-full border border-dashed border-white/20 flex items-center justify-center text-white/20">
+<span class="material-symbols-outlined text-[12px]">person</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-grab active:cursor-grabbing">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">Refactor</span>
+</div>
+<span class="font-mono text-xs text-text-muted group-hover:text-white transition-colors">GLS-51</span>
+</div>
+<p class="font-body text-sm text-text-primary leading-snug">Clean up CSS variables and remove unused Tailwind classes.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-text-muted text-xs hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">call_merge</span>
+<span class="font-mono">PR-901</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpsjinGyJwDVPD0-HIkgEeyxV4G2TJp1binfMKYS1HDgXJegOvMhF7hICMMA6v7A09dXyF5P7AmtygTs-M9y7OB4x_Wo5ZvQcs7hlIhs9kRScTAMBSqdqsRZ8dt2_k5FSpheNZWRub7aWp-3krNJSBHl-7W09LSMWW5f26c2M4fOQSjPJYtSPtnXnpuxdbHC4wPGiNg9SfZQGVZk6_RXl2DPqcebEpNCwN3j3-sdWhQjk8-sXPof4C1aUMIPpHc0skJmswxLE-lme1"/>
+</div>
+</div>
+</div>
+<!-- Add Item Button -->
+<button class="m-3 p-2 rounded-lg border border-dashed border-white/10 text-text-muted text-sm hover:text-white hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Create Issue
+                    </button>
+</div>
+<!-- Column: In Progress -->
+<div class="w-[340px] flex flex-col shrink-0 h-full rounded-2xl glass-panel border-none bg-transparent column-drag-over relative">
+<!-- Glow effect for active column -->
+<div class="absolute inset-0 rounded-2xl pointer-events-none border border-primary/20 shadow-[inset_0_0_40px_rgba(99,102,241,0.05)]"></div>
+<!-- Column Header -->
+<div class="p-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-20 rounded-t-2xl border-b border-primary/20 bg-primary/5">
+<div class="flex items-center gap-3">
+<div class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
+</div>
+<h3 class="font-display font-semibold text-white tracking-wide">In Progress</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary/20 text-[10px] font-mono text-primary-200">1</span>
+</div>
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+<!-- Cards List -->
+<div class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto kanban-scroll relative">
+<!-- SIMULATED DRAG & DROP: "Ghost" placeholder where card was -->
+<div class="h-[140px] w-full rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 mb-3"></div>
+<!-- Card 4 (Active/Glowing) -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-grab active:cursor-grabbing border-primary/30 bg-primary/5 shadow-neon">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">Critical</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20">Backend</span>
+</div>
+<span class="font-mono text-xs text-primary/80 group-hover:text-primary transition-colors">GLS-12</span>
+</div>
+<p class="font-body text-sm text-white font-medium leading-snug">API Gateway rate limiting logic causing timeouts on heavy loads.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-primary/20">
+<div class="flex items-center gap-2 text-primary/80 text-xs hover:text-white transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">call_merge</span>
+<span class="font-mono">PR-942</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-primary/40 shadow-neon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvbN17twdjErykUF2bJKFf-uHLVqcYqPV53q11WWBsHf5M0l7XyaJIdcxx94umgDTdKjoz9Gfs6WuQqA9M8wNqCJULsw173gbzqbyVGmVWvhpZfMmMRQq1rV2ww8yb1FSdJtl6FJiS9GvKrGE5E8ZqOk7STJ_nkQhgY2uWIFCGj7UlDNkL1GcxTAk41HRBauAs0a5ndgUT3n3EqTMoR0Oaxl8ciRD4a9rdQive9z-EI0XHqhECuEaErKMsQzunquJxYuM044eQcDMb"/>
+</div>
+</div>
+</div>
+<!-- SIMULATED DRAG & DROP: The Floating Card -->
+<div class="absolute top-[180px] left-[20px] w-[calc(100%-24px)] card-dragged p-4 rounded-xl flex flex-col gap-3 border border-primary/50">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Improvement</span>
+</div>
+<span class="font-mono text-xs text-text-muted">GLS-33</span>
+</div>
+<p class="font-body text-sm text-white leading-snug">Optimize WebSocket connection pooling for real-time presence.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
+<div class="flex items-center gap-2 text-text-muted text-xs">
+<span class="material-symbols-outlined text-[14px]">call_merge</span>
+<span class="font-mono">PR-910</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANl5Kwd7gmyTeRqJqz3DGoBjxTZP_8T5Jw4WLf4643L4NULWwNJFWsYxkzUDYggEUY7xkFRmcjA6wft4Ae5Eteq4VkloymR7sjNkwFCFqeIWy-VFYpPBAbI3aB6ENpiMm6VpmfJEcPFenbWLX0BpdHTqcmf01v1OGWjZRMkZGPYqY0LgrYjibPxmsdS5amtBX6cRl9vfZCLbfwRJ3s0EB4CaYy5O_b3MoK4PWcs_wcfx7RyaOd8ut_1JdbZmAsLJGBoAm2broLEKVU"/>
+</div>
+</div>
+</div>
+<!-- Column: Review -->
+<div class="w-[340px] flex flex-col shrink-0 h-full rounded-2xl glass-panel border-none bg-transparent">
+<!-- Column Header -->
+<div class="p-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-20 rounded-t-2xl border-b border-white/5 bg-[#15171C]/40">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.4)]"></div>
+<h3 class="font-display font-semibold text-white tracking-wide">Review</h3>
+<span class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-mono text-text-muted">2</span>
+</div>
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+<!-- Cards List -->
+<div class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto kanban-scroll">
+<!-- Card 5 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-grab active:cursor-grabbing">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Testing</span>
+</div>
+<span class="font-mono text-xs text-text-muted group-hover:text-white transition-colors">GLS-28</span>
+</div>
+<p class="font-body text-sm text-text-primary leading-snug">Unit tests coverage for new payment processing module.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-text-muted text-xs hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">call_merge</span>
+<span class="font-mono">PR-880</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Reviewer 1" class="size-6 rounded-full border border-[#1e2028]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXKFBl1Z-pvZBT1s4pBNoMorsoEuLCr7ul1Z94hjp-X5oUqRmb0Z-9im8VF2xH7DCQx4Te1BplpjdcFfi2-ow2BzsPhv1U8NZXnv6KsLdQjs1AVWIAIHxTtpm_wDgu6iwRaQCfSKWuJ_4OkGMdKAzx4jhQBnnya411sIwjI8xtiJRTfNCy3jPMkqLWoAJcqFOYEPk345fQum90WxSdOOfjqmYKghuARR0HZ3x47M56XysgurRnVfyQmTPKbooioL4IDbXA3VGCh3hh"/>
+<img alt="Reviewer 2" class="size-6 rounded-full border border-[#1e2028]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBld44dBbMqH-Q_5VrWw7SS-OpjAMWFAEeM6XMaT5kgWJ7jSjpnpB4G8ULc3KJG7PYjI15DNzPqjl_FsrQbzsZdI5JNM2zD20JvPhm7FlAXam0KYkm5LToKINRoErZEpioa8E8DnuxTEWiLg4DFTPPd1vhJUTnfIWSBmQvAQfvs4c8Y5SNV1j20eGo4jRJgRpcVmcBfRxj15ji7_wKb2kwMovtMfz-DKATlUfNzRDGTIuU52Xhu6lPRmM4ypOIVkjzHVKYCvBwWXmwL"/>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-grab active:cursor-grabbing">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20">Design</span>
+</div>
+<span class="font-mono text-xs text-text-muted group-hover:text-white transition-colors">GLS-39</span>
+</div>
+<p class="font-body text-sm text-text-primary leading-snug">Update modal component animations to match new design system.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-text-muted text-xs hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">call_merge</span>
+<span class="font-mono">PR-905</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-white/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrpJe7H_yk5ZOy9kqTcxAwaBjj4OZ1j-NWta5Ac80_B5OVOW66HUcHzJKKOvcQ2KoMx4LQPc9Poak5WNFWdDgoRt1enmms8yxfsd_N9chTHHtd6Dm4BWUZsWDbeNq7S0BftMncSlRH-bVKGe-6OCd52Qm1-AGnkOiTd9mMdOiL91M4KSDknGcQr3TnHJMErQCyLAvM8dqMFfJ2JUzSGjKO1kVRlcHc0EmWeqD9oC9b0SM3ZXIMVd4PBbxC77V2A5Hh9nRQuV9jt0up"/>
+</div>
+</div>
+</div>
+<!-- Add Item Button -->
+<button class="m-3 p-2 rounded-lg border border-dashed border-white/10 text-text-muted text-sm hover:text-white hover:border-primary/40 hover:bg-primary/5 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Create Issue
+                    </button>
+</div>
+<!-- Column: Done -->
+<div class="w-[340px] flex flex-col shrink-0 h-full rounded-2xl glass-panel border-none bg-transparent">
+<!-- Column Header -->
+<div class="p-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-20 rounded-t-2xl border-b border-white/5 bg-[#15171C]/40">
+<div class="flex items-center gap-3">
+<div class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+<h3 class="font-display font-semibold text-white tracking-wide">Done</h3>
+<span class="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-mono text-text-muted">5</span>
+</div>
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+<!-- Cards List -->
+<div class="flex-1 p-3 flex flex-col gap-3 overflow-y-auto kanban-scroll opacity-60 hover:opacity-100 transition-opacity duration-300">
+<!-- Card 7 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-pointer bg-white/[0.01]">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/10 text-text-muted border border-white/10 decoration-slice line-through">Chore</span>
+</div>
+<span class="font-mono text-xs text-text-muted line-through decoration-white/20">GLS-10</span>
+</div>
+<p class="font-body text-sm text-text-muted line-through decoration-white/20 leading-snug">Setup initial repository structure and CI/CD pipeline.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-emerald-500/70 text-xs">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span class="font-mono">Merged</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-white/10 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA28zg-WJJ7e1PUAvS9vPWUttzMSEN0nAhTctclfrq6nVZcNmsWOvqtLZyQDiDdY0dMy1mCdc8iLIvLTEOulmNZwFwrUCQygfLQ4hOkFAqAKiViCdpN2ePq-JkqMLeX8g-JDHxJgegccxLp4Rf0jQw3IsVMqxEiu5a6fy0eCGPgTkrZ6psk35kScYPG1IubyrPBEjbveEiFurWZfq7Pj0z54l1J0kgEThohBNoQO-T-tuYLjvUVQmA2aE4lRiUR2tpunrtVMwGa-Z8Q"/>
+</div>
+</div>
+<!-- Card 8 -->
+<div class="glass-card p-4 rounded-xl flex flex-col gap-3 group cursor-pointer bg-white/[0.01]">
+<div class="flex justify-between items-start">
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/10 text-text-muted border border-white/10 line-through">Feature</span>
+</div>
+<span class="font-mono text-xs text-text-muted line-through decoration-white/20">GLS-15</span>
+</div>
+<p class="font-body text-sm text-text-muted line-through decoration-white/20 leading-snug">User dashboard analytics chart initial implementation.</p>
+<div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+<div class="flex items-center gap-2 text-emerald-500/70 text-xs">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span class="font-mono">Merged</span>
+</div>
+<img alt="Assignee" class="size-6 rounded-full border border-white/10 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsNmu6GQ3mgUwkX1XFIfVlnhyJtJvJl6L8l_Gi7qPJkl0Mp0ZhFxfgFIBy6pf8PShUGfx0xoLEsBzyDLNwGSl1NTvWJt1pZLPOBmSQ2OoUGzRX-Fu-xe_G885leT_hCFnWCO1X2I6RYUFfKgme5OxgjSBlz8M5dw3eBsS5ww___z7v_si7L3200JC2y7qQPLNksZIlXuXDQFckIJFGgbXQ_8day1gGDblgzzGkxXy8v8W0GP40Qo0kkHk-8B436yfAggsZ5cJrxklv"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

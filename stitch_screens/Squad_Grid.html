@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Squad Grid - Glass &amp; Flow Team Manager</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366F1", // Indigo Neon from PRD
+                        "background-dark": "#0F1115", // Deep Void from PRD
+                        "glass-surface": "rgba(30, 32, 40, 0.65)",
+                        "glass-border": "rgba(255, 255, 255, 0.06)",
+                        "accent-success": "#10B981",
+                        "accent-alert": "#F43F5E",
+                        "text-primary": "#F3F4F6",
+                        "text-muted": "#9CA3AF",
+                    },
+                    fontFamily: {
+                        "display": ['"Space Grotesk"', "sans-serif"],
+                        "body": ['"Inter"', "sans-serif"],
+                        "mono": ['"JetBrains Mono"', "monospace"],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(99, 102, 241, 0.2)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                    },
+                    backgroundImage: {
+                        'void-gradient': 'radial-gradient(circle at 50% 0%, #1e1e2e 0%, #0F1115 60%)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Utilities for Glassmorphism */
+        .glass-panel {
+            background: rgba(30, 32, 40, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #282839; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4343ef; 
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+            50% { opacity: 0.7; box-shadow: 0 0 2px rgba(16, 185, 129, 0.3); }
+        }
+        .status-dot-pulse {
+            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-background-dark bg-void-gradient text-text-primary font-body antialiased min-h-screen flex overflow-hidden selection:bg-primary/30">
+<!-- Floating Sidebar -->
+<nav class="fixed left-6 top-6 bottom-6 w-[260px] glass-panel rounded-2xl flex flex-col justify-between py-6 px-4 z-50">
+<!-- Logo Area -->
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-8 h-8 rounded bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-glow">
+<span class="material-symbols-outlined text-white text-[20px]">blur_on</span>
+</div>
+<span class="text-xl font-display font-bold tracking-tight text-white">GlassFlow</span>
+</div>
+<!-- Navigation Links -->
+<div class="flex flex-col gap-2 flex-1">
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-white transition-all duration-200" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors text-[20px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-white transition-all duration-200" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors text-[20px]">view_kanban</span>
+<span class="text-sm font-medium">Kanban Flow</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/20 border border-primary/20 text-white shadow-[0_0_15px_rgba(99,102,241,0.15)] relative overflow-hidden" href="#">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>
+<span class="material-symbols-outlined text-primary text-[20px] fill-1">group</span>
+<span class="text-sm font-medium relative z-10">Squad Grid</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-white transition-all duration-200" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors text-[20px]">article</span>
+<span class="text-sm font-medium">Knowledge Nexus</span>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-white transition-all duration-200" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors text-[20px]">hub</span>
+<span class="text-sm font-medium">Repository Link</span>
+</a>
+</div>
+<!-- User Profile (Bottom) -->
+<div class="mt-auto border-t border-white/10 pt-4">
+<div class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+<div class="relative">
+<img alt="User profile picture" class="w-9 h-9 rounded-full object-cover border border-white/20" data-alt="Close up portrait of a man smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwiVjheKSUJQAccjSsuJB6NCIc3IfJZBKbkNhSHDKmQJTW5_Vk5mWVKRkiPUQWa1x21mIGEHdH6z10jCcsMSF8QxGNO-TnD9Vc1KO-Asb1llGMkmPNTpoW_XtOpUv5uT6W0duk42hjeOokntQA_jmvKQCxnYq18sajU5_cJRQS1fNRShGfB9AGpX9cUp6Q8ZAtTTCVnwCplWXedjO7aC4vLjPePcY2E-XwV_kgB4VV19bZn7H7Wdh2kgr-C6hcd-Al5uyc2tNuk1Iw"/>
+<div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent-success rounded-full border-2 border-[#1e2028]"></div>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-white">Alex Chen</span>
+<span class="text-xs text-text-muted">Lead Architect</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[300px] mr-6 my-6 flex flex-col h-[calc(100vh-48px)]">
+<!-- Header Section -->
+<header class="flex justify-between items-end mb-8 pl-2">
+<div>
+<h1 class="text-4xl font-display font-bold text-white tracking-tight mb-2">Squad Roster</h1>
+<p class="text-text-muted text-sm max-w-lg">Manage role assignments, view real-time availability, and coordinate your engineering crew.</p>
+</div>
+<!-- Quick Filters / Actions -->
+<div class="flex items-center gap-3">
+<div class="relative group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-muted text-[18px]">search</span>
+<input class="bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/50 w-64 transition-all hover:bg-white/10" placeholder="Search member..." type="text"/>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-medium text-text-muted hover:text-white hover:bg-white/10 transition-all">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+<span>Filter</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Grid Container -->
+<div class="flex-1 overflow-y-auto pr-2 pb-24">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+<!-- Card 1: Admin/Online -->
+<div class="glass-card rounded-2xl p-6 flex flex-col items-center relative group">
+<div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<button class="w-8 h-8 rounded-full bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<div class="relative mb-4">
+<div class="w-20 h-20 rounded-full p-1 border border-white/10 relative">
+<img alt="Portrait of Sarah Jones" class="w-full h-full rounded-full object-cover" data-alt="Woman with long dark hair looking forward" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMGC1Hug-eMfjCPJbboraIGDv-AFi50tb-ZP31kYxBnZM8t68x2uhQZtvmmXyYZCqyTT0VgJUQ4xsVUdwjAd3EZxrLIt6qbwC2r2iXsy87sIpLkSvpIGU78D9GNGXQP2ud1WlOmO5tFKXnCXDnhw1PqES81tXHTrEK86p59P2Nv056rDtoB355gZ8-Pmgp4bUt9T_IaTHIsO8bLSDsH4OX_9bTG0CATJwBvlJkB3CxLLyiwTEYEXiPO-WqS_7VvtScuQCWGy1DouFQ"/>
+</div>
+<!-- Status Indicator -->
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-background-dark flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-accent-success status-dot-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+</div>
+</div>
+<h3 class="font-display font-semibold text-lg text-white mb-1">Sarah Jones</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-yellow-500/30 text-yellow-400 bg-yellow-500/10">
+                            Admin
+                        </span>
+<span class="font-mono text-xs text-text-muted">@sarah_j</span>
+</div>
+<div class="w-full border-t border-white/5 pt-4 mt-auto">
+<div class="flex justify-between items-center text-xs text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                9:42 AM
+                            </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                SF, CA
+                            </span>
+</div>
+</div>
+</div>
+<!-- Card 2: Dev/Online -->
+<div class="glass-card rounded-2xl p-6 flex flex-col items-center relative group">
+<div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<button class="w-8 h-8 rounded-full bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<div class="relative mb-4">
+<div class="w-20 h-20 rounded-full p-1 border border-white/10 relative">
+<img alt="Portrait of Mike Ross" class="w-full h-full rounded-full object-cover" data-alt="Young man looking at camera with serious expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDYCRVATXi5dCWfjJy1kVaX47n68MeyXZs2EVIkllS4TL8HTnqAuoUj3Pn54jr1ma_25gEbwTAS-fI5EKqr3DAADUuBK7BtYpc9jdGrkg0IYVVVn-KAocrvcDGzpAXcTe-wtYtDEeL7Off5Rvua8eA3JBnMmlCB4A6AiOGLdHRI_xoD3SCpFKIaUNpR8eJsFqfoezJKZEuf-cdJhzpDgBxvDD5AJ5mJe_tZiQpebDik3TaLZiaM_Nc4xGQxNtd7C36t86HwoIBWmB6"/>
+</div>
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-background-dark flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-accent-success status-dot-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+</div>
+</div>
+<h3 class="font-display font-semibold text-lg text-white mb-1">Mike Ross</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-cyan-500/30 text-cyan-400 bg-cyan-500/10">
+                            Frontend
+                        </span>
+<span class="font-mono text-xs text-text-muted">@mikeross_dev</span>
+</div>
+<div class="w-full border-t border-white/5 pt-4 mt-auto">
+<div class="flex justify-between items-center text-xs text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                12:42 PM
+                            </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                NY, USA
+                            </span>
+</div>
+</div>
+</div>
+<!-- Card 3: Dev/Offline -->
+<div class="glass-card rounded-2xl p-6 flex flex-col items-center relative group">
+<div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<button class="w-8 h-8 rounded-full bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<div class="relative mb-4">
+<div class="w-20 h-20 rounded-full p-1 border border-white/10 relative grayscale opacity-80">
+<img alt="Portrait of Elena V" class="w-full h-full rounded-full object-cover" data-alt="Woman with short hair smiling slightly" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB76bjJZOq3MVW3NFgH6SclEbO1b6zHvB3Eul9fcAH2csvkjLOdv2PA4KHnQA8l-6Bt6vN2PWD9sIkpgDa8ChzTr-5PPKMV2SbiIXem3FV6oMFlIn10Bvelwqwo6OF1flFBexweOTyQj5V8eFIJdxm40HYgyVz3NAQ6ZPQRsJjJ_CWfw9b7lfQ38RKLTW8qdrndtVYD0gP_IdwatkPd6TbM-xXNexga3n1j5udkn5Mme0BcqJ9nRSbeeXPbJ53Hc5bHGtWfK704ZFOt"/>
+</div>
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-background-dark flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-gray-600 border border-black/50"></div>
+</div>
+</div>
+<h3 class="font-display font-semibold text-lg text-white mb-1 text-opacity-80">Elena V.</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-blue-500/30 text-blue-400 bg-blue-500/10">
+                            Backend
+                        </span>
+<span class="font-mono text-xs text-text-muted">@elenavops</span>
+</div>
+<div class="w-full border-t border-white/5 pt-4 mt-auto">
+<div class="flex justify-between items-center text-xs text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                6:42 PM
+                            </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                London, UK
+                            </span>
+</div>
+</div>
+</div>
+<!-- Card 4: Dev/Online -->
+<div class="glass-card rounded-2xl p-6 flex flex-col items-center relative group">
+<div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<button class="w-8 h-8 rounded-full bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<div class="relative mb-4">
+<div class="w-20 h-20 rounded-full p-1 border border-white/10 relative">
+<img alt="Portrait of David Kim" class="w-full h-full rounded-full object-cover" data-alt="Man's face close up with blurred background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBanLodB-aXHR7cDPymeHVGxTV5CrOuXJLSUGbZ_8hTX_Jey-kaFoiAKdMoIbccLVGZyOnRcE_JlrEaXYOUHpBgfYODT12pIspFLawl7sMjLdfHvlYbZ8nBPv2eK2X0oFB8zb3RdY4XBCR5SheIkg1Q1tNdia4ydRon0gijY_LorqYUPXCljUxOIe9uzlRw8kKOFYwZ9-Kgm22E1bQTG8ezsUrIWChX5FN9LdAyMCxO_QZipF6VPFFHeJnEz7F5WFfdapiHVWI3xLx"/>
+</div>
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-background-dark flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-accent-success status-dot-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+</div>
+</div>
+<h3 class="font-display font-semibold text-lg text-white mb-1">David Kim</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-purple-500/30 text-purple-400 bg-purple-500/10">
+                            DevOps
+                        </span>
+<span class="font-mono text-xs text-text-muted">@dkim_ops</span>
+</div>
+<div class="w-full border-t border-white/5 pt-4 mt-auto">
+<div class="flex justify-between items-center text-xs text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                9:42 AM
+                            </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                SF, CA
+                            </span>
+</div>
+</div>
+</div>
+<!-- Card 5: Design/Online -->
+<div class="glass-card rounded-2xl p-6 flex flex-col items-center relative group">
+<div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<button class="w-8 h-8 rounded-full bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<div class="relative mb-4">
+<div class="w-20 h-20 rounded-full p-1 border border-white/10 relative">
+<img alt="Portrait of Jessica Lee" class="w-full h-full rounded-full object-cover" data-alt="Close up of smiling woman with curly hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_XySa08LGborVd28r57ZbzFiny3eoHsSamzgBv6a3BzU2GayhqCQVJMX1SdQ0qrOSfqGEhlm_7sFLfAde6ZlvHv7tUukV48A8NNoqqBMvC4bkPkD2Pl4T4_lMnAt7GTxbnA1fWDnTGGlSPLySUrl8aAS9L2weVnI_xMgXiY0lmongEvTPcQ5BsUT90vT53NV0V0JzpesZExXb_5EBt76lFRK9bxVHIrVEJEjyuxN7nyhlg-f6zxXrFu5lAgf99fKg0gukALURVxKs"/>
+</div>
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-background-dark flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-accent-success status-dot-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+</div>
+</div>
+<h3 class="font-display font-semibold text-lg text-white mb-1">Jessica Lee</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-pink-500/30 text-pink-400 bg-pink-500/10">
+                            Design
+                        </span>
+<span class="font-mono text-xs text-text-muted">@jesslee_ux</span>
+</div>
+<div class="w-full border-t border-white/5 pt-4 mt-auto">
+<div class="flex justify-between items-center text-xs text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                6:42 PM
+                            </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                Berlin, DE
+                            </span>
+</div>
+</div>
+</div>
+<!-- Card 6: Dev/Offline -->
+<div class="glass-card rounded-2xl p-6 flex flex-col items-center relative group">
+<div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<button class="w-8 h-8 rounded-full bg-white/10 hover:bg-primary hover:text-white flex items-center justify-center text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+<div class="relative mb-4">
+<div class="w-20 h-20 rounded-full p-1 border border-white/10 relative grayscale opacity-70">
+<img alt="Portrait of Tom Baker" class="w-full h-full rounded-full object-cover" data-alt="Man with beard looking sideways" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5VJBMS15G49Irt_CWMEB3SWS6Km1kjBBHBNJgviLYLtLZone_NLw38b-PROYc279BXeSmx3iyGL46htYeDDgms1InYyVe5e1S1Lj2U_UtS0sIH_zG6qwzbfDyqV6KBnl0M2JQXb9Lbf8Md3AZUutRymdR1sO3FZO6gnoBWMwTIBoPEkdtLTXrSFZfgNiKNHc6QPX89aqWVTyvviqTqtZ2HRXKhF8kR4qbxBCC-0WhFyH240vpAT8aheKcmeV0UfLizhX41Sct1iqC"/>
+</div>
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-background-dark flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-gray-600 border border-black/50"></div>
+</div>
+</div>
+<h3 class="font-display font-semibold text-lg text-white mb-1 text-opacity-80">Tom Baker</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-blue-500/30 text-blue-400 bg-blue-500/10">
+                            QA Eng
+                        </span>
+<span class="font-mono text-xs text-text-muted">@tbaker_test</span>
+</div>
+<div class="w-full border-t border-white/5 pt-4 mt-auto">
+<div class="flex justify-between items-center text-xs text-text-muted">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                3:42 AM
+                            </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                                Sydney, AU
+                            </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="group relative flex items-center justify-center w-14 h-14 bg-primary rounded-full shadow-[0_8px_30px_rgba(99,102,241,0.5)] hover:shadow-[0_8px_40px_rgba(99,102,241,0.7)] hover:scale-105 transition-all duration-300">
+<span class="material-symbols-outlined text-white text-3xl transition-transform group-hover:rotate-90">add</span>
+<!-- Tooltip -->
+<span class="absolute right-full mr-4 px-3 py-1.5 bg-black/80 backdrop-blur-sm text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10 pointer-events-none">
+                Invite Member
+            </span>
+</button>
+</div>
+</body></html>
