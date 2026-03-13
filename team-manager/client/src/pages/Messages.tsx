@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
-import { Search, Mail, User, Briefcase, MessageSquare, ChevronRight, Loader2, Clock } from "lucide-react";
+import { Search, Mail, User, Briefcase, MessageSquare, Clock, Loader2, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export default function Messages() {
@@ -20,61 +20,54 @@ export default function Messages() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-full bg-[#111b21] text-[#e9edef] overflow-hidden w-full relative border-l border-white/5">
+      <div className="flex h-full font-display text-foreground bg-[#F2F2F7] dark:bg-background overflow-hidden w-full relative">
         
         {/* Sidebar: Message List */}
-        <aside className="w-[400px] flex flex-col border-r border-white/10 bg-[#111b21]">
-          {/* Header */}
-          <div className="h-16 flex items-center justify-between px-4 bg-[#202c33]">
-            <h2 className="text-xl font-bold">Messages</h2>
-            <div className="flex gap-4">
-              <MessageSquare className="size-5 text-[#aebac1] cursor-pointer" />
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="p-2 border-b border-white/5">
+        <aside className="w-80 border-r border-border flex flex-col liquid-glass z-20">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground mb-4">Inbound Messages</h2>
             <div className="relative flex items-center">
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search or start new chat"
-                className="h-9 bg-[#202c33] border-none text-sm pl-12 focus-visible:ring-0 rounded-lg placeholder:text-[#8696a0] w-full text-[#d1d7db]"
+                placeholder="Search messages..."
+                className="h-10 bg-foreground/[0.03] border-none text-sm pl-10 focus-visible:ring-1 focus-visible:ring-blue-500/20 rounded-xl placeholder:text-muted-foreground/40 w-full"
               />
-              <Search className="size-4 absolute left-4 text-[#8696a0]" />
+              <Search className="size-4 absolute left-3.5 text-muted-foreground/30" />
             </div>
           </div>
 
-          {/* List */}
-          <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
             {isLoading ? (
               <div className="flex items-center justify-center h-20">
-                <Loader2 className="animate-spin text-[#00a884]" />
+                <Loader2 className="animate-spin text-muted-foreground/30" />
               </div>
             ) : filteredMessages?.length === 0 ? (
-              <div className="p-8 text-center text-[#8696a0] text-sm">
-                No messages found.
+              <div className="p-8 text-center text-muted-foreground/40 text-[10px] uppercase font-bold tracking-widest">
+                No messages found
               </div>
             ) : (
               filteredMessages?.map((message) => (
                 <button
                   key={message.id}
                   onClick={() => setSelectedMessageId(message.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#202c33] transition-colors relative border-b border-white/5 ${
-                    selectedMessageId === message.id ? "bg-[#2a3942]" : ""
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
+                    selectedMessageId === message.id 
+                      ? "bg-foreground/10 shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:bg-foreground/5"
                   }`}
                 >
-                  <div className="size-12 rounded-full bg-[#6a7175] flex items-center justify-center shrink-0">
-                    <User className="size-6 text-white" />
+                  <div className="size-10 rounded-full bg-foreground/5 flex items-center justify-center shrink-0">
+                    <User className="size-5 opacity-40" />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="flex justify-between items-baseline mb-1">
-                      <h3 className="text-base font-normal truncate">{message.clientName}</h3>
-                      <span className="text-[11px] text-[#8696a0]">
+                    <div className="flex justify-between items-baseline mb-0.5">
+                      <h3 className="text-sm font-semibold truncate">{message.clientName}</h3>
+                      <span className="text-[9px] text-muted-foreground/50 font-bold uppercase tracking-tighter">
                         {message.createdAt ? new Date(message.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                       </span>
                     </div>
-                    <p className="text-xs text-[#8696a0] truncate">{message.serviceType}</p>
+                    <p className="text-[10px] text-muted-foreground/60 truncate uppercase tracking-widest font-medium">{message.serviceType}</p>
                   </div>
                 </button>
               ))
@@ -82,78 +75,63 @@ export default function Messages() {
           </div>
         </aside>
 
-        {/* Content Area */}
-        <main className="flex-1 flex flex-col bg-[#0b141a] relative">
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto no-scrollbar relative p-8">
           {selectedMessage ? (
-            <>
-              {/* Content Header */}
-              <div className="h-16 flex items-center px-4 bg-[#202c33] border-b border-white/5">
-                <div className="size-10 rounded-full bg-[#6a7175] flex items-center justify-center mr-3">
-                  <User className="size-5 text-white" />
+            <div className="max-w-4xl animate-in fade-in slide-in-from-right-2 duration-500">
+              <header className="mb-12">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground/60 mb-2 font-bold">
+                  Client Communication
+                </p>
+                <h1 className="text-4xl font-light tracking-tight mb-2">{selectedMessage.clientName}</h1>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground/60">
+                   <div className="flex items-center gap-1.5">
+                     <Clock className="size-3.5" />
+                     <span>Received {new Date(selectedMessage.createdAt).toLocaleString()}</span>
+                   </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-normal">{selectedMessage.clientName}</h3>
-                  <p className="text-[11px] text-[#8696a0]">Client</p>
-                </div>
-              </div>
+              </header>
 
-              {/* Chat-like Details */}
-              <div className="flex-1 overflow-y-auto p-12 space-y-8 bg-[#0b141a] custom-scrollbar">
-                <div className="max-w-3xl mx-auto space-y-12">
-                  {/* Message Bubble - Information */}
-                  <div className="bg-[#202c33] p-6 rounded-lg rounded-tl-none shadow-sm relative self-start inline-block min-w-[300px]">
-                    <div className="absolute top-0 -left-2 w-0 h-0 border-t-[10px] border-t-[#202c33] border-l-[10px] border-l-transparent"></div>
-                    
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                        <Mail className="size-4 text-[#00a884]" />
-                        <div>
-                          <p className="text-[10px] text-[#8696a0] uppercase tracking-widest font-bold">Email</p>
-                          <p className="text-sm">{selectedMessage.clientEmail}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Briefcase className="size-4 text-[#00a884]" />
-                        <div>
-                          <p className="text-[10px] text-[#8696a0] uppercase tracking-widest font-bold">Service Type</p>
-                          <p className="text-sm">{selectedMessage.serviceType}</p>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-white/5">
-                        <p className="text-[10px] text-[#8696a0] uppercase tracking-widest font-bold mb-3">Request Details</p>
-                        <div className="bg-[#111b21] p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
-                          {selectedMessage.details}
-                        </div>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="liquid-glass-card p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                      <Mail className="size-4 text-blue-500" />
                     </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground/50 uppercase font-bold tracking-widest">Contact Email</p>
+                      <p className="text-sm font-medium">{selectedMessage.clientEmail}</p>
+                    </div>
+                  </div>
+                </div>
 
-                    <div className="flex justify-end mt-4">
-                      <span className="text-[10px] text-[#8696a0]">
-                        <Clock className="size-3 inline mr-1" />
-                        {selectedMessage.createdAt ? new Date(selectedMessage.createdAt).toLocaleString() : ''}
-                      </span>
+                <div className="liquid-glass-card p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-500/10 rounded-lg">
+                      <Briefcase className="size-4 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground/50 uppercase font-bold tracking-widest">Service Type</p>
+                      <p className="text-sm font-medium">{selectedMessage.serviceType}</p>
                     </div>
                   </div>
                 </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-[#8696a0] p-12 bg-[#222e35] relative">
-              <div className="flex flex-col items-center">
-                <div className="size-20 rounded-full border border-white/10 flex items-center justify-center mb-6">
-                  <MessageSquare className="size-10 opacity-20" />
+
+              <div className="space-y-4">
+                <h4 className="text-xs uppercase tracking-widest font-bold opacity-40">Request Details</h4>
+                <div className="liquid-glass-card p-8 rounded-3xl text-lg font-light leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                  {selectedMessage.details}
                 </div>
-                <h1 className="text-3xl font-light text-[#d1d7db] mb-4">Atsupi's Messages</h1>
-                <p className="max-w-md text-center text-sm leading-relaxed opacity-60">
-                  Select a message from the list to view client details and request information.
-                </p>
               </div>
-              <div className="absolute bottom-10 flex items-center gap-2 text-[10px] tracking-widest uppercase opacity-30">
-                <User className="size-3" />
-                <span>Internal Messaging System</span>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground/20">
+              <div className="size-24 rounded-full border border-foreground/5 flex items-center justify-center mb-6">
+                <MessageSquare className="size-12" />
               </div>
+              <h2 className="text-2xl font-light tracking-tight text-foreground/20">Communications Portal</h2>
+              <p className="text-[10px] mt-2 uppercase tracking-[0.2em] font-bold">Select a message to view details</p>
             </div>
           )}
         </main>

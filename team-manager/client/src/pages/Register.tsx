@@ -208,9 +208,10 @@ export default function Register() {
 
         {/* Footer */}
         <p className="mt-8 text-center text-[10px] text-muted-foreground/40 uppercase tracking-widest font-bold">
-          &copy; 2026 TeamManager System. Secured by Atsupi Trading.
+          &copy; 2026 TeamManager System. High-Fidelity Awareness Platform.
         </p>
       </div>
     </div>
   );
 }
+
