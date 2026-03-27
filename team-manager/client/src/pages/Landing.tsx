@@ -201,6 +201,11 @@ export default function Landing() {
                     <div className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase opacity-40">
                         &copy; 2026 TeamManager System. All rights reserved.
                     </div>
+                    <div className="flex gap-6">
+                        <a href="/privacy" className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase hover:text-white transition-colors">
+                            Privacy Policy
+                        </a>
+                    </div>
                 </div>
             </footer>
         </div>

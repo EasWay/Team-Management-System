@@ -15,6 +15,7 @@ import Projects from "./pages/Projects";
 import Messages from "./pages/Messages";
 import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -24,6 +25,7 @@ function Router() {
         {() => (tokenStorage.getAccessToken() ? <Home /> : <Landing />)}
       </Route>
       <Route path={"/login"} component={Landing} />
+      <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/team"} component={TeamMembers} />
       <Route path={"/teams"} component={Teams} />
       <Route path={"/tasks"} component={Tasks} />
