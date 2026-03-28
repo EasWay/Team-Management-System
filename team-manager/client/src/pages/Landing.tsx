@@ -205,6 +205,9 @@ export default function Landing() {
                         <a href="/privacy" className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase hover:text-white transition-colors">
                             Privacy Policy
                         </a>
+                        <a href="/terms" className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase hover:text-white transition-colors">
+                            Terms of Service
+                        </a>
                     </div>
                 </div>
             </footer>
