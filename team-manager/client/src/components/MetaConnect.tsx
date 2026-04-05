@@ -2,7 +2,7 @@
 // Connect Facebook Page and Instagram Business account to team
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation } from 'wouter';
 
 interface MetaAccount {
   connected: boolean;
@@ -19,27 +19,29 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
   const [account, setAccount] = useState<MetaAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     fetchAccount();
   }, [teamId]);
 
-  // Check for OAuth callback params
+  // Check for OAuth callback params in URL on mount
   useEffect(() => {
-    const connected = searchParams.get('meta_connected');
-    const error = searchParams.get('meta_error');
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('meta_connected');
+    const error = params.get('meta_error');
     
     if (connected === 'true') {
       fetchAccount();
-      setSearchParams({});
+      // Clear URL params
+      window.history.replaceState({}, '', window.location.pathname);
     }
     
     if (error) {
       alert(`Connection failed: ${decodeURIComponent(error)}`);
-      setSearchParams({});
+      window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [searchParams]);
+  }, []);
 
   const fetchAccount = async () => {
     try {
