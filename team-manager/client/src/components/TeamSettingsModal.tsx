@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { TeamMemberList } from "./TeamMemberList";
 import { InvitationForm } from "./InvitationForm";
 import { InvitationList } from "./InvitationList";
+import { MetaConnect } from "./MetaConnect";
 
 const formSchema = z.object({
   name: z.string().min(1, "Team name is required").max(100, "Team name must be less than 100 characters"),
@@ -75,11 +76,12 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="invite">Invite</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
+            <TabsTrigger value="social">Social</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
@@ -141,6 +143,10 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
 
           <TabsContent value="invitations">
             <InvitationList teamId={team.id} />
+          </TabsContent>
+
+          <TabsContent value="social">
+            <MetaConnect teamId={team.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
