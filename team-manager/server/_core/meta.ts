@@ -1,14 +1,23 @@
 // Meta (Facebook/Instagram) OAuth routes for Express
 // Handles connecting Facebook Page and Instagram Business accounts to teams
+// Uses raw SQL like other Express routes in this project
 
 import { Request, Response } from "express";
-import { getDb } from "../db.js";
-import { metaAccounts } from "../db.js";
-import { eq } from "drizzle-orm";
+import pkg from 'pg';
+const { Pool } = pkg;
 
 const META_APP_ID = process.env.META_APP_ID || '1754806639211913';
 const META_APP_SECRET = process.env.META_APP_SECRET || '1e4a6cee9fd6e666553e25d2f0682bf0';
 const META_REDIRECT_URI = process.env.META_REDIRECT_URI || 'https://team-management-system-zq6x.onrender.com/api/meta/callback';
+
+// Database pool - reuse existing connection from process.env.DATABASE_URL
+function getPool() {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  return pool;
+}
 
 export function registerMetaRoutes(app: any) {
   // Initiate Meta OAuth
@@ -53,6 +62,7 @@ export function registerMetaRoutes(app: any) {
       return res.redirect('/teams?meta_error=Invalid state');
     }
     
+    const pool = getPool();
     try {
       // Exchange code for access token
       const tokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
@@ -105,43 +115,28 @@ export function registerMetaRoutes(app: any) {
         }
       }
       
-      // Store in database using Drizzle
-      const db = await getDb();
       const teamIdNum = parseInt(teamId);
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
       
-      // Check if connection exists
-      const existing = await db.select().from(metaAccounts).where(eq(metaAccounts.teamId, teamIdNum));
+      // Upsert using raw SQL
+      await pool.query(`
+        INSERT INTO meta_accounts (team_id, page_id, page_name, page_access_token, instagram_id, instagram_username, token_expires_at, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        ON CONFLICT (team_id) DO UPDATE SET
+          page_id = EXCLUDED.page_id,
+          page_name = EXCLUDED.page_name,
+          page_access_token = EXCLUDED.page_access_token,
+          instagram_id = EXCLUDED.instagram_id,
+          instagram_username = EXCLUDED.instagram_username,
+          token_expires_at = EXCLUDED.token_expires_at,
+          updated_at = NOW()
+      `, [teamIdNum, firstPage?.id || null, firstPage?.name || null, firstPage?.access_token || null, instagramAccount?.id || null, instagramAccount?.username || null, expiresAt]);
       
-      if (existing.length > 0) {
-        // Update
-        await db.update(metaAccounts).set({
-          pageId: firstPage?.id || null,
-          pageName: firstPage?.name || null,
-          pageAccessToken: firstPage?.access_token || null,
-          instagramId: instagramAccount?.id || null,
-          instagramUsername: instagramAccount?.username || null,
-          tokenExpiresAt: expiresAt,
-          updatedAt: new Date(),
-        }).where(eq(metaAccounts.teamId, teamIdNum));
-      } else {
-        // Insert
-        await db.insert(metaAccounts).values({
-          teamId: teamIdNum,
-          pageId: firstPage?.id || null,
-          pageName: firstPage?.name || null,
-          pageAccessToken: firstPage?.access_token || null,
-          instagramId: instagramAccount?.id || null,
-          instagramUsername:instagramAccount?.username || null,
-          tokenExpiresAt: expiresAt,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
-      
+      await pool.end();
       return res.redirect('/teams?meta_connected=true');
     } catch (err: any) {
       console.error('Meta OAuth error:', err);
+      await pool.end();
       return res.redirect(`/teams?meta_error=${encodeURIComponent(err.message)}`);
     }
   });
@@ -150,33 +145,35 @@ export function registerMetaRoutes(app: any) {
   app.get('/api/meta/account/:teamId', async (req: Request, res: Response) => {
     const { teamId } = req.params;
     
+    const pool = getPool();
     try {
-      const db = await getDb();
       const teamIdNum = parseInt(teamId);
+      const result = await pool.query('SELECT * FROM meta_accounts WHERE team_id = $1', [teamIdNum]);
       
-      const result = await db.select().from(metaAccounts).where(eq(metaAccounts.teamId, teamIdNum));
+      await pool.end();
       
-      if (result.length === 0) {
+      if (result.rows.length === 0) {
         return res.json({ connected: false });
       }
       
-      const account = result[0];
-      const tokenExpired = account.tokenExpiresAt && new Date(account.tokenExpiresAt) < new Date();
+      const account = result.rows[0];
+      const tokenExpired = account.token_expires_at && new Date(account.token_expires_at) < new Date();
       
       return res.json({
         connected: true,
         page: {
-          id: account.pageId,
-          name: account.pageName,
+          id: account.page_id,
+          name: account.page_name,
         },
         instagram: {
-          id: account.instagramId,
-          username: account.instagramUsername,
+          id: account.instagram_id,
+          username: account.instagram_username,
         },
         tokenExpired,
       });
     } catch (err: any) {
       console.error('Error fetching meta account:', err);
+      await pool.end();
       return res.status(500).json({ error: err.message });
     }
   });
@@ -185,15 +182,16 @@ export function registerMetaRoutes(app: any) {
   app.post('/api/meta/disconnect', async (req: Request, res: Response) => {
     const { team_id } = req.body;
     
+    const pool = getPool();
     try {
-      const db = await getDb();
       const teamIdNum = parseInt(team_id);
+      await pool.query('DELETE FROM meta_accounts WHERE team_id = $1', [teamIdNum]);
       
-      await db.delete(metaAccounts).where(eq(metaAccounts.teamId, teamIdNum));
-      
+      await pool.end();
       return res.json({ success: true });
     } catch (err: any) {
       console.error('Error disconnecting meta account:', err);
+      await pool.end();
       return res.status(500).json({ error: err.message });
     }
   });

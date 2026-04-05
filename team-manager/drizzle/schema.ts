@@ -366,22 +366,3 @@ export type OAuthToken = typeof oauthTokens.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 // Meta Accounts table for Facebook Page + Instagram Business connections
-export const metaAccounts = pgTable("meta_accounts", {
-  id: serial("id").primaryKey(),
-  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull().unique(),
-  memberId: integer("member_id").references(() => teamMembers.id),
-  metaUserId: text("meta_user_id"),
-  pageId: text("page_id"),
-  pageName: text("page_name"),
-  pageAccessToken: text("page_access_token"),
-  instagramId: text("instagram_id"),
-  instagramUsername: text("instagram_username"),
-  instagramAccessToken: text("instagram_access_token"),
-  tokenExpiresAt: timestamp("token_expires_at"),
-  refreshToken: text("refresh_token"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type InsertMetaAccount = typeof metaAccounts.$inferInsert;
-export type MetaAccount = typeof metaAccounts.$inferSelect;
