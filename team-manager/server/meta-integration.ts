@@ -9,7 +9,7 @@ const META_APP_ID = process.env.META_APP_ID || '1754806639211913';
 const META_APP_SECRET = process.env.META_APP_SECRET || '1e4a6cee9fd6e666553e25d2f0682bf0';
 // Use Render URL in production, localhost in development
 const isDev = process.env.NODE_ENV === 'development';
-const META_REDIRECT_URI = process.env.META_REDIRECT_URI || (isDev ? 'http://localhost:3000/api/meta/callback' : 'https://team-management-system.onrender.com/api/meta/callback');
+const META_REDIRECT_URI = process.env.META_REDIRECT_URI || (isDev ? 'http://localhost:3000/api/meta/callback' : 'https://team-management-system-zq6x.onrender.com/api/meta/callback');
 
 export async function metaRoutes(fastify: FastifyInstance) {
   // Initiate Meta OAuth - redirect user to Meta login
