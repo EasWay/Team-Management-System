@@ -2,7 +2,9 @@
 // Handles connecting Facebook Page and Instagram Business accounts to teams
 
 import { Request, Response } from "express";
-import { sql } from "../db.js";
+import { getDb } from "../db.js";
+import { metaAccounts } from "../db.js";
+import { eq } from "drizzle-orm";
 
 const META_APP_ID = process.env.META_APP_ID || '1754806639211913';
 const META_APP_SECRET = process.env.META_APP_SECRET || '1e4a6cee9fd6e666553e25d2f0682bf0';
@@ -103,37 +105,38 @@ export function registerMetaRoutes(app: any) {
         }
       }
       
-      // Store in database - use direct SQL
+      // Store in database using Drizzle
+      const db = await getDb();
       const teamIdNum = parseInt(teamId);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
       
       // Check if connection exists
-      const existing = await sql`SELECT id FROM meta_accounts WHERE team_id = ${teamIdNum}`;
+      const existing = await db.select().from(metaAccounts).where(eq(metaAccounts.teamId, teamIdNum));
       
       if (existing.length > 0) {
         // Update
-        await sql`
-          UPDATE meta_accounts SET
-            page_id = ${firstPage?.id || null},
-            page_name = ${firstPage?.name || null},
-            page_access_token = ${firstPage?.access_token || null},
-            instagram_id = ${instagramAccount?.id || null},
-            instagram_username = ${instagramAccount?.username || null},
-            token_expires_at = ${new Date(Date.now() + 60 * 60 * 1000).toISOString()},
-            updated_at = NOW()
-          WHERE team_id = ${teamIdNum}
-        `;
+        await db.update(metaAccounts).set({
+          pageId: firstPage?.id || null,
+          pageName: firstPage?.name || null,
+          pageAccessToken: firstPage?.access_token || null,
+          instagramId: instagramAccount?.id || null,
+          instagramUsername: instagramAccount?.username || null,
+          tokenExpiresAt: expiresAt,
+          updatedAt: new Date(),
+        }).where(eq(metaAccounts.teamId, teamIdNum));
       } else {
         // Insert
-        await sql`
-          INSERT INTO meta_accounts (
-            team_id, page_id, page_name, page_access_token,
-            instagram_id, instagram_username, token_expires_at, created_at, updated_at
-          ) VALUES (
-            ${teamIdNum}, ${firstPage?.id || null}, ${firstPage?.name || null}, ${firstPage?.access_token || null},
-            ${instagramAccount?.id || null}, ${instagramAccount?.username || null},
-            ${new Date(Date.now() + 60 * 60 * 1000).toISOString()}, NOW(), NOW()
-          )
-        `;
+        await db.insert(metaAccounts).values({
+          teamId: teamIdNum,
+          pageId: firstPage?.id || null,
+          pageName: firstPage?.name || null,
+          pageAccessToken: firstPage?.access_token || null,
+          instagramId: instagramAccount?.id || null,
+          instagramUsername:instagramAccount?.username || null,
+          tokenExpiresAt: expiresAt,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
       }
       
       return res.redirect('/teams?meta_connected=true');
@@ -148,29 +151,27 @@ export function registerMetaRoutes(app: any) {
     const { teamId } = req.params;
     
     try {
+      const db = await getDb();
       const teamIdNum = parseInt(teamId);
-      const result = await sql`
-        SELECT id, team_id, page_id, page_name, instagram_id, instagram_username, token_expires_at, created_at
-        FROM meta_accounts
-        WHERE team_id = ${teamIdNum}
-      `;
+      
+      const result = await db.select().from(metaAccounts).where(eq(metaAccounts.teamId, teamIdNum));
       
       if (result.length === 0) {
         return res.json({ connected: false });
       }
       
       const account = result[0];
-      const tokenExpired = account.token_expires_at && new Date(account.token_expires_at) < new Date();
+      const tokenExpired = account.tokenExpiresAt && new Date(account.tokenExpiresAt) < new Date();
       
       return res.json({
         connected: true,
         page: {
-          id: account.page_id,
-          name: account.page_name,
+          id: account.pageId,
+          name: account.pageName,
         },
         instagram: {
-          id: account.instagram_id,
-          username: account.instagram_username,
+          id: account.instagramId,
+          username: account.instagramUsername,
         },
         tokenExpired,
       });
@@ -185,8 +186,10 @@ export function registerMetaRoutes(app: any) {
     const { team_id } = req.body;
     
     try {
+      const db = await getDb();
       const teamIdNum = parseInt(team_id);
-      await sql`DELETE FROM meta_accounts WHERE team_id = ${teamIdNum}`;
+      
+      await db.delete(metaAccounts).where(eq(metaAccounts.teamId, teamIdNum));
       
       return res.json({ success: true });
     } catch (err: any) {

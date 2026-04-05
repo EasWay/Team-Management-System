@@ -92,3 +92,23 @@ CREATE POLICY "Users can view tasks from their teams" ON tasks
       )
     )
   );
+-- Meta Accounts table for Facebook Page + Instagram Business connections
+CREATE TABLE IF NOT EXISTS meta_accounts (
+  id SERIAL PRIMARY KEY,
+  team_id INTEGER NOT NULL UNIQUE,
+  member_id INTEGER,
+  meta_user_id TEXT,
+  page_id TEXT,
+  page_name TEXT,
+  page_access_token TEXT,
+  instagram_id TEXT,
+  instagram_username TEXT,
+  instagram_access_token TEXT,
+  token_expires_at TIMESTAMPTZ,
+  refresh_token TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add index
+CREATE INDEX IF NOT EXISTS idx_meta_accounts_team ON meta_accounts(team_id);
