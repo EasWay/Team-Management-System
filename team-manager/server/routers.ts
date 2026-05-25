@@ -1,8 +1,10 @@
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { authService } from "./_core/auth";
-import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages } from "./db";
+import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats } from "./db";
 import { parsePRDText } from "./_core/prdParser";
+import { processIdeation } from "./_core/ideationEngine";
+import { evaluateProject, quickEvaluate } from "./_core/projectEvaluator";
 import { GitHubService, parseGitHubUrl } from "./github-service";
 import { z } from "zod";
 
@@ -482,6 +484,37 @@ export const appRouter = router({
         }
       }),
 
+    updateOfficeRole: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        userId: z.number(),
+        officeRole: z.enum([
+          'project_manager',
+          'lead_researcher',
+          'systems_architect',
+          'backend_engineer',
+          'fullstack_engineer',
+          'ai_engineer',
+          'qa_tester',
+          'designer'
+        ]).nullable(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          return await updateTeamMemberOfficeRole(
+            input.teamId,
+            input.userId,
+            input.officeRole,
+            ctx.user.id
+          );
+        } catch (error) {
+          handleDatabaseError(error);
+        }
+      }),
+
     removeMember: protectedProcedure
       .input(z.object({
         teamId: z.number(),
@@ -755,6 +788,93 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
         return await deleteProjectFile(input.id, ctx.user?.id);
+      }),
+    
+    // NEW: AI Ideation Engine routes
+    processIdeation: protectedProcedure
+      .input(z.object({
+        chatLogs: z.string().min(10, "Chat logs must be at least 10 characters"),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await processIdeation(input.chatLogs);
+          return result;
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to process ideation');
+        }
+      }),
+    
+    activateProject: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        ideationResult: z.object({
+          chatLogs: z.string(),
+          speakers: z.array(z.object({
+            name: z.string(),
+            role: z.string(),
+            contributions: z.number(),
+          })),
+          aiAnalysis: z.any(),
+          finalDecisionReport: z.any(),
+        }),
+        clientFirstName: z.string().optional(),
+        clientLastName: z.string().optional(),
+        clientEmail: z.string().optional(),
+        clientPhone: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const { teamId, ideationResult, clientFirstName, clientLastName, clientEmail, clientPhone } = input;
+          
+          // Create or find client
+          let client;
+          if (clientFirstName && clientLastName) {
+            client = await createClient({
+              teamId,
+              firstName: clientFirstName,
+              lastName: clientLastName,
+              email: clientEmail,
+              phone: clientPhone,
+            }, ctx.user?.id);
+          } else {
+            // Use first speaker as client if not provided
+            const firstSpeaker = ideationResult.speakers[0];
+            const [firstName, ...lastNameParts] = firstSpeaker.name.split(' ');
+            client = await createClient({
+              teamId,
+              firstName: firstName || 'Unknown',
+              lastName: lastNameParts.join(' ') || 'Client',
+              email: clientEmail,
+              phone: clientPhone,
+            }, ctx.user?.id);
+          }
+          
+          // Create project with ideation data
+          const project = await createProject({
+            clientId: client.id,
+            teamId,
+            name: ideationResult.finalDecisionReport.projectName,
+            definition: ideationResult.finalDecisionReport.executiveSummary,
+            description: JSON.stringify(ideationResult.finalDecisionReport.businessRequirements),
+            status: 'active',
+            dateReceived: new Date(),
+            // NEW FIELDS from schema
+            ideationData: ideationResult,
+            workflowStage: 'research', // Move from ideation to research stage (Lead Researcher)
+            assignedRole: 'lead_researcher', // First handoff to Lead Researcher
+            handoffHistory: [],
+            deliverables: {},
+          }, ctx.user?.id);
+          
+          return {
+            success: true,
+            project,
+            client,
+            message: `📁 Folder "${project.name}" delivered to Lead Researcher's office (George Essel Bonsu)`
+          };
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to activate project');
+        }
       }),
   }),
 
@@ -1071,6 +1191,483 @@ export const appRouter = router({
         throw new Error(error instanceof Error ? error.message : 'Failed to get messages');
       }
     }),
+  }),
+  
+  // NEW: Approvals Router - Decision Table / Quality Gate
+  approvals: router({
+    create: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project', 'handoff']),
+        entityId: z.number(),
+        teamId: z.number(),
+        fromStage: z.string().optional(),
+        toStage: z.string().optional(),
+        deliverables: z.any().optional(),
+        comments: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await createApproval(input, ctx.user?.id!);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to create approval');
+        }
+      }),
+    
+    list: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        status: z.enum(['pending', 'approved', 'rejected']).optional(),
+        entityType: z.string().optional(),
+        entityId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getApprovals(input);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch approvals');
+        }
+      }),
+    
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getApprovalById(input.id);
+      }),
+    
+    approve: protectedProcedure
+      .input(z.object({
+        approvalId: z.number(),
+        comments: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await approveOrReject(input.approvalId, 'approved', ctx.user?.id!, input.comments);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to approve');
+        }
+      }),
+    
+    reject: protectedProcedure
+      .input(z.object({
+        approvalId: z.number(),
+        comments: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await approveOrReject(input.approvalId, 'rejected', ctx.user?.id!, input.comments);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to reject');
+        }
+      }),
+    
+    vote: protectedProcedure
+      .input(z.object({
+        approvalId: z.number(),
+        vote: z.enum(['for', 'against', 'abstain']),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await castVote(input.approvalId, ctx.user?.id!, input.vote, input.reason);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to cast vote');
+        }
+      }),
+    
+    getPending: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          return await getPendingApprovalsForUser(ctx.user.id);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch pending approvals');
+        }
+      }),
+    
+    configureTeam: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        approvalMode: z.enum(['boss', 'pm', 'team_vote']),
+        bossUserId: z.number().optional(),
+        pmUserId: z.number().optional(),
+        voteThreshold: z.number().min(1).max(100).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await configureTeamApproval(input.teamId, input, ctx.user?.id!);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to configure team approval');
+        }
+      }),
+  }),
+  
+  // NEW: Handoff Router - Sequential Workflow System
+  handoff: router({
+    handoffTask: protectedProcedure
+      .input(z.object({
+        taskId: z.number(),
+        toStage: z.enum(['ideation', 'design', 'business', 'development', 'testing', 'review', 'completed']),
+        toRole: z.enum(['designer', 'business_strategist', 'backend_dev', 'frontend_dev', 'qa_tester', 'reviewer']),
+        toUserId: z.number().optional(),
+        deliverables: z.array(z.object({
+          type: z.enum(['figma', 'github', 'pdf', 'link', 'document', 'image']),
+          url: z.string(),
+          description: z.string(),
+          uploadedAt: z.string(),
+          uploadedBy: z.number().optional(),
+        })),
+        comments: z.string().optional(),
+        requiresApproval: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const { taskId, ...handoffData } = input;
+          return await handoffTask(taskId, handoffData, ctx.user?.id!);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to handoff task');
+        }
+      }),
+    
+    handoffProject: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        toStage: z.enum(['ideation', 'design', 'business', 'development', 'testing', 'review', 'completed']),
+        toRole: z.enum(['designer', 'business_strategist', 'backend_dev', 'frontend_dev', 'qa_tester', 'reviewer']),
+        toUserId: z.number().optional(),
+        deliverables: z.array(z.object({
+          type: z.enum(['figma', 'github', 'pdf', 'link', 'document', 'image']),
+          url: z.string(),
+          description: z.string(),
+          uploadedAt: z.string(),
+          uploadedBy: z.number().optional(),
+        })),
+        comments: z.string().optional(),
+        requiresApproval: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const { projectId, ...handoffData } = input;
+          return await handoffProject(projectId, handoffData, ctx.user?.id!);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to handoff project');
+        }
+      }),
+    
+    getTasksByRole: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        role: z.enum(['designer', 'business_strategist', 'backend_dev', 'frontend_dev', 'qa_tester', 'reviewer']),
+        userId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getTasksByRole(input.teamId, input.role, input.userId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch tasks by role');
+        }
+      }),
+    
+    getProjectsByRole: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        role: z.enum(['designer', 'business_strategist', 'backend_dev', 'frontend_dev', 'qa_tester', 'reviewer']),
+        userId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getProjectsByRole(input.teamId, input.role, input.userId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch projects by role');
+        }
+      }),
+    
+    getTasksByStage: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        stage: z.enum(['ideation', 'design', 'business', 'development', 'testing', 'review', 'completed']),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getTasksByStage(input.teamId, input.stage);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch tasks by stage');
+        }
+      }),
+    
+    getProjectsByStage: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        stage: z.enum(['ideation', 'design', 'business', 'development', 'testing', 'review', 'completed']),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getProjectsByStage(input.teamId, input.stage);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch projects by stage');
+        }
+      }),
+    
+    getMyWorkQueue: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+      }))
+      .query(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          return await getMyWorkQueue(ctx.user.id, input.teamId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch work queue');
+        }
+      }),
+    
+    acceptHandoff: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project']),
+        entityId: z.number(),
+        approvalId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          return await acceptHandoff(input.entityType, input.entityId, input.approvalId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to accept handoff');
+        }
+      }),
+  }),
+  
+  // NEW: Workflow/Handoff Router - Sequential Handoff System
+  workflow: router({
+    getWorkspace: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        assignedRole: z.enum(['project_manager', 'lead_researcher', 'systems_architect', 'backend_engineer', 'fullstack_engineer', 'ai_engineer', 'qa_tester', 'designer']),
+        entityType: z.enum(['task', 'project']).default('task'),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getWorkspaceItems(input.teamId, input.assignedRole, input.entityType);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch workspace items');
+        }
+      }),
+    
+    getByStage: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        workflowStage: z.enum(['ideation', 'research', 'architecture', 'design', 'backend', 'fullstack', 'ai', 'testing', 'review', 'completed']),
+        entityType: z.enum(['task', 'project']).default('task'),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getItemsByStage(input.teamId, input.workflowStage, input.entityType);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch items by stage');
+        }
+      }),
+    
+    addDeliverable: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project']),
+        entityId: z.number(),
+        deliverable: z.object({
+          type: z.enum(['figma', 'github', 'pdf', 'link', 'document', 'image']),
+          url: z.string().url(),
+          description: z.string(),
+          uploadedAt: z.string(),
+        }),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await addDeliverable(
+            input.entityType,
+            input.entityId,
+            input.deliverable,
+            ctx.user?.id!
+          );
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to add deliverable');
+        }
+      }),
+    
+    handoff: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project']),
+        entityId: z.number(),
+        toStage: z.enum(['ideation', 'research', 'architecture', 'design', 'backend', 'fullstack', 'ai', 'testing', 'review', 'completed']),
+        toRole: z.enum(['project_manager', 'lead_researcher', 'systems_architect', 'backend_engineer', 'fullstack_engineer', 'ai_engineer', 'qa_tester', 'designer']),
+        toUserId: z.number().optional(),
+        comments: z.string().optional(),
+        requiresApproval: z.boolean().default(true),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          return await handoffToNextStage(
+            input.entityType,
+            input.entityId,
+            {
+              toStage: input.toStage,
+              toRole: input.toRole,
+              toUserId: input.toUserId,
+              comments: input.comments,
+              requiresApproval: input.requiresApproval,
+            },
+            ctx.user?.id!
+          );
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to handoff');
+        }
+      }),
+    
+    completeHandoff: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project']),
+        entityId: z.number(),
+        approvalId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          return await completeHandoff(input.entityType, input.entityId, input.approvalId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to complete handoff');
+        }
+      }),
+    
+    getHistory: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project']),
+        entityId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getHandoffHistory(input.entityType, input.entityId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch handoff history');
+        }
+      }),
+    
+    getDeliverables: protectedProcedure
+      .input(z.object({
+        entityType: z.enum(['task', 'project']),
+        entityId: z.number(),
+        role: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getDeliverables(input.entityType, input.entityId, input.role);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch deliverables');
+        }
+      }),
+    
+    getSummary: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+      }))
+      .query(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) {
+            throw new Error('User not authenticated');
+          }
+          return await getWorkspaceSummary(input.teamId, ctx.user.id);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch workspace summary');
+        }
+      }),
+  }),
+  
+  // NEW: Evaluation Router - AI Project Evaluation
+  evaluation: router({
+    evaluate: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Get project with all data
+          const project = await getProjectById(input.projectId);
+          if (!project) {
+            throw new Error('Project not found');
+          }
+
+          // Run AI evaluation
+          const evaluation = await evaluateProject(project);
+
+          // Save evaluation
+          await saveProjectEvaluation(input.projectId, evaluation, ctx.user?.id!);
+
+          return evaluation;
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to evaluate project');
+        }
+      }),
+    
+    get: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getProjectEvaluation(input.projectId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch evaluation');
+        }
+      }),
+    
+    listEvaluated: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getEvaluatedProjects(input.teamId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch evaluated projects');
+        }
+      }),
+    
+    getReadyForLaunch: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getProjectsReadyForLaunch(input.teamId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch ready projects');
+        }
+      }),
+    
+    getStats: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          return await getEvaluationStats(input.teamId);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to fetch evaluation stats');
+        }
+      }),
+    
+    quickEvaluate: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const project = await getProjectById(input.projectId);
+          if (!project) {
+            throw new Error('Project not found');
+          }
+          return await quickEvaluate(project);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to quick evaluate');
+        }
+      }),
   }),
 });
 

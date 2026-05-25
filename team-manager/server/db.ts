@@ -2,7 +2,7 @@ import { eq, and, isNull, desc, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
-import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage } from "../drizzle/schema";
+import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
 import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted } from './socket-server';
@@ -994,6 +994,52 @@ export async function changeTeamMemberRole(
     const [updated] = await db
       .update(teamMembersCollaborative)
       .set({ role: newRole })
+      .where(
+        and(
+          eq(teamMembersCollaborative.teamId, teamId),
+          eq(teamMembersCollaborative.memberId, targetMemberId)
+        )
+      )
+      .returning();
+
+    if (!updated) {
+      throw new NotFoundError('Team member not found');
+    }
+
+    return updated;
+  });
+}
+
+/**
+ * Update team member's office role (Digital HQ assignment)
+ */
+export async function updateTeamMemberOfficeRole(
+  teamId: number,
+  targetMemberId: number,
+  officeRole: string | null,
+  changedBy: number
+): Promise<TeamMemberCollaborative> {
+  return await withTransaction(async (db) => {
+    // Check changer has permission (admin or team_lead can assign offices)
+    const [changerMembership] = await db
+      .select()
+      .from(teamMembersCollaborative)
+      .where(
+        and(
+          eq(teamMembersCollaborative.teamId, teamId),
+          eq(teamMembersCollaborative.memberId, changedBy)
+        )
+      )
+      .limit(1);
+
+    if (!changerMembership || !hasPermission(changerMembership.role as TeamRole, 'change_role')) {
+      throw new ValidationError('Insufficient permissions to assign office roles');
+    }
+
+    // Update office role
+    const [updated] = await db
+      .update(teamMembersCollaborative)
+      .set({ officeRole: officeRole })
       .where(
         and(
           eq(teamMembersCollaborative.teamId, teamId),
@@ -2228,4 +2274,1760 @@ export async function getMessages(): Promise<Message[]> {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(messages).orderBy(desc(messages.createdAt));
+}
+
+/**
+ * ============================================================================
+ * APPROVAL SYSTEM - Decision Table / Quality Gate
+ * ============================================================================
+ */
+
+export type ApproverType = 'boss' | 'pm' | 'team_vote';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type VoteChoice = 'for' | 'against' | 'abstain';
+
+export interface VoterRecord {
+  userId: number;
+  vote: VoteChoice;
+  timestamp: string;
+  reason?: string;
+}
+
+/**
+ * Create an approval request
+ */
+export async function createApproval(
+  approvalData: {
+    entityType: 'task' | 'project' | 'handoff';
+    entityId: number;
+    teamId: number;
+    fromStage?: string;
+    toStage?: string;
+    deliverables?: any;
+    comments?: string;
+  },
+  requestedBy: number
+): Promise<Approval> {
+  return await withTransaction(async (db) => {
+    // Get team approval configuration
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, approvalData.teamId))
+      .limit(1);
+
+    if (!team) {
+      throw new NotFoundError('Team not found');
+    }
+
+    const approvalMode = (team.approvalMode || 'pm') as ApproverType;
+    let approverUserId: number | null = null;
+    let requiredVotes: number | null = null;
+
+    // Determine approver based on team configuration
+    if (approvalMode === 'boss') {
+      if (!team.bossUserId) {
+        throw new ValidationError('Team does not have a boss configured');
+      }
+      approverUserId = team.bossUserId;
+    } else if (approvalMode === 'pm') {
+      if (!team.pmUserId) {
+        throw new ValidationError('Team does not have a project manager configured');
+      }
+      approverUserId = team.pmUserId;
+    } else if (approvalMode === 'team_vote') {
+      // Calculate required votes based on team size and threshold
+      const teamMembers = await db
+        .select()
+        .from(teamMembersCollaborative)
+        .where(
+          and(
+            eq(teamMembersCollaborative.teamId, approvalData.teamId),
+            eq(teamMembersCollaborative.status, 'active')
+          )
+        );
+
+      const threshold = team.voteThreshold || 51;
+      requiredVotes = Math.ceil((teamMembers.length * threshold) / 100);
+    }
+
+    // Create approval
+    const [approval] = await db
+      .insert(approvals)
+      .values({
+        entityType: approvalData.entityType,
+        entityId: approvalData.entityId,
+        teamId: approvalData.teamId,
+        approverType: approvalMode,
+        approverUserId,
+        status: 'pending',
+        comments: approvalData.comments,
+        fromStage: approvalData.fromStage,
+        toStage: approvalData.toStage,
+        deliverables: approvalData.deliverables,
+        requiredVotes,
+        voters: [],
+      })
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: approvalData.teamId,
+      userId: requestedBy,
+      type: 'approval_requested',
+      entityId: approval.id,
+      entityType: 'approval',
+      description: `Requested approval for ${approvalData.entityType} #${approvalData.entityId}`,
+      metadata: {
+        approvalId: approval.id,
+        approverType: approvalMode,
+        fromStage: approvalData.fromStage,
+        toStage: approvalData.toStage,
+      },
+    });
+
+    return approval;
+  });
+}
+
+/**
+ * Get approvals for a team with optional filters
+ */
+export async function getApprovals(filters: {
+  teamId: number;
+  status?: ApprovalStatus;
+  entityType?: string;
+  entityId?: number;
+  approverUserId?: number;
+}): Promise<(Approval & { 
+  approverName?: string | null;
+  entityName?: string | null;
+})[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [eq(approvals.teamId, filters.teamId)];
+
+  if (filters.status) {
+    conditions.push(eq(approvals.status, filters.status));
+  }
+  if (filters.entityType) {
+    conditions.push(eq(approvals.entityType, filters.entityType));
+  }
+  if (filters.entityId) {
+    conditions.push(eq(approvals.entityId, filters.entityId));
+  }
+  if (filters.approverUserId) {
+    conditions.push(eq(approvals.approverUserId, filters.approverUserId));
+  }
+
+  const result = await db
+    .select({
+      id: approvals.id,
+      entityType: approvals.entityType,
+      entityId: approvals.entityId,
+      teamId: approvals.teamId,
+      approverType: approvals.approverType,
+      approverUserId: approvals.approverUserId,
+      status: approvals.status,
+      comments: approvals.comments,
+      votesFor: approvals.votesFor,
+      votesAgainst: approvals.votesAgainst,
+      votesAbstain: approvals.votesAbstain,
+      requiredVotes: approvals.requiredVotes,
+      voters: approvals.voters,
+      fromStage: approvals.fromStage,
+      toStage: approvals.toStage,
+      deliverables: approvals.deliverables,
+      createdAt: approvals.createdAt,
+      resolvedAt: approvals.resolvedAt,
+      resolvedBy: approvals.resolvedBy,
+      approverName: teamMembers.name,
+    })
+    .from(approvals)
+    .leftJoin(teamMembers, eq(approvals.approverUserId, teamMembers.id))
+    .where(and(...conditions))
+    .orderBy(desc(approvals.createdAt));
+
+  // Fetch entity names
+  const enriched = await Promise.all(
+    result.map(async (approval) => {
+      let entityName: string | null = null;
+
+      if (approval.entityType === 'task') {
+        const task = await getTaskById(approval.entityId);
+        entityName = task?.title || null;
+      } else if (approval.entityType === 'project') {
+        const project = await getProjectById(approval.entityId);
+        entityName = project?.name || null;
+      }
+
+      return {
+        ...approval,
+        entityName,
+      };
+    })
+  );
+
+  return enriched;
+}
+
+/**
+ * Get approval by ID
+ */
+export async function getApprovalById(approvalId: number): Promise<Approval | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const [approval] = await db
+    .select()
+    .from(approvals)
+    .where(eq(approvals.id, approvalId))
+    .limit(1);
+
+  return approval;
+}
+
+/**
+ * Boss or PM approval
+ */
+export async function approveOrReject(
+  approvalId: number,
+  decision: 'approved' | 'rejected',
+  userId: number,
+  comments?: string
+): Promise<Approval> {
+  return await withTransaction(async (db) => {
+    const [approval] = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, approvalId))
+      .limit(1);
+
+    if (!approval) {
+      throw new NotFoundError('Approval not found');
+    }
+
+    if (approval.status !== 'pending') {
+      throw new ValidationError('Approval already resolved');
+    }
+
+    // Verify user is the designated approver
+    if (approval.approverType !== 'team_vote' && approval.approverUserId !== userId) {
+      throw new ValidationError('You are not authorized to approve this request');
+    }
+
+    // Update approval
+    const [updated] = await db
+      .update(approvals)
+      .set({
+        status: decision,
+        resolvedAt: new Date(),
+        resolvedBy: userId,
+        comments: comments || approval.comments,
+      })
+      .where(eq(approvals.id, approvalId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: approval.teamId,
+      userId,
+      type: decision === 'approved' ? 'approval_approved' : 'approval_rejected',
+      entityId: approval.id,
+      entityType: 'approval',
+      description: `${decision === 'approved' ? 'Approved' : 'Rejected'} ${approval.entityType} #${approval.entityId}`,
+      metadata: {
+        approvalId: approval.id,
+        decision,
+        comments,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Cast a vote for team voting
+ */
+export async function castVote(
+  approvalId: number,
+  userId: number,
+  vote: VoteChoice,
+  reason?: string
+): Promise<Approval> {
+  return await withTransaction(async (db) => {
+    const [approval] = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, approvalId))
+      .limit(1);
+
+    if (!approval) {
+      throw new NotFoundError('Approval not found');
+    }
+
+    if (approval.status !== 'pending') {
+      throw new ValidationError('Approval already resolved');
+    }
+
+    if (approval.approverType !== 'team_vote') {
+      throw new ValidationError('This approval does not use team voting');
+    }
+
+    // Verify user is a team member
+    const [membership] = await db
+      .select()
+      .from(teamMembersCollaborative)
+      .where(
+        and(
+          eq(teamMembersCollaborative.teamId, approval.teamId),
+          eq(teamMembersCollaborative.memberId, userId),
+          eq(teamMembersCollaborative.status, 'active')
+        )
+      )
+      .limit(1);
+
+    if (!membership) {
+      throw new ValidationError('You are not a member of this team');
+    }
+
+    // Get current voters
+    const voters = (approval.voters as VoterRecord[]) || [];
+
+    // Check if user already voted
+    const existingVoteIndex = voters.findIndex((v) => v.userId === userId);
+
+    if (existingVoteIndex >= 0) {
+      // Update existing vote
+      const oldVote = voters[existingVoteIndex].vote;
+      voters[existingVoteIndex] = {
+        userId,
+        vote,
+        timestamp: new Date().toISOString(),
+        reason,
+      };
+
+      // Update vote counts
+      let votesFor = approval.votesFor || 0;
+      let votesAgainst = approval.votesAgainst || 0;
+      let votesAbstain = approval.votesAbstain || 0;
+
+      // Remove old vote count
+      if (oldVote === 'for') votesFor--;
+      else if (oldVote === 'against') votesAgainst--;
+      else if (oldVote === 'abstain') votesAbstain--;
+
+      // Add new vote count
+      if (vote === 'for') votesFor++;
+      else if (vote === 'against') votesAgainst++;
+      else if (vote === 'abstain') votesAbstain++;
+
+      await db
+        .update(approvals)
+        .set({
+          voters,
+          votesFor,
+          votesAgainst,
+          votesAbstain,
+        })
+        .where(eq(approvals.id, approvalId));
+    } else {
+      // Add new vote
+      voters.push({
+        userId,
+        vote,
+        timestamp: new Date().toISOString(),
+        reason,
+      });
+
+      // Update vote counts
+      const votesFor = (approval.votesFor || 0) + (vote === 'for' ? 1 : 0);
+      const votesAgainst = (approval.votesAgainst || 0) + (vote === 'against' ? 1 : 0);
+      const votesAbstain = (approval.votesAbstain || 0) + (vote === 'abstain' ? 1 : 0);
+
+      await db
+        .update(approvals)
+        .set({
+          voters,
+          votesFor,
+          votesAgainst,
+          votesAbstain,
+        })
+        .where(eq(approvals.id, approvalId));
+    }
+
+    // Check if voting is complete
+    const [updatedApproval] = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, approvalId))
+      .limit(1);
+
+    const votesFor = updatedApproval.votesFor || 0;
+    const requiredVotes = updatedApproval.requiredVotes || 1;
+
+    if (votesFor >= requiredVotes) {
+      // Automatically approve
+      await db
+        .update(approvals)
+        .set({
+          status: 'approved',
+          resolvedAt: new Date(),
+          resolvedBy: userId,
+        })
+        .where(eq(approvals.id, approvalId));
+
+      // Create activity
+      await db.insert(activities).values({
+        teamId: approval.teamId,
+        userId,
+        type: 'approval_approved',
+        entityId: approval.id,
+        entityType: 'approval',
+        description: `Team vote approved ${approval.entityType} #${approval.entityId}`,
+        metadata: {
+          approvalId: approval.id,
+          votesFor,
+          requiredVotes,
+        },
+      });
+    }
+
+    // Return updated approval
+    const [final] = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, approvalId))
+      .limit(1);
+
+    return final;
+  });
+}
+
+/**
+ * Get pending approvals for a specific user (as approver)
+ */
+export async function getPendingApprovalsForUser(userId: number): Promise<Approval[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get approvals where user is the designated approver
+  const directApprovals = await db
+    .select()
+    .from(approvals)
+    .where(
+      and(
+        eq(approvals.approverUserId, userId),
+        eq(approvals.status, 'pending')
+      )
+    )
+    .orderBy(desc(approvals.createdAt));
+
+  // Get team vote approvals for teams user is a member of
+  const memberships = await db
+    .select()
+    .from(teamMembersCollaborative)
+    .where(
+      and(
+        eq(teamMembersCollaborative.memberId, userId),
+        eq(teamMembersCollaborative.status, 'active')
+      )
+    );
+
+  const teamIds = memberships.map((m) => m.teamId);
+
+  const teamVoteApprovals = teamIds.length > 0
+    ? await db
+        .select()
+        .from(approvals)
+        .where(
+          and(
+            eq(approvals.approverType, 'team_vote'),
+            eq(approvals.status, 'pending'),
+            sql`${approvals.teamId} IN (${sql.join(teamIds.map(id => sql`${id}`), sql`, `)})`
+          )
+        )
+        .orderBy(desc(approvals.createdAt))
+    : [];
+
+  return [...directApprovals, ...teamVoteApprovals];
+}
+
+/**
+ * Configure team approval settings
+ */
+export async function configureTeamApproval(
+  teamId: number,
+  config: {
+    approvalMode: ApproverType;
+    bossUserId?: number;
+    pmUserId?: number;
+    voteThreshold?: number;
+  },
+  userId: number
+): Promise<Team> {
+  return await withTransaction(async (db) => {
+    // Check user has permission
+    const [membership] = await db
+      .select()
+      .from(teamMembersCollaborative)
+      .where(
+        and(
+          eq(teamMembersCollaborative.teamId, teamId),
+          eq(teamMembersCollaborative.memberId, userId)
+        )
+      )
+      .limit(1);
+
+    if (!membership || !hasPermission(membership.role as TeamRole, 'update_team')) {
+      throw new ValidationError('Insufficient permissions to configure team approval');
+    }
+
+    // Validate configuration
+    if (config.approvalMode === 'boss' && !config.bossUserId) {
+      throw new ValidationError('Boss user ID is required for boss approval mode');
+    }
+    if (config.approvalMode === 'pm' && !config.pmUserId) {
+      throw new ValidationError('PM user ID is required for PM approval mode');
+    }
+    if (config.approvalMode === 'team_vote' && config.voteThreshold) {
+      if (config.voteThreshold < 1 || config.voteThreshold > 100) {
+        throw new ValidationError('Vote threshold must be between 1 and 100');
+      }
+    }
+
+    // Update team
+    const [updated] = await db
+      .update(teams)
+      .set({
+        approvalMode: config.approvalMode,
+        bossUserId: config.bossUserId,
+        pmUserId: config.pmUserId,
+        voteThreshold: config.voteThreshold,
+        updatedAt: new Date(),
+      })
+      .where(eq(teams.id, teamId))
+      .returning();
+
+    return updated;
+  });
+}
+
+/**
+ * ============================================================================
+ * SEQUENTIAL HANDOFF SYSTEM - Role-based Workflow
+ * ============================================================================
+ */
+
+export type WorkflowStage = 'ideation' | 'design' | 'business' | 'development' | 'testing' | 'review' | 'completed';
+export type WorkflowRole = 'designer' | 'business_strategist' | 'backend_dev' | 'frontend_dev' | 'qa_tester' | 'reviewer';
+
+export interface HandoffRecord {
+  from: WorkflowRole | string;
+  to: WorkflowRole | string;
+  fromUserId?: number;
+  toUserId?: number;
+  deliverables: DeliverableItem[];
+  timestamp: string;
+  comments?: string;
+  approved?: boolean;
+  approvalId?: number;
+}
+
+export interface DeliverableItem {
+  type: 'figma' | 'github' | 'pdf' | 'link' | 'document' | 'image';
+  url: string;
+  description: string;
+  uploadedAt: string;
+  uploadedBy?: number;
+}
+
+/**
+ * Push work to next stage (handoff)
+ */
+export async function handoffTask(
+  taskId: number,
+  handoffData: {
+    toStage: WorkflowStage;
+    toRole: WorkflowRole;
+    toUserId?: number;
+    deliverables: DeliverableItem[];
+    comments?: string;
+    requiresApproval?: boolean;
+  },
+  fromUserId: number
+): Promise<Task> {
+  return await withTransaction(async (db) => {
+    // Get current task
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    // Verify user has permission
+    if (!task.teamId) {
+      throw new ValidationError('Task must belong to a team');
+    }
+
+    const [membership] = await db
+      .select()
+      .from(teamMembersCollaborative)
+      .where(
+        and(
+          eq(teamMembersCollaborative.teamId, task.teamId),
+          eq(teamMembersCollaborative.memberId, fromUserId)
+        )
+      )
+      .limit(1);
+
+    if (!membership || !hasPermission(membership.role as TeamRole, 'update_task')) {
+      throw new ValidationError('Insufficient permissions to handoff task');
+    }
+
+    // Create handoff record
+    const handoffHistory = (task.handoffHistory as HandoffRecord[]) || [];
+    const newHandoff: HandoffRecord = {
+      from: task.assignedRole || 'unknown',
+      to: handoffData.toRole,
+      fromUserId,
+      toUserId: handoffData.toUserId,
+      deliverables: handoffData.deliverables,
+      timestamp: new Date().toISOString(),
+      comments: handoffData.comments,
+      approved: !handoffData.requiresApproval,
+    };
+
+    handoffHistory.push(newHandoff);
+
+    // Update task deliverables
+    const currentDeliverables = (task.deliverables as Record<string, DeliverableItem[]>) || {};
+    const roleKey = task.assignedRole || 'unknown';
+    currentDeliverables[roleKey] = handoffData.deliverables;
+
+    // Create approval if required
+    let approvalId: number | undefined;
+    if (handoffData.requiresApproval) {
+      const approval = await createApproval(
+        {
+          entityType: 'handoff',
+          entityId: taskId,
+          teamId: task.teamId,
+          fromStage: task.workflowStage || undefined,
+          toStage: handoffData.toStage,
+          deliverables: handoffData.deliverables,
+          comments: handoffData.comments,
+        },
+        fromUserId
+      );
+      approvalId = approval.id;
+      newHandoff.approvalId = approvalId;
+
+      // Update handoff history with approval ID
+      handoffHistory[handoffHistory.length - 1] = newHandoff;
+    }
+
+    // Update task
+    const updateData: any = {
+      handoffHistory,
+      deliverables: currentDeliverables,
+      updatedAt: new Date(),
+    };
+
+    // Only update stage/role if no approval required or auto-approved
+    if (!handoffData.requiresApproval) {
+      updateData.workflowStage = handoffData.toStage;
+      updateData.assignedRole = handoffData.toRole;
+      if (handoffData.toUserId) {
+        updateData.assignedTo = handoffData.toUserId;
+      }
+    }
+
+    const [updated] = await db
+      .update(tasks)
+      .set(updateData)
+      .where(eq(tasks.id, taskId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: task.teamId,
+      userId: fromUserId,
+      type: 'task_handoff',
+      entityId: taskId,
+      entityType: 'task',
+      description: `Handed off task to ${handoffData.toRole}${handoffData.requiresApproval ? ' (pending approval)' : ''}`,
+      metadata: {
+        fromStage: task.workflowStage,
+        toStage: handoffData.toStage,
+        fromRole: task.assignedRole,
+        toRole: handoffData.toRole,
+        requiresApproval: handoffData.requiresApproval,
+        approvalId,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Push project to next stage (handoff)
+ */
+export async function handoffProject(
+  projectId: number,
+  handoffData: {
+    toStage: WorkflowStage;
+    toRole: WorkflowRole;
+    toUserId?: number;
+    deliverables: DeliverableItem[];
+    comments?: string;
+    requiresApproval?: boolean;
+  },
+  fromUserId: number
+): Promise<Project> {
+  return await withTransaction(async (db) => {
+    // Get current project
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+
+    if (!project) {
+      throw new NotFoundError('Project not found');
+    }
+
+    // Verify user has permission
+    if (!project.teamId) {
+      throw new ValidationError('Project must belong to a team');
+    }
+
+    const [membership] = await db
+      .select()
+      .from(teamMembersCollaborative)
+      .where(
+        and(
+          eq(teamMembersCollaborative.teamId, project.teamId),
+          eq(teamMembersCollaborative.memberId, fromUserId)
+        )
+      )
+      .limit(1);
+
+    if (!membership || !hasPermission(membership.role as TeamRole, 'update_team')) {
+      throw new ValidationError('Insufficient permissions to handoff project');
+    }
+
+    // Create handoff record
+    const handoffHistory = (project.handoffHistory as HandoffRecord[]) || [];
+    const newHandoff: HandoffRecord = {
+      from: project.assignedRole || 'unknown',
+      to: handoffData.toRole,
+      fromUserId,
+      toUserId: handoffData.toUserId,
+      deliverables: handoffData.deliverables,
+      timestamp: new Date().toISOString(),
+      comments: handoffData.comments,
+      approved: !handoffData.requiresApproval,
+    };
+
+    handoffHistory.push(newHandoff);
+
+    // Update project deliverables
+    const currentDeliverables = (project.deliverables as Record<string, DeliverableItem[]>) || {};
+    const roleKey = project.assignedRole || 'unknown';
+    currentDeliverables[roleKey] = handoffData.deliverables;
+
+    // Create approval if required
+    let approvalId: number | undefined;
+    if (handoffData.requiresApproval) {
+      const approval = await createApproval(
+        {
+          entityType: 'handoff',
+          entityId: projectId,
+          teamId: project.teamId,
+          fromStage: project.workflowStage || undefined,
+          toStage: handoffData.toStage,
+          deliverables: handoffData.deliverables,
+          comments: handoffData.comments,
+        },
+        fromUserId
+      );
+      approvalId = approval.id;
+      newHandoff.approvalId = approvalId;
+
+      // Update handoff history with approval ID
+      handoffHistory[handoffHistory.length - 1] = newHandoff;
+    }
+
+    // Update project
+    const updateData: any = {
+      handoffHistory,
+      deliverables: currentDeliverables,
+      updatedAt: new Date(),
+    };
+
+    // Only update stage/role if no approval required or auto-approved
+    if (!handoffData.requiresApproval) {
+      updateData.workflowStage = handoffData.toStage;
+      updateData.assignedRole = handoffData.toRole;
+    }
+
+    const [updated] = await db
+      .update(projects)
+      .set(updateData)
+      .where(eq(projects.id, projectId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: project.teamId,
+      userId: fromUserId,
+      type: 'project_handoff',
+      entityId: projectId,
+      entityType: 'project',
+      description: `Handed off project to ${handoffData.toRole}${handoffData.requiresApproval ? ' (pending approval)' : ''}`,
+      metadata: {
+        fromStage: project.workflowStage,
+        toStage: handoffData.toStage,
+        fromRole: project.assignedRole,
+        toRole: handoffData.toRole,
+        requiresApproval: handoffData.requiresApproval,
+        approvalId,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Get tasks assigned to a specific role
+ */
+export async function getTasksByRole(
+  teamId: number,
+  role: WorkflowRole,
+  userId?: number
+): Promise<Task[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [
+    eq(tasks.teamId, teamId),
+    eq(tasks.assignedRole, role),
+  ];
+
+  if (userId) {
+    conditions.push(eq(tasks.assignedTo, userId));
+  }
+
+  return await db
+    .select()
+    .from(tasks)
+    .where(and(...conditions))
+    .orderBy(desc(tasks.updatedAt));
+}
+
+/**
+ * Get projects assigned to a specific role
+ */
+export async function getProjectsByRole(
+  teamId: number,
+  role: WorkflowRole,
+  userId?: number
+): Promise<Project[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [
+    eq(projects.teamId, teamId),
+    eq(projects.assignedRole, role),
+  ];
+
+  return await db
+    .select()
+    .from(projects)
+    .where(and(...conditions))
+    .orderBy(desc(projects.updatedAt));
+}
+
+/**
+ * Get tasks by workflow stage
+ */
+export async function getTasksByStage(
+  teamId: number,
+  stage: WorkflowStage
+): Promise<Task[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.teamId, teamId),
+        eq(tasks.workflowStage, stage)
+      )
+    )
+    .orderBy(desc(tasks.updatedAt));
+}
+
+/**
+ * Get projects by workflow stage
+ */
+export async function getProjectsByStage(
+  teamId: number,
+  stage: WorkflowStage
+): Promise<Project[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(projects)
+    .where(
+      and(
+        eq(projects.teamId, teamId),
+        eq(projects.workflowStage, stage)
+      )
+    )
+    .orderBy(desc(projects.updatedAt));
+}
+
+/**
+ * Get user's role-based work queue
+ */
+export async function getMyWorkQueue(
+  userId: number,
+  teamId: number
+): Promise<{
+  tasks: Task[];
+  projects: Project[];
+  role?: string;
+}> {
+  const db = await getDb();
+  if (!db) return { tasks: [], projects: [] };
+
+  // Get user's primary role in team
+  const [membership] = await db
+    .select()
+    .from(teamMembersCollaborative)
+    .where(
+      and(
+        eq(teamMembersCollaborative.teamId, teamId),
+        eq(teamMembersCollaborative.memberId, userId)
+      )
+    )
+    .limit(1);
+
+  if (!membership) {
+    return { tasks: [], projects: [] };
+  }
+
+  // Get tasks assigned to user or their role
+  const userTasks = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.teamId, teamId),
+        eq(tasks.assignedTo, userId)
+      )
+    )
+    .orderBy(desc(tasks.updatedAt));
+
+  // Get projects in user's domain (if they have a workflow role)
+  const userProjects: Project[] = [];
+
+  return {
+    tasks: userTasks,
+    projects: userProjects,
+    role: membership.role,
+  };
+}
+
+/**
+ * Accept handoff (when approval is approved, update task/project)
+ */
+export async function acceptHandoff(
+  entityType: 'task' | 'project',
+  entityId: number,
+  approvalId: number
+): Promise<Task | Project> {
+  return await withTransaction(async (db) => {
+    // Get approval
+    const [approval] = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, approvalId))
+      .limit(1);
+
+    if (!approval || approval.status !== 'approved') {
+      throw new ValidationError('Approval must be approved first');
+    }
+
+    if (entityType === 'task') {
+      // Update task
+      const [task] = await db
+        .select()
+        .from(tasks)
+        .where(eq(tasks.id, entityId))
+        .limit(1);
+
+      if (!task) {
+        throw new NotFoundError('Task not found');
+      }
+
+      const [updated] = await db
+        .update(tasks)
+        .set({
+          workflowStage: approval.toStage || task.workflowStage,
+          assignedRole: approval.toStage || task.assignedRole,
+          updatedAt: new Date(),
+        })
+        .where(eq(tasks.id, entityId))
+        .returning();
+
+      return updated;
+    } else {
+      // Update project
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, entityId))
+        .limit(1);
+
+      if (!project) {
+        throw new NotFoundError('Project not found');
+      }
+
+      const [updated] = await db
+        .update(projects)
+        .set({
+          workflowStage: approval.toStage || project.workflowStage,
+          assignedRole: approval.toStage || project.assignedRole,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, entityId))
+        .returning();
+
+      return updated;
+    }
+  });
+}
+
+/**
+ * ============================================================================
+ * SEQUENTIAL HANDOFF SYSTEM - Role-Based Workflow
+ * ============================================================================
+ */
+
+export type WorkflowStage = 'ideation' | 'research' | 'architecture' | 'design' | 'backend' | 'fullstack' | 'ai' | 'testing' | 'review' | 'completed';
+export type AssignedRole = 'project_manager' | 'lead_researcher' | 'systems_architect' | 'backend_engineer' | 'fullstack_engineer' | 'ai_engineer' | 'qa_tester' | 'designer';
+
+export interface HandoffRecord {
+  from: string;
+  to: string;
+  fromUserId?: number;
+  toUserId?: number;
+  deliverables: any[];
+  timestamp: string;
+  comments?: string;
+  approved?: boolean;
+  approvalId?: number;
+}
+
+export interface Deliverable {
+  type: 'figma' | 'github' | 'pdf' | 'link' | 'document' | 'image';
+  url: string;
+  description: string;
+  uploadedAt: string;
+  uploadedBy?: number;
+}
+
+/**
+ * Get tasks/projects assigned to a specific role for workspace view
+ */
+export async function getWorkspaceItems(
+  teamId: number,
+  assignedRole: AssignedRole,
+  entityType: 'task' | 'project' = 'task'
+): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (entityType === 'task') {
+    return await db
+      .select()
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.teamId, teamId),
+          eq(tasks.assignedRole, assignedRole)
+        )
+      )
+      .orderBy(desc(tasks.updatedAt));
+  } else {
+    return await db
+      .select()
+      .from(projects)
+      .where(
+        and(
+          eq(projects.teamId, teamId),
+          eq(projects.assignedRole, assignedRole)
+        )
+      )
+      .orderBy(desc(projects.updatedAt));
+  }
+}
+
+/**
+ * Get all items in a specific workflow stage
+ */
+export async function getItemsByStage(
+  teamId: number,
+  workflowStage: WorkflowStage,
+  entityType: 'task' | 'project' = 'task'
+): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (entityType === 'task') {
+    return await db
+      .select()
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.teamId, teamId),
+          eq(tasks.workflowStage, workflowStage)
+        )
+      )
+      .orderBy(desc(tasks.updatedAt));
+  } else {
+    return await db
+      .select()
+      .from(projects)
+      .where(
+        and(
+          eq(projects.teamId, teamId),
+          eq(projects.workflowStage, workflowStage)
+        )
+      )
+      .orderBy(desc(projects.updatedAt));
+  }
+}
+
+/**
+ * Add deliverable to task or project
+ */
+export async function addDeliverable(
+  entityType: 'task' | 'project',
+  entityId: number,
+  deliverable: Deliverable,
+  userId: number
+): Promise<any> {
+  return await withTransaction(async (db) => {
+    const table = entityType === 'task' ? tasks : projects;
+    
+    // Get current entity
+    const [entity] = await db
+      .select()
+      .from(table)
+      .where(eq(table.id, entityId))
+      .limit(1);
+
+    if (!entity) {
+      throw new NotFoundError(`${entityType} not found`);
+    }
+
+    // Get current deliverables
+    const currentDeliverables = (entity.deliverables as any) || {};
+    const role = entity.assignedRole || 'general';
+
+    // Add new deliverable to role's deliverables
+    if (!currentDeliverables[role]) {
+      currentDeliverables[role] = [];
+    }
+
+    currentDeliverables[role].push({
+      ...deliverable,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: userId,
+    });
+
+    // Update entity
+    const [updated] = await db
+      .update(table)
+      .set({
+        deliverables: currentDeliverables,
+        updatedAt: new Date(),
+      })
+      .where(eq(table.id, entityId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: entity.teamId,
+      userId,
+      type: 'deliverable_added',
+      entityId,
+      entityType,
+      description: `Added ${deliverable.type} deliverable: ${deliverable.description}`,
+      metadata: {
+        deliverableType: deliverable.type,
+        role,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Push work to next stage (handoff)
+ */
+export async function handoffToNextStage(
+  entityType: 'task' | 'project',
+  entityId: number,
+  handoffData: {
+    toStage: WorkflowStage;
+    toRole: AssignedRole;
+    toUserId?: number;
+    comments?: string;
+    requiresApproval?: boolean;
+  },
+  userId: number
+): Promise<any> {
+  return await withTransaction(async (db) => {
+    const table = entityType === 'task' ? tasks : projects;
+    
+    // Get current entity
+    const [entity] = await db
+      .select()
+      .from(table)
+      .where(eq(table.id, entityId))
+      .limit(1);
+
+    if (!entity) {
+      throw new NotFoundError(`${entityType} not found`);
+    }
+
+    const fromStage = entity.workflowStage || 'ideation';
+    const fromRole = entity.assignedRole || 'unknown';
+
+    // Create handoff record
+    const handoffRecord: HandoffRecord = {
+      from: fromRole,
+      to: handoffData.toRole,
+      fromUserId: userId,
+      toUserId: handoffData.toUserId,
+      deliverables: (entity.deliverables as any)?.[fromRole] || [],
+      timestamp: new Date().toISOString(),
+      comments: handoffData.comments,
+      approved: !handoffData.requiresApproval,
+    };
+
+    // Get current handoff history
+    const handoffHistory = (entity.handoffHistory as HandoffRecord[]) || [];
+    handoffHistory.push(handoffRecord);
+
+    // If approval required, create approval request
+    let approvalId: number | undefined;
+    if (handoffData.requiresApproval) {
+      const approval = await createApproval(
+        {
+          entityType,
+          entityId,
+          teamId: entity.teamId,
+          fromStage,
+          toStage: handoffData.toStage,
+          deliverables: entity.deliverables,
+          comments: handoffData.comments,
+        },
+        userId
+      );
+      approvalId = approval.id;
+      handoffRecord.approvalId = approvalId;
+
+      // Update handoff history with approval ID
+      handoffHistory[handoffHistory.length - 1] = handoffRecord;
+
+      // Update entity with pending handoff
+      await db
+        .update(table)
+        .set({
+          handoffHistory,
+          updatedAt: new Date(),
+        })
+        .where(eq(table.id, entityId));
+
+      // Create activity
+      await db.insert(activities).values({
+        teamId: entity.teamId,
+        userId,
+        type: 'handoff_pending',
+        entityId,
+        entityType,
+        description: `Requested handoff from ${fromRole} to ${handoffData.toRole} (pending approval)`,
+        metadata: {
+          fromStage,
+          toStage: handoffData.toStage,
+          fromRole,
+          toRole: handoffData.toRole,
+          approvalId,
+        },
+      });
+
+      return {
+        ...entity,
+        handoffHistory,
+        pendingApproval: true,
+        approvalId,
+      };
+    }
+
+    // No approval required - complete handoff immediately
+    const [updated] = await db
+      .update(table)
+      .set({
+        workflowStage: handoffData.toStage,
+        assignedRole: handoffData.toRole,
+        assignedTo: handoffData.toUserId || entity.assignedTo,
+        handoffHistory,
+        updatedAt: new Date(),
+      })
+      .where(eq(table.id, entityId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: entity.teamId,
+      userId,
+      type: 'handoff_completed',
+      entityId,
+      entityType,
+      description: `Handed off from ${fromRole} to ${handoffData.toRole}`,
+      metadata: {
+        fromStage,
+        toStage: handoffData.toStage,
+        fromRole,
+        toRole: handoffData.toRole,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Complete handoff after approval
+ */
+export async function completeHandoff(
+  entityType: 'task' | 'project',
+  entityId: number,
+  approvalId: number
+): Promise<any> {
+  return await withTransaction(async (db) => {
+    const table = entityType === 'task' ? tasks : projects;
+    
+    // Get approval
+    const [approval] = await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.id, approvalId))
+      .limit(1);
+
+    if (!approval) {
+      throw new NotFoundError('Approval not found');
+    }
+
+    if (approval.status !== 'approved') {
+      throw new ValidationError('Approval must be approved before completing handoff');
+    }
+
+    // Get entity
+    const [entity] = await db
+      .select()
+      .from(table)
+      .where(eq(table.id, entityId))
+      .limit(1);
+
+    if (!entity) {
+      throw new NotFoundError(`${entityType} not found`);
+    }
+
+    // Update handoff history to mark as approved
+    const handoffHistory = (entity.handoffHistory as HandoffRecord[]) || [];
+    const pendingHandoff = handoffHistory.find((h) => h.approvalId === approvalId);
+
+    if (pendingHandoff) {
+      pendingHandoff.approved = true;
+    }
+
+    // Complete handoff
+    const [updated] = await db
+      .update(table)
+      .set({
+        workflowStage: approval.toStage,
+        assignedRole: approval.toStage === 'design' ? 'designer' :
+                      approval.toStage === 'business' ? 'business_strategist' :
+                      approval.toStage === 'development' ? 'backend_dev' :
+                      approval.toStage === 'testing' ? 'qa_tester' :
+                      approval.toStage === 'review' ? 'reviewer' : entity.assignedRole,
+        handoffHistory,
+        updatedAt: new Date(),
+      })
+      .where(eq(table.id, entityId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: entity.teamId,
+      userId: approval.resolvedBy || null,
+      type: 'handoff_completed',
+      entityId,
+      entityType,
+      description: `Handoff approved and completed to ${approval.toStage}`,
+      metadata: {
+        approvalId,
+        toStage: approval.toStage,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Get handoff history for an entity
+ */
+export async function getHandoffHistory(
+  entityType: 'task' | 'project',
+  entityId: number
+): Promise<HandoffRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const table = entityType === 'task' ? tasks : projects;
+  
+  const [entity] = await db
+    .select()
+    .from(table)
+    .where(eq(table.id, entityId))
+    .limit(1);
+
+  if (!entity) {
+    return [];
+  }
+
+  return (entity.handoffHistory as HandoffRecord[]) || [];
+}
+
+/**
+ * Get deliverables for an entity
+ */
+export async function getDeliverables(
+  entityType: 'task' | 'project',
+  entityId: number,
+  role?: string
+): Promise<Record<string, Deliverable[]>> {
+  const db = await getDb();
+  if (!db) return {};
+
+  const table = entityType === 'task' ? tasks : projects;
+  
+  const [entity] = await db
+    .select()
+    .from(table)
+    .where(eq(table.id, entityId))
+    .limit(1);
+
+  if (!entity) {
+    return {};
+  }
+
+  const allDeliverables = (entity.deliverables as Record<string, Deliverable[]>) || {};
+
+  if (role) {
+    return { [role]: allDeliverables[role] || [] };
+  }
+
+  return allDeliverables;
+}
+
+/**
+ * Get workspace summary for a user
+ */
+export async function getWorkspaceSummary(
+  teamId: number,
+  userId: number
+): Promise<{
+  myRole: string | null;
+  assignedItems: any[];
+  pendingHandoffs: any[];
+  recentHandoffs: HandoffRecord[];
+}> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      myRole: null,
+      assignedItems: [],
+      pendingHandoffs: [],
+      recentHandoffs: [],
+    };
+  }
+
+  // Get user's role in team
+  const [membership] = await db
+    .select()
+    .from(teamMembersCollaborative)
+    .where(
+      and(
+        eq(teamMembersCollaborative.teamId, teamId),
+        eq(teamMembersCollaborative.memberId, userId)
+      )
+    )
+    .limit(1);
+
+  const myRole = membership?.role || null;
+
+  // Get items assigned to user
+  const assignedTasks = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.teamId, teamId),
+        eq(tasks.assignedTo, userId)
+      )
+    )
+    .orderBy(desc(tasks.updatedAt))
+    .limit(10);
+
+  // Get pending handoffs (items waiting for approval)
+  const pendingApprovals = await db
+    .select()
+    .from(approvals)
+    .where(
+      and(
+        eq(approvals.teamId, teamId),
+        eq(approvals.status, 'pending'),
+        eq(approvals.entityType, 'handoff')
+      )
+    )
+    .orderBy(desc(approvals.createdAt))
+    .limit(10);
+
+  // Get recent activities for handoffs
+  const recentActivities = await db
+    .select()
+    .from(activities)
+    .where(
+      and(
+        eq(activities.teamId, teamId),
+        sql`${activities.type} IN ('handoff_completed', 'handoff_pending')`
+      )
+    )
+    .orderBy(desc(activities.createdAt))
+    .limit(10);
+
+  return {
+    myRole,
+    assignedItems: assignedTasks,
+    pendingHandoffs: pendingApprovals,
+    recentHandoffs: recentActivities.map((a) => a.metadata as any),
+  };
+}
+
+/**
+ * ============================================================================
+ * AI PROJECT EVALUATION SYSTEM
+ * ============================================================================
+ */
+
+/**
+ * Save evaluation results to project
+ */
+export async function saveProjectEvaluation(
+  projectId: number,
+  evaluationData: any,
+  userId: number
+): Promise<any> {
+  return await withTransaction(async (db) => {
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+
+    if (!project) {
+      throw new NotFoundError('Project not found');
+    }
+
+    // Update project with evaluation
+    const [updated] = await db
+      .update(projects)
+      .set({
+        evaluationData,
+        evaluatedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId))
+      .returning();
+
+    // Create activity
+    await db.insert(activities).values({
+      teamId: project.teamId,
+      userId,
+      type: 'project_evaluated',
+      entityId: projectId,
+      entityType: 'project',
+      description: `AI evaluation completed: ${evaluationData.overallScore}/100`,
+      metadata: {
+        overallScore: evaluationData.overallScore,
+        readyForLaunch: evaluationData.readyForLaunch,
+        criticalIssues: evaluationData.criticalIssues?.length || 0,
+      },
+    });
+
+    return updated;
+  });
+}
+
+/**
+ * Get project evaluation
+ */
+export async function getProjectEvaluation(projectId: number): Promise<any | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+
+  if (!project || !project.evaluationData) {
+    return null;
+  }
+
+  return {
+    projectId: project.id,
+    projectName: project.name,
+    evaluationData: project.evaluationData,
+    evaluatedAt: project.evaluatedAt,
+  };
+}
+
+/**
+ * Get all evaluated projects for a team
+ */
+export async function getEvaluatedProjects(teamId: number): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const evaluatedProjects = await db
+    .select()
+    .from(projects)
+    .where(
+      and(
+        eq(projects.teamId, teamId),
+        sql`${projects.evaluationData} IS NOT NULL`
+      )
+    )
+    .orderBy(desc(projects.evaluatedAt));
+
+  return evaluatedProjects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    overallScore: (p.evaluationData as any)?.overallScore || 0,
+    readyForLaunch: (p.evaluationData as any)?.readyForLaunch || false,
+    evaluatedAt: p.evaluatedAt,
+  }));
+}
+
+/**
+ * Get projects ready for launch
+ */
+export async function getProjectsReadyForLaunch(teamId: number): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const readyProjects = await db
+    .select()
+    .from(projects)
+    .where(
+      and(
+        eq(projects.teamId, teamId),
+        sql`${projects.evaluationData} IS NOT NULL`,
+        sql`(${projects.evaluationData}->>'readyForLaunch')::boolean = true`
+      )
+    )
+    .orderBy(desc(projects.evaluatedAt));
+
+  return readyProjects;
+}
+
+/**
+ * Get evaluation statistics for a team
+ */
+export async function getEvaluationStats(teamId: number): Promise<{
+  totalEvaluated: number;
+  averageScore: number;
+  readyForLaunch: number;
+  needsWork: number;
+}> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      totalEvaluated: 0,
+      averageScore: 0,
+      readyForLaunch: 0,
+      needsWork: 0,
+    };
+  }
+
+  const evaluatedProjects = await db
+    .select()
+    .from(projects)
+    .where(
+      and(
+        eq(projects.teamId, teamId),
+        sql`${projects.evaluationData} IS NOT NULL`
+      )
+    );
+
+  if (evaluatedProjects.length === 0) {
+    return {
+      totalEvaluated: 0,
+      averageScore: 0,
+      readyForLaunch: 0,
+      needsWork: 0,
+    };
+  }
+
+  const scores = evaluatedProjects.map((p) => (p.evaluationData as any)?.overallScore || 0);
+  const averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+
+  const readyForLaunch = evaluatedProjects.filter(
+    (p) => (p.evaluationData as any)?.readyForLaunch === true
+  ).length;
+
+  const needsWork = evaluatedProjects.filter(
+    (p) => (p.evaluationData as any)?.overallScore < 70
+  ).length;
+
+  return {
+    totalEvaluated: evaluatedProjects.length,
+    averageScore,
+    readyForLaunch,
+    needsWork,
+  };
 }

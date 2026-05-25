@@ -50,6 +50,11 @@ export const teams = pgTable("teams", {
   description: text("description"),
   createdBy: integer("created_by").references(() => teamMembers.id),
   githubAccessToken: text("github_access_token"),
+  // New fields for approval workflow configuration
+  approvalMode: text("approval_mode").default("pm"), // 'boss', 'pm', 'team_vote'
+  bossUserId: integer("boss_user_id").references(() => teamMembers.id),
+  pmUserId: integer("pm_user_id").references(() => teamMembers.id),
+  voteThreshold: integer("vote_threshold").default(51), // percentage for team votes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -59,7 +64,8 @@ export const teamMembersCollaborative = pgTable("team_members_collaborative", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
   memberId: integer("member_id").references(() => teamMembers.id, { onDelete: "cascade" }).notNull(),
-  role: text("role").default("member"),
+  role: text("role").default("member"), // 'admin', 'team_lead', 'member', 'viewer'
+  officeRole: text("office_role"), // 'project_manager', 'lead_researcher', 'systems_architect', 'backend_engineer', 'fullstack_engineer', 'ai_engineer', 'qa_tester', 'designer'
   status: text("status").default("active"), // 'active', 'pending'
   joinedAt: timestamp("joined_at").defaultNow(),
 });
@@ -88,6 +94,11 @@ export const tasks = pgTable("tasks", {
   teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
   createdBy: integer("created_by").references(() => teamMembers.id),
   dueDate: timestamp("due_date"),
+  // New fields for sequential handoff workflow
+  workflowStage: text("workflow_stage"), // 'ideation', 'design', 'business', 'development', 'testing', 'review', 'completed'
+  assignedRole: text("assigned_role"), // 'designer', 'business_strategist', 'backend_dev', 'frontend_dev', etc.
+  handoffHistory: jsonb("handoff_history"), // array of {from, to, deliverables, timestamp, comments}
+  deliverables: jsonb("deliverables"), // {type: 'figma'|'github'|'pdf'|'link', url, description, uploadedAt}
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -115,6 +126,15 @@ export const projects = pgTable("projects", {
   dateReceived: timestamp("date_received").defaultNow(),
   dateEnded: timestamp("date_ended"),
   status: text("status").default("active"),
+  // New fields for AI ideation and workflow
+  ideationData: jsonb("ideation_data"), // {chatLogs, speakers, aiAnalysis, finalDecisionReport}
+  workflowStage: text("workflow_stage").default("ideation"), // 'ideation', 'design', 'business', 'development', 'testing', 'completed'
+  assignedRole: text("assigned_role"), // current role responsible for this stage
+  handoffHistory: jsonb("handoff_history"), // array of handoff records
+  deliverables: jsonb("deliverables"), // accumulated deliverables from all stages
+  // New fields for AI project evaluation
+  evaluationData: jsonb("evaluation_data"), // {overallScore, designAlignment, businessAlignment, technicalQuality, testingProtocol, readyForLaunch}
+  evaluatedAt: timestamp("evaluated_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -182,6 +202,31 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Approvals table - NEW for Decision Table / Quality Gate
+export const approvals = pgTable("approvals", {
+  id: serial("id").primaryKey(),
+  entityType: text("entity_type").notNull(), // 'task', 'project', 'handoff'
+  entityId: integer("entity_id").notNull(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
+  approverType: text("approver_type").notNull(), // 'boss', 'pm', 'team_vote'
+  approverUserId: integer("approver_user_id").references(() => teamMembers.id), // null for team_vote
+  status: text("status").default("pending"), // 'pending', 'approved', 'rejected'
+  comments: text("comments"),
+  // For team voting
+  votesFor: integer("votes_for").default(0),
+  votesAgainst: integer("votes_against").default(0),
+  votesAbstain: integer("votes_abstain").default(0),
+  requiredVotes: integer("required_votes"), // calculated based on team size and threshold
+  voters: jsonb("voters"), // array of {userId, vote: 'for'|'against'|'abstain', timestamp}
+  // Metadata
+  fromStage: text("from_stage"), // for handoff approvals
+  toStage: text("to_stage"), // for handoff approvals
+  deliverables: jsonb("deliverables"), // snapshot of deliverables being approved
+  createdAt: timestamp("created_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: integer("resolved_by").references(() => teamMembers.id),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   oauthTokens: many(oauthTokens),
@@ -189,6 +234,8 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const teamMembersRelations = relations(teamMembers, ({ many, one }) => ({
   createdTeams: many(teams, { relationName: "creator" }),
+  bossOfTeams: many(teams, { relationName: "boss" }),
+  pmOfTeams: many(teams, { relationName: "projectManager" }),
   teamMemberships: many(teamMembersCollaborative),
   assignedTasks: many(tasks, { relationName: "assignee" }),
   createdTasks: many(tasks, { relationName: "creator" }),
@@ -198,6 +245,8 @@ export const teamMembersRelations = relations(teamMembers, ({ many, one }) => ({
   createdRepositories: many(repositories),
   sentInvitations: many(teamInvitations),
   auditLogs: many(auditLogs),
+  approvals: many(approvals, { relationName: "approver" }),
+  resolvedApprovals: many(approvals, { relationName: "resolver" }),
 }));
 
 
@@ -207,6 +256,16 @@ export const teamsRelations = relations(teams, ({ many, one }) => ({
     references: [teamMembers.id],
     relationName: "creator",
   }),
+  boss: one(teamMembers, {
+    fields: [teams.bossUserId],
+    references: [teamMembers.id],
+    relationName: "boss",
+  }),
+  projectManager: one(teamMembers, {
+    fields: [teams.pmUserId],
+    references: [teamMembers.id],
+    relationName: "projectManager",
+  }),
   members: many(teamMembersCollaborative),
   tasks: many(tasks),
   clients: many(clients),
@@ -214,6 +273,7 @@ export const teamsRelations = relations(teams, ({ many, one }) => ({
   repositories: many(repositories),
   invitations: many(teamInvitations),
   activities: many(activities),
+  approvals: many(approvals),
 }));
 
 export const teamMembersCollaborativeRelations = relations(teamMembersCollaborative, ({ one }) => ({
@@ -322,6 +382,23 @@ export const oauthTokensRelations = relations(oauthTokens, ({ one }) => ({
   }),
 }));
 
+export const approvalsRelations = relations(approvals, ({ one }) => ({
+  team: one(teams, {
+    fields: [approvals.teamId],
+    references: [teams.id],
+  }),
+  approver: one(teamMembers, {
+    fields: [approvals.approverUserId],
+    references: [teamMembers.id],
+    relationName: "approver",
+  }),
+  resolver: one(teamMembers, {
+    fields: [approvals.resolvedBy],
+    references: [teamMembers.id],
+    relationName: "resolver",
+  }),
+}));
+
 // Type exports
 export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -365,4 +442,7 @@ export type OAuthToken = typeof oauthTokens.$inferSelect;
 
 export type InsertMessage = typeof messages.$inferInsert;
 export type Message = typeof messages.$inferSelect;
+
+export type InsertApproval = typeof approvals.$inferInsert;
+export type Approval = typeof approvals.$inferSelect;
 // Meta Accounts table for Facebook Page + Instagram Business connections

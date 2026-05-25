@@ -78,6 +78,13 @@
       "when": 1773441577677,
       "tag": "0010_robust_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779719584134,
+      "tag": "0011_slimy_phalanx",
+      "breakpoints": true
     }
   ]
 }

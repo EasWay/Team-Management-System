@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, Shield, Crown, Code, Eye } from "lucide-react";
 import { RoleChangeDropdown } from "./RoleChangeDropdown";
+import { OfficeRoleDropdown } from "./OfficeRoleDropdown";
 import { RemoveMemberButton } from "./RemoveMemberButton";
 
 interface TeamMemberListProps {
@@ -30,6 +31,7 @@ interface TeamMember {
   teamId: number;
   memberId: number;
   role: TeamRole;
+  officeRole: string | null;
   joinedAt: Date;
   member: {
     id: number;
@@ -108,6 +110,11 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
                         <RoleIcon className="h-3 w-3 mr-1" />
                         {member.role}
                       </Badge>
+                      {member.officeRole && (
+                        <Badge variant="outline" className="text-xs">
+                          🏢 {member.officeRole.replace(/_/g, ' ')}
+                        </Badge>
+                      )}
                       <span className="text-xs text-slate-500 dark:text-slate-400">
                         Joined {new Date(member.joinedAt).toLocaleDateString()}
                       </span>
@@ -115,6 +122,11 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <OfficeRoleDropdown
+                    teamId={teamId}
+                    userId={member.memberId}
+                    currentOfficeRole={member.officeRole}
+                  />
                   <RoleChangeDropdown
                     teamId={teamId}
                     userId={member.memberId}
