@@ -48,9 +48,9 @@ async function startServer() {
     const cspHeader = process.env.NODE_ENV === "development"
       ? "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " +
-      "style-src 'self' 'unsafe-inline'; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "img-src 'self' data: https:; " +
-      "font-src 'self' data:; " +
+      "font-src 'self' data: https://fonts.gstatic.com; " +
       "connect-src 'self' https://github.com https://api.github.com https://accounts.google.com https://www.googleapis.com ws: wss: http://localhost:* http://127.0.0.1:*; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
@@ -59,9 +59,9 @@ async function startServer() {
       "worker-src 'self' blob:"
       : "default-src 'self'; " +
       "script-src 'self' 'sha256-Eoj6XODkFF87BVabaKx38kr7sC0DCgv0l0N3CdsTja8='; " +
-      "style-src 'self' 'unsafe-inline'; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "img-src 'self' data: https:; " +
-      "font-src 'self' data:; " +
+      "font-src 'self' data: https://fonts.gstatic.com; " +
       "connect-src 'self' https://github.com https://api.github.com https://accounts.google.com https://www.googleapis.com; " +
       "frame-ancestors 'none'; " +
       "base-uri 'self'; " +
