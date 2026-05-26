@@ -35,6 +35,7 @@ import {
   Building2,
   Sparkles,
   Target,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Dialog,
