@@ -1819,3 +1819,104 @@ export type PermissionRole = typeof permissionRoles.$inferSelect;
 
 export type InsertUserRoleAssignment = typeof userRoleAssignments.$inferInsert;
 export type UserRoleAssignment = typeof userRoleAssignments.$inferSelect;
+
+
+// Google Drive Connections table - Team and Office-level Google Drive integration
+export const googleDriveConnections = pgTable("google_drive_connections", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
+  userId: integer("user_id").references(() => teamMembers.id, { onDelete: "cascade" }),
+  officeRole: text("office_role"), // 'project_manager', 'lead_researcher', etc. - null for team-level
+  
+  // Connection type
+  connectionType: text("connection_type").notNull(), // 'team' or 'office'
+  
+  // Google Drive details
+  driveId: text("drive_id"), // Google Drive ID (for shared drives)
+  driveName: text("drive_name"),
+  driveUrl: text("drive_url").notNull(),
+  
+  // OAuth tokens (encrypted)
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  
+  // Sync settings
+  autoSync: boolean("auto_sync").default(false),
+  syncFolders: jsonb("sync_folders"), // array of folder IDs to sync
+  lastSyncedAt: timestamp("last_synced_at"),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  // Metadata
+  connectedBy: integer("connected_by").references(() => teamMembers.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  teamIdIdx: index("google_drive_connections_team_id_idx").on(table.teamId),
+  userIdIdx: index("google_drive_connections_user_id_idx").on(table.userId),
+  officeRoleIdx: index("google_drive_connections_office_role_idx").on(table.officeRole),
+}));
+
+// Google Drive Files Cache table - Cache Google Drive file metadata
+export const googleDriveFilesCache = pgTable("google_drive_files_cache", {
+  id: serial("id").primaryKey(),
+  connectionId: integer("connection_id").references(() => googleDriveConnections.id, { onDelete: "cascade" }).notNull(),
+  
+  // Google Drive file details
+  googleFileId: text("google_file_id").notNull().unique(),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  fileSize: integer("file_size"),
+  webViewLink: text("web_view_link"),
+  webContentLink: text("web_content_link"),
+  thumbnailLink: text("thumbnail_link"),
+  
+  // Folder structure
+  parentFolderId: text("parent_folder_id"),
+  folderPath: text("folder_path"),
+  
+  // Metadata
+  createdTime: timestamp("created_time"),
+  modifiedTime: timestamp("modified_time"),
+  owners: jsonb("owners"), // array of owner info
+  
+  // Cache info
+  lastFetchedAt: timestamp("last_fetched_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  connectionIdIdx: index("google_drive_files_cache_connection_id_idx").on(table.connectionId),
+  googleFileIdIdx: index("google_drive_files_cache_google_file_id_idx").on(table.googleFileId),
+}));
+
+// Relations for Google Drive tables
+export const googleDriveConnectionsRelations = relations(googleDriveConnections, ({ one, many }) => ({
+  team: one(teams, {
+    fields: [googleDriveConnections.teamId],
+    references: [teams.id],
+  }),
+  user: one(teamMembers, {
+    fields: [googleDriveConnections.userId],
+    references: [teamMembers.id],
+  }),
+  connectedByUser: one(teamMembers, {
+    fields: [googleDriveConnections.connectedBy],
+    references: [teamMembers.id],
+  }),
+  filesCache: many(googleDriveFilesCache),
+}));
+
+export const googleDriveFilesCacheRelations = relations(googleDriveFilesCache, ({ one }) => ({
+  connection: one(googleDriveConnections, {
+    fields: [googleDriveFilesCache.connectionId],
+    references: [googleDriveConnections.id],
+  }),
+}));
+
+// Type exports for Google Drive tables
+export type InsertGoogleDriveConnection = typeof googleDriveConnections.$inferInsert;
+export type GoogleDriveConnection = typeof googleDriveConnections.$inferSelect;
+
+export type InsertGoogleDriveFileCache = typeof googleDriveFilesCache.$inferInsert;
+export type GoogleDriveFileCache = typeof googleDriveFilesCache.$inferSelect;

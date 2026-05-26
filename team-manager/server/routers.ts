@@ -3858,6 +3858,96 @@ export const appRouter = router({
         }),
     }),
   }),
+
+  // Google Drive Integration Router - Team and Office-level Google Drive connections
+  googleDrive: router({
+    // Connect Team Google Drive
+    connectTeam: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        driveUrl: z.string().url(),
+        driveName: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) {
+          throw new Error('User not authenticated');
+        }
+        const { connectTeamGoogleDrive } = await import('./google-drive-service');
+        return await connectTeamGoogleDrive({
+          ...input,
+          connectedBy: ctx.user.id,
+        });
+      }),
+
+    // Connect Office Google Drive
+    connectOffice: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        officeRole: z.string(),
+        driveUrl: z.string().url(),
+        driveName: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) {
+          throw new Error('User not authenticated');
+        }
+        const { connectOfficeGoogleDrive } = await import('./google-drive-service');
+        return await connectOfficeGoogleDrive({
+          ...input,
+          userId: ctx.user.id,
+          connectedBy: ctx.user.id,
+        });
+      }),
+
+    // Get Team Google Drive
+    getTeamDrive: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .query(async ({ input }) => {
+        const { getTeamGoogleDrive } = await import('./google-drive-service');
+        return await getTeamGoogleDrive(input.teamId);
+      }),
+
+    // Get Office Google Drive
+    getOfficeDrive: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        officeRole: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { getOfficeGoogleDrive } = await import('./google-drive-service');
+        return await getOfficeGoogleDrive(input.teamId, input.officeRole);
+      }),
+
+    // Get All Team Google Drives
+    getAllDrives: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .query(async ({ input }) => {
+        const { getAllTeamGoogleDrives } = await import('./google-drive-service');
+        return await getAllTeamGoogleDrives(input.teamId);
+      }),
+
+    // Disconnect Google Drive
+    disconnect: protectedProcedure
+      .input(z.object({ connectionId: z.number() }))
+      .mutation(async ({ input }) => {
+        const { disconnectGoogleDrive } = await import('./google-drive-service');
+        return await disconnectGoogleDrive(input.connectionId);
+      }),
+
+    // Update Google Drive Connection
+    update: protectedProcedure
+      .input(z.object({
+        connectionId: z.number(),
+        driveUrl: z.string().url().optional(),
+        driveName: z.string().optional(),
+        autoSync: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { connectionId, ...data } = input;
+        const { updateGoogleDriveConnection } = await import('./google-drive-service');
+        return await updateGoogleDriveConnection(connectionId, data);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
