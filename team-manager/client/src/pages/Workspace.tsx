@@ -177,6 +177,7 @@ export default function Workspace() {
   useEffect(() => {
     if (userOfficeRole) {
       setSelectedRole(userOfficeRole);
+      setIsOfficeLocked(true); // Auto-lock when loading user's own office
     }
   }, [userOfficeRole]);
   
@@ -186,10 +187,16 @@ export default function Workspace() {
   
   // Handle office selection with access control
   const handleOfficeClick = (officeRole: keyof typeof ROLE_CONFIG) => {
-    // Allow access if:
-    // 1. It's their own office
-    // 2. They're an admin or team_lead
-    if (officeRole === userOfficeRole || userRole === 'admin' || userRole === 'team_lead') {
+    // If it's their own office, lock it immediately
+    if (officeRole === userOfficeRole) {
+      setSelectedRole(officeRole);
+      setIsOfficeLocked(true); // Auto-lock when entering own office
+      toast.success(`🔒 Entered your office - Locked Mode`);
+      return;
+    }
+    
+    // Allow access without code if they're an admin or team_lead
+    if (userRole === 'admin' || userRole === 'team_lead') {
       setSelectedRole(officeRole);
       return;
     }
