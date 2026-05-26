@@ -33,6 +33,11 @@ export async function createCalendarEvent(data: {
   metadata?: any;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [event] = await db.insert(calendarEvents).values(data).returning();
     return event;
   } catch (error) {
@@ -55,6 +60,11 @@ export async function getCalendarEvents(
   }
 ) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(calendarEvents.teamId, teamId)];
     
     if (filters?.startDate) {
@@ -98,6 +108,11 @@ export async function getCalendarEvents(
  */
 export async function getCalendarEventById(eventId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [event] = await db.select().from(calendarEvents).where(eq(calendarEvents.id, eventId));
     return event;
   } catch (error) {
@@ -124,6 +139,11 @@ export async function updateCalendarEvent(eventId: number, data: Partial<{
   color: string;
 }>) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [event] = await db.update(calendarEvents)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(calendarEvents.id, eventId))
@@ -141,6 +161,11 @@ export async function updateCalendarEvent(eventId: number, data: Partial<{
  */
 export async function deleteCalendarEvent(eventId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(calendarEvents).where(eq(calendarEvents.id, eventId));
     return { success: true };
   } catch (error) {
@@ -166,6 +191,11 @@ export async function createMilestone(data: {
   createdBy: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [milestone] = await db.insert(milestones).values(data).returning();
     return milestone;
   } catch (error) {
@@ -179,6 +209,11 @@ export async function createMilestone(data: {
  */
 export async function getMilestones(projectId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const projectMilestones = await db.select()
       .from(milestones)
       .where(eq(milestones.projectId, projectId))
@@ -200,6 +235,11 @@ export async function getTeamMilestones(teamId: number, filters?: {
   status?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(milestones.teamId, teamId)];
     
     if (filters?.startDate) {
@@ -239,6 +279,11 @@ export async function updateMilestone(milestoneId: number, data: Partial<{
   completedBy: number;
 }>) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [milestone] = await db.update(milestones)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(milestones.id, milestoneId))
@@ -256,6 +301,11 @@ export async function updateMilestone(milestoneId: number, data: Partial<{
  */
 export async function deleteMilestone(milestoneId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(milestones).where(eq(milestones.id, milestoneId));
     return { success: true };
   } catch (error) {
@@ -274,6 +324,11 @@ export async function createTaskDependency(data: {
   lag?: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Check for circular dependencies
     const isCircular = await checkCircularDependency(data.taskId, data.dependsOnTaskId);
     if (isCircular) {
@@ -293,6 +348,11 @@ export async function createTaskDependency(data: {
  */
 async function checkCircularDependency(taskId: number, dependsOnTaskId: number): Promise<boolean> {
   try {
+    const db = await getDb();
+    if (!db) {
+      return false;
+    }
+
     // Get all dependencies of the dependsOnTaskId
     const dependencies = await db.select()
       .from(taskDependencies)
@@ -321,6 +381,11 @@ async function checkCircularDependency(taskId: number, dependsOnTaskId: number):
  */
 export async function getTaskDependencies(taskId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const dependencies = await db.select()
       .from(taskDependencies)
       .where(eq(taskDependencies.taskId, taskId));
@@ -337,6 +402,11 @@ export async function getTaskDependencies(taskId: number) {
  */
 export async function getProjectDependencies(projectId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Get all tasks for the project
     const projectTasks = await db.select()
       .from(tasks)
@@ -363,6 +433,11 @@ export async function getProjectDependencies(projectId: number) {
  */
 export async function deleteTaskDependency(dependencyId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(taskDependencies).where(eq(taskDependencies.id, dependencyId));
     return { success: true };
   } catch (error) {
@@ -385,6 +460,11 @@ export async function setUserAvailability(data: {
   recurrencePattern?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [availability] = await db.insert(userAvailability).values(data).returning();
     return availability;
   } catch (error) {
@@ -404,6 +484,11 @@ export async function getUserAvailability(
   }
 ) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(userAvailability.userId, userId)];
     
     if (filters?.startDate) {
@@ -437,6 +522,11 @@ export async function getTeamAvailability(
   }
 ) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(userAvailability.teamId, teamId)];
     
     if (filters?.startDate) {
@@ -469,6 +559,11 @@ export async function updateUserAvailability(availabilityId: number, data: Parti
   reason: string;
 }>) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [availability] = await db.update(userAvailability)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(userAvailability.id, availabilityId))
@@ -486,6 +581,11 @@ export async function updateUserAvailability(availabilityId: number, data: Parti
  */
 export async function deleteUserAvailability(availabilityId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(userAvailability).where(eq(userAvailability.id, availabilityId));
     return { success: true };
   } catch (error) {
@@ -499,6 +599,11 @@ export async function deleteUserAvailability(availabilityId: number) {
  */
 export async function getGanttChartData(projectId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Get all tasks for the project
     const projectTasks = await db.select()
       .from(tasks)
@@ -603,6 +708,11 @@ function calculateCriticalPath(tasks: any[], dependencies: any[]) {
  */
 export async function getUpcomingDeadlines(teamId: number, days: number = 7) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const now = new Date();
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);

@@ -29,6 +29,11 @@ interface TimeRange {
  */
 export async function getTeamPerformanceMetrics(teamId: number, timeRange?: TimeRange) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(tasks.teamId, teamId)];
     
     if (timeRange?.startDate) {
@@ -111,7 +116,7 @@ async function calculateStageMetrics(allTasks: any[]) {
  */
 async function calculateMemberMetrics(teamId: number, allTasks: any[]) {
   // Get team members
-  const members = await db
+  const members = await getDb()
     .select({
       id: teamMembers.id,
       name: teamMembers.name,
@@ -173,7 +178,7 @@ async function calculateQualityMetrics(teamId: number, timeRange?: TimeRange) {
       conditions.push(lte(projects.evaluatedAt, timeRange.endDate));
     }
 
-    const evaluatedProjects = await db
+    const evaluatedProjects = await getDb()
       .select()
       .from(projects)
       .where(and(...conditions, sql`${projects.evaluationData} IS NOT NULL`))
@@ -237,7 +242,7 @@ export async function getProjectAnalytics(teamId: number, timeRange?: TimeRange)
       conditions.push(lte(projects.createdAt, timeRange.endDate));
     }
 
-    const allProjects = await db
+    const allProjects = await getDb()
       .select()
       .from(projects)
       .where(and(...conditions));
@@ -307,12 +312,12 @@ export async function getProjectAnalytics(teamId: number, timeRange?: TimeRange)
 export async function getBottleneckAnalysis(teamId: number) {
   try {
     // Get all tasks and projects with handoff history
-    const allTasks = await db
+    const allTasks = await getDb()
       .select()
       .from(tasks)
       .where(eq(tasks.teamId, teamId));
 
-    const allProjects = await db
+    const allProjects = await getDb()
       .select()
       .from(projects)
       .where(eq(projects.teamId, teamId));
@@ -381,7 +386,7 @@ export async function getVelocityTracking(teamId: number, weeks: number = 12) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - (weeks * 7));
 
-    const completedTasks = await db
+    const completedTasks = await getDb()
       .select()
       .from(tasks)
       .where(
@@ -432,7 +437,7 @@ export async function getVelocityTracking(teamId: number, weeks: number = 12) {
 export async function getOfficeWorkloadDistribution(teamId: number) {
   try {
     // Get all active tasks and projects
-    const activeTasks = await db
+    const activeTasks = await getDb()
       .select()
       .from(tasks)
       .where(
@@ -442,7 +447,7 @@ export async function getOfficeWorkloadDistribution(teamId: number) {
         )
       );
 
-    const activeProjects = await db
+    const activeProjects = await getDb()
       .select()
       .from(projects)
       .where(
@@ -497,7 +502,7 @@ export async function getBurndownData(teamId: number, sprintDays: number = 14) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - sprintDays);
 
-    const allTasks = await db
+    const allTasks = await getDb()
       .select()
       .from(tasks)
       .where(

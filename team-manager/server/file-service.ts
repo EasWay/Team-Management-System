@@ -86,6 +86,11 @@ export async function uploadFile(data: {
   description?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const fileName = generateFileName(data.file.originalName);
     const fileType = getFileType(data.file.mimeType);
     
@@ -152,6 +157,11 @@ export async function uploadFileVersion(data: {
   changeDescription?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Get existing file
     const [existingFile] = await db.select().from(files).where(eq(files.id, data.fileId));
     
@@ -213,6 +223,11 @@ export async function getFilesByTeam(teamId: number, filters?: {
   search?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     let query = db.select().from(files).where(eq(files.teamId, teamId));
     
     const conditions = [eq(files.teamId, teamId)];
@@ -258,6 +273,11 @@ export async function getFilesByTeam(teamId: number, filters?: {
  */
 export async function getFileById(fileId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [file] = await db.select().from(files).where(eq(files.id, fileId));
     return file;
   } catch (error) {
@@ -271,6 +291,11 @@ export async function getFileById(fileId: number) {
  */
 export async function getFileVersions(fileId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const versions = await db.select()
       .from(fileVersions)
       .where(eq(fileVersions.fileId, fileId))
@@ -288,6 +313,11 @@ export async function getFileVersions(fileId: number) {
  */
 export async function deleteFile(fileId: number, userId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [file] = await db.select().from(files).where(eq(files.id, fileId));
     
     if (!file) {
@@ -330,6 +360,11 @@ export async function createFolder(data: {
   createdBy: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [folder] = await db.insert(fileFolders).values(data).returning();
     return folder;
   } catch (error) {
@@ -343,6 +378,11 @@ export async function createFolder(data: {
  */
 export async function getFoldersByTeam(teamId: number, projectId?: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(fileFolders.teamId, teamId)];
     
     if (projectId) {
@@ -371,6 +411,11 @@ export async function updateFolder(folderId: number, data: {
   icon?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [folder] = await db.update(fileFolders)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(fileFolders.id, folderId))
@@ -388,6 +433,11 @@ export async function updateFolder(folderId: number, data: {
  */
 export async function deleteFolder(folderId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Check if folder has files
     const folderFiles = await db.select().from(files).where(eq(files.folderId, folderId));
     
@@ -408,6 +458,11 @@ export async function deleteFolder(folderId: number) {
  */
 export async function moveFileToFolder(fileId: number, folderId: number | null) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [file] = await db.update(files)
       .set({ folderId, updatedAt: new Date() })
       .where(eq(files.id, fileId))
@@ -429,6 +484,11 @@ export async function addFileComment(data: {
   comment: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [comment] = await db.insert(fileComments).values(data).returning();
     return comment;
   } catch (error) {
@@ -442,6 +502,11 @@ export async function addFileComment(data: {
  */
 export async function getFileComments(fileId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const comments = await db.select()
       .from(fileComments)
       .where(eq(fileComments.fileId, fileId))
@@ -465,6 +530,11 @@ export async function shareFile(data: {
   expiresAt?: Date;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [share] = await db.insert(fileShares).values(data).returning();
     return share;
   } catch (error) {
@@ -478,6 +548,11 @@ export async function shareFile(data: {
  */
 export async function getFileShares(fileId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const shares = await db.select()
       .from(fileShares)
       .where(eq(fileShares.fileId, fileId));
@@ -494,6 +569,11 @@ export async function getFileShares(fileId: number) {
  */
 export async function updateFileTags(fileId: number, tags: string[]) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [file] = await db.update(files)
       .set({ tags, updatedAt: new Date() })
       .where(eq(files.id, fileId))
@@ -511,6 +591,11 @@ export async function updateFileTags(fileId: number, tags: string[]) {
  */
 export async function searchFiles(teamId: number, query: string) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const results = await db.select()
       .from(files)
       .where(
@@ -538,6 +623,11 @@ export async function searchFiles(teamId: number, query: string) {
  */
 export async function getFileStatistics(teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const stats = await db.select({
       totalFiles: sql<number>`count(*)`,
       totalSize: sql<number>`sum(${files.fileSize})`,

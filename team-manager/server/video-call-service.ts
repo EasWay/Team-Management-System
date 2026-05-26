@@ -33,6 +33,11 @@ export async function createOfficeRoom(data: {
   createdBy: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [room] = await db.insert(officeRooms).values(data).returning();
     return room;
   } catch (error) {
@@ -49,6 +54,11 @@ export async function getOfficeRooms(teamId: number, filters?: {
   isActive?: boolean;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(officeRooms.teamId, teamId)];
     
     if (filters?.officeRole) {
@@ -76,6 +86,11 @@ export async function getOfficeRooms(teamId: number, filters?: {
  */
 export async function getOfficeRoomById(roomId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [room] = await db.select().from(officeRooms).where(eq(officeRooms.id, roomId));
     return room;
   } catch (error) {
@@ -100,6 +115,11 @@ export async function updateOfficeRoom(roomId: number, data: Partial<{
   knockToEnter: boolean;
 }>) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [room] = await db.update(officeRooms)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(officeRooms.id, roomId))
@@ -117,6 +137,11 @@ export async function updateOfficeRoom(roomId: number, data: Partial<{
  */
 export async function deleteOfficeRoom(roomId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(officeRooms).where(eq(officeRooms.id, roomId));
     return { success: true };
   } catch (error) {
@@ -147,6 +172,11 @@ export async function startVideoCall(data: {
   maxParticipants?: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const roomId = generateRoomId();
     
     const [call] = await db.insert(videoCalls).values({
@@ -203,6 +233,11 @@ export async function joinVideoCall(data: {
   isMuted?: boolean;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Check if user is already in the call
     const [existing] = await db.select()
       .from(callParticipants)
@@ -254,6 +289,11 @@ export async function leaveVideoCall(data: {
   userId: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [participant] = await db.select()
       .from(callParticipants)
       .where(
@@ -302,6 +342,11 @@ export async function leaveVideoCall(data: {
  */
 export async function endVideoCall(callId: number, hostId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [call] = await db.select().from(videoCalls).where(eq(videoCalls.id, callId));
     
     if (!call) {
@@ -362,6 +407,11 @@ export async function endVideoCall(callId: number, hostId: number) {
  */
 export async function getVideoCallById(callId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [call] = await db.select().from(videoCalls).where(eq(videoCalls.id, callId));
     return call;
   } catch (error) {
@@ -375,6 +425,11 @@ export async function getVideoCallById(callId: number) {
  */
 export async function getVideoCallByRoomId(roomId: string) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [call] = await db.select().from(videoCalls).where(eq(videoCalls.roomId, roomId));
     return call;
   } catch (error) {
@@ -388,6 +443,11 @@ export async function getVideoCallByRoomId(roomId: string) {
  */
 export async function getActiveCalls(teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const calls = await db.select()
       .from(videoCalls)
       .where(
@@ -415,6 +475,11 @@ export async function getCallHistory(teamId: number, filters?: {
   limit?: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(videoCalls.teamId, teamId)];
     
     if (filters?.startDate) {
@@ -451,6 +516,11 @@ export async function getCallHistory(teamId: number, filters?: {
  */
 export async function getCallParticipants(callId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const participants = await db.select()
       .from(callParticipants)
       .where(eq(callParticipants.callId, callId))
@@ -474,6 +544,11 @@ export async function updateParticipantStatus(data: {
   isSharingScreen?: boolean;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [participant] = await db.select()
       .from(callParticipants)
       .where(
@@ -516,6 +591,11 @@ export async function sendCallMessage(data: {
   fileName?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [msg] = await db.insert(callMessages).values(data).returning();
     return msg;
   } catch (error) {
@@ -529,6 +609,11 @@ export async function sendCallMessage(data: {
  */
 export async function getCallMessages(callId: number, limit?: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     let query = db.select()
       .from(callMessages)
       .where(eq(callMessages.callId, callId))
@@ -551,6 +636,11 @@ export async function getCallMessages(callId: number, limit?: number) {
  */
 export async function startRecording(callId: number, hostId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [call] = await db.select().from(videoCalls).where(eq(videoCalls.id, callId));
     
     if (!call) {
@@ -582,6 +672,11 @@ export async function stopRecording(data: {
   recordingDuration: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [call] = await db.select().from(videoCalls).where(eq(videoCalls.id, data.callId));
     
     if (!call) {
@@ -614,6 +709,11 @@ export async function getCallStatistics(teamId: number, filters?: {
   endDate?: Date;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(videoCalls.teamId, teamId)];
     
     if (filters?.startDate) {

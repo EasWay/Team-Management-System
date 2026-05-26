@@ -33,6 +33,11 @@ export async function upsertNotificationPreferences(data: {
   dailyDigestTimezone?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Check if preferences exist
     const [existing] = await db.select()
       .from(notificationPreferences)
@@ -68,6 +73,11 @@ export async function upsertNotificationPreferences(data: {
  */
 export async function getNotificationPreferences(userId: number, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [prefs] = await db.select()
       .from(notificationPreferences)
       .where(
@@ -125,6 +135,11 @@ export async function createNotification(data: {
   actionLabel?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     // Get user preferences
     const prefs = await getNotificationPreferences(data.userId, data.teamId);
 
@@ -203,6 +218,11 @@ export async function getNotifications(userId: number, teamId: number, filters?:
   limit?: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [
       eq(notifications.userId, userId),
       eq(notifications.teamId, teamId),
@@ -238,6 +258,11 @@ export async function getNotifications(userId: number, teamId: number, filters?:
  */
 export async function getUnreadCount(userId: number, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const result = await db.select({ count: sql<number>`count(*)` })
       .from(notifications)
       .where(
@@ -260,6 +285,11 @@ export async function getUnreadCount(userId: number, teamId: number) {
  */
 export async function markNotificationAsRead(notificationId: number, userId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [notification] = await db.update(notifications)
       .set({
         isRead: true,
@@ -285,6 +315,11 @@ export async function markNotificationAsRead(notificationId: number, userId: num
  */
 export async function markAllAsRead(userId: number, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.update(notifications)
       .set({
         isRead: true,
@@ -310,6 +345,11 @@ export async function markAllAsRead(userId: number, teamId: number) {
  */
 export async function deleteNotification(notificationId: number, userId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(notifications)
       .where(
         and(
@@ -341,6 +381,11 @@ export async function createNotificationRule(data: {
   createdBy: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [rule] = await db.insert(notificationRules).values(data).returning();
     return rule;
   } catch (error) {
@@ -357,6 +402,11 @@ export async function getNotificationRules(teamId: number, filters?: {
   ruleType?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const conditions = [eq(notificationRules.teamId, teamId)];
 
     if (filters?.isActive !== undefined) {
@@ -392,6 +442,11 @@ export async function updateNotificationRule(ruleId: number, data: Partial<{
   isActive: boolean;
 }>) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const [rule] = await db.update(notificationRules)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(notificationRules.id, ruleId))
@@ -409,6 +464,11 @@ export async function updateNotificationRule(ruleId: number, data: Partial<{
  */
 export async function deleteNotificationRule(ruleId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.delete(notificationRules).where(eq(notificationRules.id, ruleId));
     return { success: true };
   } catch (error) {
@@ -422,6 +482,11 @@ export async function deleteNotificationRule(ruleId: number) {
  */
 export async function checkIdleFolders(teamId: number, thresholdHours: number = 24) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const thresholdDate = new Date(Date.now() - thresholdHours * 60 * 60 * 1000);
 
     const idleFolders = await db.select()
@@ -446,6 +511,11 @@ export async function checkIdleFolders(teamId: number, thresholdHours: number = 
  */
 export async function checkApproachingDeadlines(teamId: number, thresholdDays: number = 3) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const thresholdDate = new Date(Date.now() + thresholdDays * 24 * 60 * 60 * 1000);
     const now = new Date();
 
@@ -472,6 +542,11 @@ export async function checkApproachingDeadlines(teamId: number, thresholdDays: n
  */
 export async function generateDailyDigest(userId: number, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const todayStart = new Date(today);
@@ -536,6 +611,11 @@ export async function generateDailyDigest(userId: number, teamId: number) {
  */
 export async function queueDailyDigest(userId: number, teamId: number, scheduledTime: Date) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const digestData = await generateDailyDigest(userId, teamId);
 
     const [digest] = await db.insert(dailyDigestQueue).values({
@@ -563,6 +643,11 @@ export async function queueDailyDigest(userId: number, teamId: number, scheduled
  */
 export async function getPendingDigests() {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const now = new Date();
 
     const digests = await db.select()
@@ -586,6 +671,11 @@ export async function getPendingDigests() {
  */
 export async function markDigestAsSent(digestId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     await db.update(dailyDigestQueue)
       .set({
         status: 'sent',
@@ -605,6 +695,11 @@ export async function markDigestAsSent(digestId: number) {
  */
 export async function getNotificationStatistics(userId: number, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
     const stats = await db.select({
       total: sql<number>`count(*)`,
       unread: sql<number>`count(*) FILTER (WHERE ${notifications.isRead} = false)`,
