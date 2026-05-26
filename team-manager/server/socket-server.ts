@@ -111,6 +111,14 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       const roomName = `doc:${documentId}`;
       socket.join(roomName);
       console.log(`[Socket.io] User ${socket.name} joined document room: ${roomName}`);
+      
+      // If it's an ideation room, notify others
+      if (documentId.startsWith('ideation-')) {
+        socket.to(roomName).emit('ideationUserJoined', {
+          userId: socket.userId,
+          username: socket.name
+        });
+      }
     });
 
     // Handle document room leaving
@@ -118,6 +126,72 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       const roomName = `doc:${documentId}`;
       socket.leave(roomName);
       console.log(`[Socket.io] User ${socket.name} left document room: ${roomName}`);
+      
+      // If it's an ideation room, notify others
+      if (documentId.startsWith('ideation-')) {
+        socket.to(roomName).emit('ideationUserLeft', {
+          userId: socket.userId
+        });
+      }
+    });
+
+    // Handle ideation chat messages (real-time brainstorming)
+    socket.on('ideationMessage', (data: {teamId: number, name: string, message: string, timestamp: string, userId: number}) => {
+      const roomName = `doc:ideation-${data.teamId}`;
+      // Broadcast to all users in the ideation room (including sender)
+      io.to(roomName).emit('ideationMessage', data);
+      console.log(`[Socket.io] Broadcast ideation message to ${roomName}`);
+    });
+
+    // Handle ideation chat clear
+    socket.on('ideationClearChat', (data: {teamId: number}) => {
+      const roomName = `doc:ideation-${data.teamId}`;
+      // Broadcast to all users in the ideation room
+      io.to(roomName).emit('ideationChatCleared');
+      console.log(`[Socket.io] Broadcast chat cleared to ${roomName}`);
+    });
+
+    // Handle office room joining (for office chat)
+    socket.on('joinOffice', (data: {teamId: number, officeRole: string, userName: string}) => {
+      const roomName = `office:${data.teamId}:${data.officeRole}`;
+      socket.join(roomName);
+      console.log(`[Socket.io] User ${socket.name} joined office: ${roomName}`);
+      
+      // Notify others in the office
+      socket.to(roomName).emit('officeVisitorJoined', {
+        userId: socket.userId,
+        userName: data.userName
+      });
+      
+      // Send current visitors list to the new joiner
+      io.in(roomName).allSockets().then((sockets) => {
+        const visitors = Array.from(sockets).map((socketId) => {
+          const s = io.sockets.sockets.get(socketId) as any;
+          return { userId: s?.userId, userName: s?.name };
+        }).filter(v => v.userId);
+        
+        socket.emit('officeVisitorsList', { visitors });
+      });
+    });
+
+    // Handle office room leaving
+    socket.on('leaveOffice', (data: {teamId: number, officeRole: string}) => {
+      const roomName = `office:${data.teamId}:${data.officeRole}`;
+      socket.leave(roomName);
+      console.log(`[Socket.io] User ${socket.name} left office: ${roomName}`);
+      
+      // Notify others
+      socket.to(roomName).emit('officeVisitorLeft', {
+        userId: socket.userId
+      });
+    });
+
+    // Handle office chat messages
+    socket.on('officeMessage', (data: {teamId: number, officeRole: string, userId: number, userName: string, message: string, timestamp: string}) => {
+      const roomName = `office:${data.teamId}:${data.officeRole}`;
+      // Broadcast to all users in the office
+      io.to(roomName).emit('officeMessage', data);
+      console.log(`[Socket.io] Broadcast office message to ${roomName}`);
     });
 
     // Handle disconnection

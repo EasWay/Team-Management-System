@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { OfficeChat } from "@/components/OfficeChat";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -792,6 +793,9 @@ export default function Workspace() {
 
           {/* Right Side - Office Furniture */}
           <div className="space-y-6">
+            {/* Office Chat */}
+            <OfficeChat officeRole={selectedRole} teamId={selectedTeamId} />
+
             {/* Inbox */}
             <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/50 to-cyan-50/30">
               <CardHeader>

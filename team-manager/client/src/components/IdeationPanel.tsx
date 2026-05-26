@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "sonner";
 import { 
   Sparkles, 
@@ -19,7 +21,11 @@ import {
   CheckCircle2, 
   Loader2,
   Rocket,
-  MessageSquare
+  MessageSquare,
+  Send,
+  MessageCircle,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 
 interface IdeationPanelProps {
@@ -28,16 +34,131 @@ interface IdeationPanelProps {
 }
 
 export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps) {
+  const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [chatLogs, setChatLogs] = useState("");
   const [ideationResult, setIdeationResult] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  
+  // Live chat state
+  const [liveMessages, setLiveMessages] = useState<Array<{name: string, message: string, timestamp: Date, userId?: number}>>([]);
+  const [currentMessage, setCurrentMessage] = useState("");
+  const [onlineUsers, setOnlineUsers] = useState<Array<{userId: number, username: string}>>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Client info for activation
   const [clientFirstName, setClientFirstName] = useState("");
   const [clientLastName, setClientLastName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+
+  // Join ideation room when component mounts
+  useEffect(() => {
+    if (socket && isConnected && teamId) {
+      const roomId = `ideation-${teamId}`;
+      socket.emit('joinDocument', roomId);
+      console.log(`[Ideation] Joined room: ${roomId}`);
+
+      return () => {
+        socket.emit('leaveDocument', roomId);
+        console.log(`[Ideation] Left room: ${roomId}`);
+      };
+    }
+  }, [socket, isConnected, teamId]);
+
+  // Listen for real-time messages
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIdeationMessage = (data: {name: string, message: string, timestamp: string, userId: number}) => {
+      setLiveMessages(prev => [...prev, {
+        name: data.name,
+        message: data.message,
+        timestamp: new Date(data.timestamp),
+        userId: data.userId
+      }]);
+    };
+
+    const handleUserJoined = (data: {userId: number, username: string}) => {
+      setOnlineUsers(prev => {
+        if (prev.find(u => u.userId === data.userId)) return prev;
+        return [...prev, data];
+      });
+      toast.success(`${data.username} joined the brainstorming session`);
+    };
+
+    const handleUserLeft = (data: {userId: number}) => {
+      setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId));
+    };
+
+    const handleChatCleared = () => {
+      setLiveMessages([]);
+      toast.info("Chat was cleared by a team member");
+    };
+
+    socket.on('ideationMessage' as any, handleIdeationMessage);
+    socket.on('ideationUserJoined' as any, handleUserJoined);
+    socket.on('ideationUserLeft' as any, handleUserLeft);
+    socket.on('ideationChatCleared' as any, handleChatCleared);
+
+    return () => {
+      socket.off('ideationMessage' as any, handleIdeationMessage);
+      socket.off('ideationUserJoined' as any, handleUserJoined);
+      socket.off('ideationUserLeft' as any, handleUserLeft);
+      socket.off('ideationChatCleared' as any, handleChatCleared);
+    };
+  }, [socket]);
+
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [liveMessages]);
+
+  // Send message in live chat (real-time)
+  const handleSendMessage = () => {
+    if (!currentMessage.trim() || !user || !socket || !isConnected) return;
+    
+    const messageData = {
+      teamId,
+      name: user.name || user.email || "Anonymous",
+      message: currentMessage.trim(),
+      timestamp: new Date().toISOString(),
+      userId: user.id
+    };
+    
+    // Emit to all users in the room
+    socket.emit('ideationMessage' as any, messageData);
+    
+    setCurrentMessage("");
+  };
+
+  // Convert live chat to text format for AI processing
+  const handleProcessLiveChat = () => {
+    if (liveMessages.length === 0) {
+      toast.error("No messages in chat yet. Start brainstorming!");
+      return;
+    }
+    
+    // Convert messages to chat log format
+    const formattedChat = liveMessages.map(msg => {
+      const time = msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      return `[${time}] ${msg.name}: ${msg.message}`;
+    }).join('\n\n');
+    
+    setChatLogs(formattedChat);
+    setIsProcessing(true);
+    processIdeationMutation.mutate({ chatLogs: formattedChat });
+  };
+
+  // Clear live chat (broadcast to all users)
+  const handleClearChat = () => {
+    if (socket && isConnected) {
+      socket.emit('ideationClearChat' as any, { teamId });
+    }
+    setLiveMessages([]);
+    toast.success("Chat cleared");
+  };
 
   const processIdeationMutation = trpc.projects.processIdeation.useMutation({
     onSuccess: (data) => {
@@ -129,27 +250,183 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
               <div>
                 <CardTitle>💡 Idea Lab - AI Transcriptionist</CardTitle>
                 <CardDescription>
-                  Paste your team's brainstorming chat and let AI structure it into a project folder
+                  Chat live with your team OR paste external conversations - AI will structure it into a project folder
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="chatLogs">Chat Logs</Label>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleSampleChat}
-                  type="button"
-                >
-                  Load Sample
-                </Button>
-              </div>
-              <Textarea
-                id="chatLogs"
-                placeholder="📋 Paste your brainstorming chat here...
+          <CardContent>
+            <Tabs defaultValue="live-chat" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="live-chat">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  💬 Live Chat
+                </TabsTrigger>
+                <TabsTrigger value="paste">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  📋 Paste Conversation
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Live Chat Tab */}
+              <TabsContent value="live-chat" className="space-y-4">
+                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/30 to-purple-50/30">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          💬 Team Brainstorming Chat
+                          {isConnected ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                              <Wifi className="h-3 w-3 mr-1" />
+                              Live
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                              <WifiOff className="h-3 w-3 mr-1" />
+                              Offline
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          Chat with your team in real-time. AI will capture the conversation and generate a project folder.
+                        </CardDescription>
+                      </div>
+                      {onlineUsers.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{onlineUsers.length} online</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Online Users */}
+                    {onlineUsers.length > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-white rounded-lg border">
+                        <span className="text-xs text-muted-foreground">Online:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {onlineUsers.map((u) => (
+                            <Badge key={u.userId} variant="secondary" className="text-xs">
+                              {u.username}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chat Messages */}
+                    <div className="h-96 overflow-y-auto border rounded-lg p-4 bg-white space-y-3">
+                      {liveMessages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                          <MessageCircle className="h-12 w-12 mb-3 opacity-30" />
+                          <p className="font-medium">Start brainstorming!</p>
+                          <p className="text-sm">Type your ideas below and AI will capture everything</p>
+                          {!isConnected && (
+                            <p className="text-xs text-red-500 mt-2">⚠️ Connecting to server...</p>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {liveMessages.map((msg, idx) => {
+                            const isCurrentUser = msg.userId === user?.id;
+                            return (
+                              <div key={idx} className={`flex flex-col gap-1 ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-sm">{msg.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <div className={`rounded-lg p-3 max-w-[80%] ${
+                                  isCurrentUser 
+                                    ? 'bg-primary text-primary-foreground' 
+                                    : 'bg-muted/50'
+                                }`}>
+                                  <p className="text-sm">{msg.message}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          <div ref={messagesEndRef} />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={isConnected ? "Type your message..." : "Connecting..."}
+                        value={currentMessage}
+                        onChange={(e) => setCurrentMessage(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        disabled={!isConnected}
+                      />
+                      <Button onClick={handleSendMessage} disabled={!currentMessage.trim() || !isConnected}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleClearChat}
+                        disabled={liveMessages.length === 0}
+                        className="flex-1"
+                      >
+                        🗑️ Clear Chat
+                      </Button>
+                      <Button 
+                        onClick={handleProcessLiveChat}
+                        disabled={isProcessing || liveMessages.length === 0}
+                        className="flex-1 bg-purple-600 hover:bg-purple-700"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            🤖 AI is analyzing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            🚀 Generate Project Folder
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground text-center">
+                      💡 Tip: Discuss goals, features, timeline, and team roles. AI will capture everything!
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Paste Conversation Tab */}
+              <TabsContent value="paste" className="space-y-4">
+              {/* Paste Conversation Tab */}
+              <TabsContent value="paste" className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="chatLogs">Paste External Chat Logs</Label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleSampleChat}
+                      type="button"
+                    >
+                      Load Sample
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="chatLogs"
+                    placeholder="📋 Paste your brainstorming chat here...
 
 Example formats:
 - WhatsApp: [Date, Time] Name: Message
@@ -163,30 +440,32 @@ The AI will identify all speakers and extract:
 ✅ Technical specifications
 ✅ Target audience
 ✅ Success metrics"
-                value={chatLogs}
-                onChange={(e) => setChatLogs(e.target.value)}
-                rows={15}
-                className="font-mono text-sm"
-              />
-            </div>
+                    value={chatLogs}
+                    onChange={(e) => setChatLogs(e.target.value)}
+                    rows={15}
+                    className="font-mono text-sm"
+                  />
+                </div>
 
-            <Button 
-              onClick={handleProcessIdeation} 
-              disabled={isProcessing || !chatLogs.trim()}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  🤖 AI is analyzing your chat...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  🚀 Create Project Folder with AI
-                </>
-              )}
-            </Button>
+                <Button 
+                  onClick={handleProcessIdeation} 
+                  disabled={isProcessing || !chatLogs.trim()}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      🤖 AI is analyzing your chat...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      🚀 Create Project Folder with AI
+                    </>
+                  )}
+                </Button>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       ) : (

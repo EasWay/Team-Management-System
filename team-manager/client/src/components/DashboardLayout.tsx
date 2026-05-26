@@ -3,6 +3,7 @@ import { getLoginUrl } from "@/const";
 import { Button } from "./ui/button";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { NotificationBell } from './NotificationBell';
 import { LogOut, BarChart, Sun, Moon, ChevronDown, LayoutDashboard } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTeamContext } from "@/contexts/TeamContext";
@@ -20,6 +21,11 @@ const workspaceMenuItems = [
   { label: "🏢 My Office", path: "/workspace" },
   { label: "🏛️ Conference Room", path: "/conference-room" },
   { label: "📊 QA Office", path: "/evaluation" },
+  { label: "📈 Analytics", path: "/analytics" },
+  { label: "📁 Files", path: "/files" },
+  { label: "📅 Calendar", path: "/calendar" },
+  { label: "🎥 Video Calls", path: "/video-calls" },
+  { label: "🔔 Notifications", path: "/notifications" },
   { label: "Tasks", path: "/tasks" },
   { label: "Team Members", path: "/team" },
   { label: "Projects", path: "/projects" },
@@ -193,6 +199,10 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto">
+        {/* Top Bar with Notifications */}
+        <div className="sticky top-0 z-10 bg-background border-b px-6 py-3 flex items-center justify-end">
+          <NotificationBell />
+        </div>
         {children}
       </main>
     </div>

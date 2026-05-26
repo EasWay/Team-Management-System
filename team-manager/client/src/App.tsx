@@ -16,6 +16,11 @@ import Messages from "./pages/Messages";
 import Workspace from "./pages/Workspace";
 import DecisionTable from "./pages/DecisionTable";
 import Evaluation from "./pages/Evaluation";
+import Analytics from "./pages/Analytics";
+import FileManager from "./pages/FileManager";
+import Calendar from "./pages/Calendar";
+import VideoCalls from "./pages/VideoCalls";
+import Notifications from "./pages/Notifications";
 import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -43,6 +48,11 @@ function Router() {
       <Route path={"/decision-table"} component={DecisionTable} />
       <Route path={"/evaluation"} component={Evaluation} />
       <Route path={"/qa-office"} component={Evaluation} />
+      <Route path={"/analytics"} component={Analytics} />
+      <Route path={"/files"} component={FileManager} />
+      <Route path={"/calendar"} component={Calendar} />
+      <Route path={"/video-calls"} component={VideoCalls} />
+      <Route path={"/notifications"} component={Notifications} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
