@@ -636,6 +636,8 @@ export default function Workspace() {
                 </p>
               </div>
             )}
+          </TabsContent>
+        </Tabs>
           </CardContent>
         </Card>
       </div>
