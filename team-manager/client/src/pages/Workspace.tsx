@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { OfficeChat } from "@/components/OfficeChat";
+import { GoogleDriveConnect } from "@/components/GoogleDriveConnect";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -829,6 +830,21 @@ export default function Workspace() {
           <div className="space-y-6">
             {/* Office Chat */}
             <OfficeChat officeRole={selectedRole} teamId={selectedTeamId} />
+
+            {/* Team Google Drive */}
+            <GoogleDriveConnect 
+              teamId={selectedTeamId} 
+              connectionType="team"
+            />
+
+            {/* Office Google Drive */}
+            {selectedRole && (
+              <GoogleDriveConnect 
+                teamId={selectedTeamId} 
+                officeRole={selectedRole}
+                connectionType="office"
+              />
+            )}
 
             {/* Inbox */}
             <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/50 to-cyan-50/30">
