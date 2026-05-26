@@ -154,9 +154,14 @@ export default function Workspace() {
   // Find current user's membership and office role
   const currentUserMembership = members?.find((m: any) => m.member?.email === user?.email);
   const userOfficeRole = currentUserMembership?.officeRole as keyof typeof ROLE_CONFIG | null;
+  const userRole = currentUserMembership?.role; // admin, team_lead, etc.
   
   // Default to user's assigned office, or project_manager if not assigned
   const [selectedRole, setSelectedRole] = useState<keyof typeof ROLE_CONFIG>('project_manager');
+  const [showAccessDialog, setShowAccessDialog] = useState(false);
+  const [pendingOfficeRole, setPendingOfficeRole] = useState<keyof typeof ROLE_CONFIG | null>(null);
+  const [officeCodeInput, setOfficeCodeInput] = useState("");
+  const [accessError, setAccessError] = useState("");
   
   // Update selected role when user's office role is loaded
   useEffect(() => {
@@ -168,6 +173,43 @@ export default function Workspace() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
   const [isHandingOff, setIsHandingOff] = useState(false);
+  
+  // Handle office selection with access control
+  const handleOfficeClick = (officeRole: keyof typeof ROLE_CONFIG) => {
+    // Allow access if:
+    // 1. It's their own office
+    // 2. They're an admin or team_lead
+    if (officeRole === userOfficeRole || userRole === 'admin' || userRole === 'team_lead') {
+      setSelectedRole(officeRole);
+      return;
+    }
+    
+    // Otherwise, require office code
+    setPendingOfficeRole(officeRole);
+    setOfficeCodeInput("");
+    setAccessError("");
+    setShowAccessDialog(true);
+  };
+  
+  // Verify office code
+  const handleAccessSubmit = () => {
+    if (!pendingOfficeRole) return;
+    
+    const officeConfig = ROLE_CONFIG[pendingOfficeRole];
+    const correctCode = officeConfig.officeNumber;
+    
+    if (officeCodeInput === correctCode) {
+      setSelectedRole(pendingOfficeRole);
+      setShowAccessDialog(false);
+      setPendingOfficeRole(null);
+      setOfficeCodeInput("");
+      setAccessError("");
+      toast.success(`Access granted to ${officeConfig.label}`);
+    } else {
+      setAccessError("Incorrect office code. Please try again.");
+      toast.error("Incorrect office code");
+    }
+  };
 
   // Deliverable form
   const [deliverableType, setDeliverableType] = useState<string>('link');
@@ -354,10 +396,13 @@ export default function Workspace() {
               {Object.entries(ROLE_CONFIG).map(([key, config]) => {
                 const Icon = config.icon;
                 const isSelected = selectedRole === key;
+                const isUserOffice = key === userOfficeRole;
+                const hasAccess = isUserOffice || userRole === 'admin' || userRole === 'team_lead';
+                
                 return (
                   <button
                     key={key}
-                    onClick={() => setSelectedRole(key as any)}
+                    onClick={() => handleOfficeClick(key as keyof typeof ROLE_CONFIG)}
                     className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all relative ${
                       isSelected
                         ? 'border-primary bg-primary/5 shadow-lg'
@@ -366,7 +411,16 @@ export default function Workspace() {
                   >
                     {isSelected && (
                       <div className="absolute top-2 right-2">
-                        <Lock className="h-3 w-3 text-primary" />
+                        {hasAccess ? (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        ) : (
+                          <Lock className="h-3 w-3 text-yellow-500" />
+                        )}
+                      </div>
+                    )}
+                    {!isSelected && !hasAccess && (
+                      <div className="absolute top-2 right-2">
+                        <Lock className="h-3 w-3 text-muted-foreground" />
                       </div>
                     )}
                     <div className={`p-2 rounded-lg ${config.bgColor}`}>
@@ -379,6 +433,9 @@ export default function Workspace() {
                         <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
                           {config.realName}
                         </div>
+                      )}
+                      {isUserOffice && (
+                        <div className="text-[10px] text-green-600 font-bold mt-1">YOUR OFFICE</div>
                       )}
                     </div>
                   </button>
@@ -641,6 +698,76 @@ export default function Workspace() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Office Access Dialog */}
+      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>🔐 Office Access Required</DialogTitle>
+            <DialogDescription>
+              {pendingOfficeRole && (
+                <>
+                  You're trying to access <strong>{ROLE_CONFIG[pendingOfficeRole].label}</strong>.
+                  <br />
+                  Enter the office code to gain access.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="officeCode">Office Code</Label>
+              <Input
+                id="officeCode"
+                type="text"
+                placeholder="Enter office number (e.g., 202)"
+                value={officeCodeInput}
+                onChange={(e) => {
+                  setOfficeCodeInput(e.target.value);
+                  setAccessError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAccessSubmit();
+                  }
+                }}
+                className={accessError ? "border-red-500" : ""}
+              />
+              {accessError && (
+                <p className="text-sm text-red-500 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {accessError}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                💡 Hint: The office code is the office number (e.g., Office #202 = code "202")
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={handleAccessSubmit}
+                className="flex-1"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Access Office
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAccessDialog(false);
+                  setPendingOfficeRole(null);
+                  setOfficeCodeInput("");
+                  setAccessError("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
