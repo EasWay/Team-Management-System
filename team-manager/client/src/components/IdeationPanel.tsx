@@ -410,8 +410,6 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
 
               {/* Paste Conversation Tab */}
               <TabsContent value="paste" className="space-y-4">
-              {/* Paste Conversation Tab */}
-              <TabsContent value="paste" className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="chatLogs">Paste External Chat Logs</Label>
