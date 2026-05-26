@@ -17,6 +17,9 @@ import {
 
 const workspaceMenuItems = [
   { label: "Home", path: "/" },
+  { label: "My Office", path: "/workspace" },
+  { label: "Conference Room", path: "/conference-room" },
+  { label: "QA Office", path: "/evaluation" },
   { label: "Tasks", path: "/tasks" },
   { label: "Team Members", path: "/team" },
   { label: "Projects", path: "/projects" },

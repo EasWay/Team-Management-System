@@ -13,6 +13,9 @@ import Tasks from "./pages/Tasks";
 import Repositories from "./pages/Repositories";
 import Projects from "./pages/Projects";
 import Messages from "./pages/Messages";
+import Workspace from "./pages/Workspace";
+import DecisionTable from "./pages/DecisionTable";
+import Evaluation from "./pages/Evaluation";
 import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -34,6 +37,12 @@ function Router() {
       <Route path={"/repositories"} component={Repositories} />
       <Route path={"/projects"} component={Projects} />
       <Route path={"/messages"} component={Messages} />
+      <Route path={"/workspace"} component={Workspace} />
+      <Route path={"/office"} component={Workspace} />
+      <Route path={"/conference-room"} component={DecisionTable} />
+      <Route path={"/decision-table"} component={DecisionTable} />
+      <Route path={"/evaluation"} component={Evaluation} />
+      <Route path={"/qa-office"} component={Evaluation} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
