@@ -189,29 +189,45 @@ AWS_S3_BUCKET=...
 
 ## 🎯 How to Use the Digital HQ
 
-### Starting a New Project
+> **📖 For complete workflow documentation, see [UNIFIED_WORKFLOW.md](./UNIFIED_WORKFLOW.md)**
+> 
+> This guide explains how ALL features (traditional + new) work together.
+
+### Quick Start Guide
+
+#### **Starting a New Project**
 
 1. **Idea Lab** - Paste your WhatsApp brainstorming chat
 2. AI extracts speakers and creates a Final Decision Report
 3. Click "Activate Project" to deliver to Lead Researcher (George)
 
-### Working on a Folder
+#### **Working on a Folder**
 
 1. Check your **Inbox** for new folders delivered to you
 2. Move folder to your **Desk** to start working
 3. Add deliverables (Figma links, GitHub PRs, documents)
-4. Click **"Deliver Folder"** to send to Conference Room
+4. Click **"Deliver Folder"** to send to next office
 
-### Approving Work
+#### **Approving Work**
 
 1. Go to **Conference Room** to see pending folders
 2. Review deliverables and handoff notes
 3. Approve (moves to next office) or Reject (returns to sender)
 
-### Quality Assurance
+#### **Quality Assurance**
 
 1. **QA Office** shows all completed folders
 2. Run AI inspection to get quality scores
 3. Folders scoring 90+ are cleared for launch
+
+### Feature Integration
+
+The Digital HQ seamlessly combines:
+- **Traditional Features**: Tasks (Kanban), Projects, Repositories, Team Members, Messages
+- **Office Features**: My Office (Desk + Inbox), Office Directory, Access Control
+- **AI Features**: Idea Lab (Brainstorming), QA Office (Quality Inspection)
+- **Approval System**: Conference Room with Boss/PM/Team Vote modes
+
+All features work together - tasks from the Kanban board appear in offices, GitHub repos link to deliverables, and messages keep everyone connected.
 
 ## 🛠️ Development Scripts
