@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { useTeamContext } from "@/contexts/TeamContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Palette,
@@ -142,7 +143,28 @@ const WORKFLOW_STAGES = [
 
 export default function Workspace() {
   const { selectedTeamId } = useTeamContext();
+  const { user } = useAuth();
+  
+  // Get team members to find current user's office role
+  const { data: members } = trpc.teams.getMembers.useQuery(
+    { teamId: selectedTeamId! },
+    { enabled: !!selectedTeamId }
+  );
+  
+  // Find current user's membership and office role
+  const currentUserMembership = members?.find((m: any) => m.member?.email === user?.email);
+  const userOfficeRole = currentUserMembership?.officeRole as keyof typeof ROLE_CONFIG | null;
+  
+  // Default to user's assigned office, or project_manager if not assigned
   const [selectedRole, setSelectedRole] = useState<keyof typeof ROLE_CONFIG>('project_manager');
+  
+  // Update selected role when user's office role is loaded
+  useEffect(() => {
+    if (userOfficeRole) {
+      setSelectedRole(userOfficeRole);
+    }
+  }, [userOfficeRole]);
+  
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
   const [isHandingOff, setIsHandingOff] = useState(false);
