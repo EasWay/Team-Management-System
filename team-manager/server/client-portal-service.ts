@@ -2,7 +2,7 @@ import { getDb } from "./db";
 import { clientPortalAccess, clientFeedback, clientActivityLog, clientProjectVisibility, clients, projects, files, teamMembers } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 /**
  * Client Portal Service
