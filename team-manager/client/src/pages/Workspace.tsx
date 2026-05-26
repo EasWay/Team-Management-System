@@ -171,6 +171,7 @@ export default function Workspace() {
   const [pendingOfficeRole, setPendingOfficeRole] = useState<keyof typeof ROLE_CONFIG | null>(null);
   const [officeCodeInput, setOfficeCodeInput] = useState("");
   const [accessError, setAccessError] = useState("");
+  const [isOfficeLocked, setIsOfficeLocked] = useState(false); // New: Track if office is in locked/focused mode
   
   // Update selected role when user's office role is loaded
   useEffect(() => {
@@ -213,11 +214,18 @@ export default function Workspace() {
       setPendingOfficeRole(null);
       setOfficeCodeInput("");
       setAccessError("");
-      toast.success(`Access granted to ${officeConfig.label}`);
+      setIsOfficeLocked(true); // Lock the office when entering with code
+      toast.success(`🔒 Entered ${officeConfig.label} - Locked Mode`);
     } else {
       setAccessError("Incorrect office code. Please try again.");
       toast.error("Incorrect office code");
     }
+  };
+  
+  // Unlock office and return to directory view
+  const handleUnlockOffice = () => {
+    setIsOfficeLocked(false);
+    toast.success("Office unlocked - Directory visible");
   };
 
   // Deliverable form
@@ -397,67 +405,69 @@ export default function Workspace() {
           </div>
         )}
 
-        {/* Office Directory */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              <CardTitle>Office Directory</CardTitle>
-            </div>
-            <CardDescription>Visit different offices in the Digital HQ</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {Object.entries(ROLE_CONFIG).map(([key, config]) => {
-                const Icon = config.icon;
-                const isSelected = selectedRole === key;
-                const isUserOffice = key === userOfficeRole;
-                const hasAccess = isUserOffice || userRole === 'admin' || userRole === 'team_lead';
-                
-                return (
-                  <button
-                    key={key}
-                    onClick={() => handleOfficeClick(key as keyof typeof ROLE_CONFIG)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all relative ${
-                      isSelected
-                        ? 'border-primary bg-primary/5 shadow-lg'
-                        : 'border-border hover:border-primary/50 hover:shadow-md'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-2 right-2">
-                        {hasAccess ? (
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Lock className="h-3 w-3 text-yellow-500" />
-                        )}
-                      </div>
-                    )}
-                    {!isSelected && !hasAccess && (
-                      <div className="absolute top-2 right-2">
-                        <Lock className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className={`p-2 rounded-lg ${config.bgColor}`}>
-                      <Icon className={`h-6 w-6 ${config.color}`} />
-                    </div>
-                    <div className="text-center">
-                      <span className="text-xs font-medium leading-tight">{config.label.replace("'s Office", "")}</span>
-                      {config.realName && (
-                        <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                          {config.realName}
+        {/* Office Directory - Only show when NOT in locked mode */}
+        {!isOfficeLocked && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                <CardTitle>Office Directory</CardTitle>
+              </div>
+              <CardDescription>Visit different offices in the Digital HQ</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {Object.entries(ROLE_CONFIG).map(([key, config]) => {
+                  const Icon = config.icon;
+                  const isSelected = selectedRole === key;
+                  const isUserOffice = key === userOfficeRole;
+                  const hasAccess = isUserOffice || userRole === 'admin' || userRole === 'team_lead';
+                  
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleOfficeClick(key as keyof typeof ROLE_CONFIG)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all relative ${
+                        isSelected
+                          ? 'border-primary bg-primary/5 shadow-lg'
+                          : 'border-border hover:border-primary/50 hover:shadow-md'
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-2 right-2">
+                          {hasAccess ? (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Lock className="h-3 w-3 text-yellow-500" />
+                          )}
                         </div>
                       )}
-                      {isUserOffice && (
-                        <div className="text-[10px] text-green-600 font-bold mt-1">YOUR OFFICE</div>
+                      {!isSelected && !hasAccess && (
+                        <div className="absolute top-2 right-2">
+                          <Lock className="h-3 w-3 text-muted-foreground" />
+                        </div>
                       )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                      <div className={`p-2 rounded-lg ${config.bgColor}`}>
+                        <Icon className={`h-6 w-6 ${config.color}`} />
+                      </div>
+                      <div className="text-center">
+                        <span className="text-xs font-medium leading-tight">{config.label.replace("'s Office", "")}</span>
+                        {config.realName && (
+                          <div className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                            {config.realName}
+                          </div>
+                        )}
+                        {isUserOffice && (
+                          <div className="text-[10px] text-green-600 font-bold mt-1">YOUR OFFICE</div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Current Office View - Real Office Design */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -477,11 +487,28 @@ export default function Workspace() {
                         {selectedRole === userOfficeRole && (
                           <Badge variant="default" className="text-xs">Your Office</Badge>
                         )}
+                        {isOfficeLocked && (
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                            <Lock className="h-3 w-3 mr-1" />
+                            🔒 Locked Mode
+                          </Badge>
+                        )}
                       </CardTitle>
                       <CardDescription>{roleConfig.description}</CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {isOfficeLocked && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUnlockOffice}
+                        className="mr-2"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Unlock Office
+                      </Button>
+                    )}
                     <Lamp className="h-5 w-5 text-yellow-500" />
                     <Monitor className="h-5 w-5 text-blue-500" />
                     <Coffee className="h-5 w-5 text-amber-600" />
