@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { useTeamContext } from "@/contexts/TeamContext";
 import { toast } from "sonner";
+import { IdeationPanel } from "@/components/IdeationPanel";
 import {
   CheckCircle2,
   XCircle,
@@ -24,6 +25,7 @@ import {
   ArrowRight,
   FileText,
   Loader2,
+  Lightbulb,
 } from "lucide-react";
 import {
   Dialog,
@@ -437,14 +439,18 @@ export default function DecisionTable() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Decision Table</h1>
+          <h1 className="text-3xl font-bold">🏛️ Conference Room</h1>
           <p className="text-muted-foreground">
-            Review and approve work transitions, handoffs, and quality gates
+            Idea Lab for brainstorming • Decision Table for approvals • Quality gates
           </p>
         </div>
 
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="idea-lab" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="idea-lab">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              🎨 Idea Lab
+            </TabsTrigger>
             <TabsTrigger value="pending">
               <Clock className="h-4 w-4 mr-2" />
               📋 Awaiting Review ({pendingApprovals?.length || 0})
@@ -458,6 +464,15 @@ export default function DecisionTable() {
               ❌ Rejected ({rejectedApprovals?.length || 0})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="idea-lab" className="space-y-4">
+            <IdeationPanel 
+              teamId={selectedTeamId} 
+              onProjectActivated={() => {
+                toast.success("Project activated! Delivered to Lead Researcher's inbox.");
+              }}
+            />
+          </TabsContent>
 
           <TabsContent value="pending" className="space-y-4">
             {pendingLoading ? (

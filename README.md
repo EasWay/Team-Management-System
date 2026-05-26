@@ -76,8 +76,12 @@ This platform transforms traditional project management into a **Virtual Office*
 ## 🚀 Getting Started
 
 ```bash
+# Clone repository
+git clone https://github.com/EasWay/Team-Management-System.git
+cd Team-Management-System/team-manager
+
 # Install dependencies
-https://github.com/EasWay/Team-Management-System.git
+pnpm install
 
 # Set up environment variables
 cp .env.example .env
@@ -90,11 +94,28 @@ cp .env.example .env
 # Push database schema
 pnpm db:push
 
+# (Optional) Setup test data
+npx tsx setup-test-data.ts
+
 # Start development server
 pnpm dev
 ```
 
 The Digital HQ will be available at `http://localhost:5000`
+
+### 🧪 Testing the Workflow
+
+> **📖 For complete testing instructions, see [TESTING_GUIDE.md](./TESTING_GUIDE.md)**
+
+Quick test:
+1. Login with GitHub
+2. Create a team or select existing team
+3. Invite team members and assign office roles
+4. Go to Conference Room → Idea Lab
+5. Paste a brainstorming chat and activate project
+6. Watch it flow through offices!
+
+**Production URL:** https://team-management-system-zq6x.onrender.com
 
 ## Scripts
 
