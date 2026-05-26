@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { calendarEvents, milestones, taskDependencies, userAvailability, tasks, projects } from "../drizzle/schema";
 import { eq, and, gte, lte, desc, sql, or } from "drizzle-orm";
 

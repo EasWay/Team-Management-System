@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { videoCalls, callParticipants, callMessages, officeRooms } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import crypto from "crypto";

@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { clientPortalAccess, clientFeedback, clientActivityLog, clientProjectVisibility, clients, projects, files, teamMembers } from "../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import crypto from "crypto";

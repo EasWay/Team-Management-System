@@ -1,7 +1,7 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { files, fileFolders, fileVersions, fileComments, fileShares } from "../drizzle/schema";
 import { eq, and, desc, sql, like, or, inArray } from "drizzle-orm";
-import { uploadToS3, deleteFromS3, getSignedUrl } from "./storage";
+import { storagePut, storageGet } from "./storage";
 import path from "path";
 import crypto from "crypto";
 
@@ -89,8 +89,9 @@ export async function uploadFile(data: {
     const fileName = generateFileName(data.file.originalName);
     const fileType = getFileType(data.file.mimeType);
     
-    // Upload to S3 (or local storage)
-    const fileUrl = await uploadToS3(fileName, data.file.buffer, data.file.mimeType);
+    // Upload to storage
+    const uploadResult = await storagePut(fileName, data.file.buffer, data.file.mimeType);
+    const fileUrl = uploadResult.url;
     
     // Generate thumbnail for images/videos if needed
     let thumbnailUrl: string | null = null;
@@ -159,7 +160,8 @@ export async function uploadFileVersion(data: {
     }
     
     const fileName = generateFileName(data.file.originalName);
-    const fileUrl = await uploadToS3(fileName, data.file.buffer, data.file.mimeType);
+    const uploadResult = await storagePut(fileName, data.file.buffer, data.file.mimeType);
+    const fileUrl = uploadResult.url;
     
     const newVersion = existingFile.version + 1;
     
@@ -292,17 +294,17 @@ export async function deleteFile(fileId: number, userId: number) {
       throw new Error('File not found');
     }
     
-    // Delete from S3
-    await deleteFromS3(file.fileName);
+    // Delete from storage (TODO: implement storage delete function)
+    // await deleteFromS3(file.fileName);
     
-    // Delete all versions from S3
-    const versions = await db.select().from(fileVersions).where(eq(fileVersions.fileId, fileId));
-    for (const version of versions) {
-      const versionFileName = version.fileUrl.split('/').pop();
-      if (versionFileName) {
-        await deleteFromS3(versionFileName);
-      }
-    }
+    // Delete all versions from storage
+    // const versions = await db.select().from(fileVersions).where(eq(fileVersions.fileId, fileId));
+    // for (const version of versions) {
+    //   const versionFileName = version.fileUrl.split('/').pop();
+    //   if (versionFileName) {
+    //     await deleteFromS3(versionFileName);
+    //   }
+    // }
     
     // Delete from database (cascade will handle related records)
     await db.delete(files).where(eq(files.id, fileId));

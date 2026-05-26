@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { tasks, projects, teamMembers, teamMembersCollaborative, approvals, activities } from "../drizzle/schema";
 import { eq, and, sql, desc, gte, lte, count, avg } from "drizzle-orm";
 

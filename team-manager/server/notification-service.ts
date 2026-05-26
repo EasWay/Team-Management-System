@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { getDb } from "./db";
 import { notifications, notificationPreferences, notificationRules, dailyDigestQueue, tasks, fileFolders, teamMembers } from "../drizzle/schema";
 import { eq, and, desc, sql, lt, gte, isNull } from "drizzle-orm";
 
