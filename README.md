@@ -77,8 +77,7 @@ This platform transforms traditional project management into a **Virtual Office*
 
 ```bash
 # Install dependencies
-cd team-manager
-pnpm install
+https://github.com/EasWay/Team-Management-System.git
 
 # Set up environment variables
 cp .env.example .env

@@ -1,0 +1,3 @@
+Deployment trigger - Force Render to redeploy with latest changes
+Timestamp: 2026-05-26 21:45:00
+Changes: Added Digital HQ navigation routes and office assignment features
