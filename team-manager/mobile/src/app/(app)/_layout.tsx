@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useColorScheme } from 'nativewind';
 import { useAuthStore } from '@/store/authStore';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
@@ -9,9 +10,6 @@ import { setBadgeCount } from '@/lib/notifications';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-// Route names must match the actual file paths relative to (app)/
-// Files in subfolders: tasks/index.tsx → name="tasks/index"
-// Files at root:       index.tsx       → name="index"
 const TABS: { name: string; title: string; icon: IconName; activeIcon: IconName }[] = [
   { name: 'index',          title: 'Office',   icon: 'home-outline',             activeIcon: 'home' },
   { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline', activeIcon: 'checkmark-circle' },
@@ -24,14 +22,13 @@ export default function AppLayout() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const { setTeams, restoreActiveTeam } = useTeamStore();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
-  // Use teams.list — returns ONLY the teams the current user belongs to.
-  // (teams.listAll returns every team in the DB with a LEFT JOIN, so
-  //  activeTeam could end up pointing at a team the user isn't in.)
   const teamsQuery = trpc.teams.list.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: 4,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15000),
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 15000),
     refetchOnMount: true,
   });
 
@@ -47,7 +44,6 @@ export default function AppLayout() {
   useEffect(() => {
     if (teamsQuery.data && teamsQuery.data.length > 0) {
       setTeams(teamsQuery.data as any);
-      // After setting teams, restore the previously picked team (async storage)
       restoreActiveTeam();
     }
   }, [teamsQuery.data]);
@@ -57,20 +53,25 @@ export default function AppLayout() {
     setBadgeCount(count).catch(() => {});
   }, [unreadQuery.data]);
 
+  // Dynamic theme colors
+  const tabBg = isDark ? '#0f172a' : '#ffffff';
+  const tabBorder = isDark ? '#1e293b' : '#e2e8f0';
+  const tabInactive = isDark ? '#475569' : '#94a3b8';
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0f172a',
-          borderTopColor: '#1e293b',
+          backgroundColor: tabBg,
+          borderTopColor: tabBorder,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 88 : 68,
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 8,
         },
         tabBarActiveTintColor: '#38bdf8',
-        tabBarInactiveTintColor: '#475569',
+        tabBarInactiveTintColor: tabInactive,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '500',
@@ -94,10 +95,12 @@ export default function AppLayout() {
           }}
         />
       ))}
+      {/* Hidden screens — accessible via router.push */}
       <Tabs.Screen name="files/index"      options={{ href: null }} />
       <Tabs.Screen name="calendar/index"   options={{ href: null }} />
       <Tabs.Screen name="analytics/index"  options={{ href: null }} />
       <Tabs.Screen name="conference/index" options={{ href: null }} />
+      <Tabs.Screen name="messages/index"   options={{ href: null }} />
     </Tabs>
   );
 }
