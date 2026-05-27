@@ -1,18 +1,40 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SecureStorage } from './secureStorage';
 import { STORAGE_KEYS, API_BASE_URL } from './constants';
+import Constants from 'expo-constants';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// In Expo SDK 53, push notification functionality has been removed from Expo Go (specifically on Android,
+// where it console.errors and causes a RedBox crash). We dynamically require 'expo-notifications'
+// only when NOT running inside Expo Go, avoiding the auto-registration crash.
+const isExpoGo = Constants.appOwnership === 'expo';
+let Notifications: any = null;
+
+if (!isExpoGo) {
+  try {
+    Notifications = require('expo-notifications');
+  } catch (err) {
+    console.warn('[Notifications] Failed to require expo-notifications:', err);
+  }
+}
+
+if (Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (!Notifications) {
+    console.log('[Notifications] Skipping permission request in Expo Go');
+    return false;
+  }
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   if (existingStatus === 'granted') return true;
 
@@ -21,6 +43,10 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 export async function registerPushToken(): Promise<string | null> {
+  if (!Notifications) {
+    console.log('[Notifications] Skipping push token registration in Expo Go');
+    return null;
+  }
   const granted = await requestNotificationPermission();
   if (!granted) return null;
 
@@ -98,12 +124,16 @@ export function handleNotificationNavigation(data: Record<string, unknown>) {
       router.push(`/(app)/calendar?eventId=${data.eventId}`);
       break;
     default:
-      router.push('/(app)/');
+      router.push('/(app)');
   }
 }
 
 export function setupNotificationResponseListener() {
-  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+  if (!Notifications) {
+    console.log('[Notifications] Skipping response listener setup in Expo Go');
+    return { remove: () => {} };
+  }
+  const subscription = Notifications.addNotificationResponseReceivedListener((response: any) => {
     const data = response.notification.request.content.data as Record<string, unknown>;
     handleNotificationNavigation(data);
   });
@@ -111,5 +141,10 @@ export function setupNotificationResponseListener() {
 }
 
 export async function setBadgeCount(count: number) {
-  await Notifications.setBadgeCountAsync(count);
+  if (!Notifications) return;
+  try {
+    await Notifications.setBadgeCountAsync(count);
+  } catch (err) {
+    console.warn('[Notifications] Failed to set badge count:', err);
+  }
 }

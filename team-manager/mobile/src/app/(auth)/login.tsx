@@ -15,7 +15,7 @@ import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
-import { API_BASE_URL, OAUTH_REDIRECT_URI } from '@/lib/constants';
+import { API_BASE_URL } from '@/lib/constants';
 import { Button } from '@/components/Button';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -52,7 +52,7 @@ export default function LoginScreen() {
         avatarUrl: data.user?.avatarUrl,
       };
       await setAuth(user, data.accessToken, data.refreshToken ?? '');
-      router.replace('/(app)/');
+      router.replace('/(app)');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication failed';
       Alert.alert('Error', msg);
@@ -64,9 +64,14 @@ export default function LoginScreen() {
   const handleGitHubOAuth = async () => {
     setOauthLoading(true);
     try {
+      // createURL adapts to the environment:
+      //   Expo Go  → exp://127.0.0.1:8081/--/oauth-callback  (captured by Custom Tab)
+      //   Dev/prod → team-management://oauth-callback
+      const mobileRedirectUri = Linking.createURL('/oauth-callback');
+
       const result = await WebBrowser.openAuthSessionAsync(
-        `${API_BASE_URL}/api/oauth/github?mobile=true&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT_URI)}`,
-        OAUTH_REDIRECT_URI
+        `${API_BASE_URL}/api/oauth/github?mobile=true&mobile_redirect=${encodeURIComponent(mobileRedirectUri)}`,
+        mobileRedirectUri
       );
 
       if (result.type === 'success') {
@@ -76,7 +81,6 @@ export default function LoginScreen() {
 
         if (!accessToken) throw new Error('No access token received');
 
-        // Fetch user from backend using the token
         const userResp = await fetch(`${API_BASE_URL}/api/trpc/auth.me`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -91,7 +95,7 @@ export default function LoginScreen() {
         };
 
         await setAuth(user, accessToken, refreshToken ?? '');
-        router.replace('/(app)/');
+        router.replace('/(app)');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'OAuth failed';

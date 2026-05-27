@@ -383,15 +383,28 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
 export async function handleGitHubMobileCallback(req: Request, res: Response): Promise<void> {
   const code = req.query.code as string | undefined;
 
+  // Extract the mobile app's redirect URI from state: `${hex}:mobile:${encodedUri}`
+  // This allows Expo Go (exp://) and production builds (team-management://) to both work.
+  const state = typeof req.query.state === 'string' ? req.query.state : '';
+  const mobileMarker = ':mobile:';
+  const markerIdx = state.indexOf(mobileMarker);
+  const rawRedirect = markerIdx !== -1
+    ? decodeURIComponent(state.slice(markerIdx + mobileMarker.length))
+    : 'team-management://oauth-callback';
+
+  // Guard against open redirect: only allow known schemes
+  const safeRedirect = rawRedirect.startsWith('team-management://')
+    || rawRedirect.startsWith('exp://')
+    ? rawRedirect
+    : 'team-management://oauth-callback';
+
   if (!code) {
-    const redirectUrl = `team-management://oauth-callback?error=missing_code`;
-    res.redirect(302, redirectUrl);
+    res.redirect(302, `${safeRedirect}?error=missing_code`);
     return;
   }
 
   if (usedCodes.has(code)) {
-    const redirectUrl = `team-management://oauth-callback?error=code_used`;
-    res.redirect(302, redirectUrl);
+    res.redirect(302, `${safeRedirect}?error=code_used`);
     return;
   }
 
@@ -400,22 +413,17 @@ export async function handleGitHubMobileCallback(req: Request, res: Response): P
   try {
     const provider = getProvider('github');
     if (!provider) {
-      res.redirect(302, `team-management://oauth-callback?error=not_configured`);
+      res.redirect(302, `${safeRedirect}?error=not_configured`);
       return;
     }
 
-    // Use the same redirect_uri but handle both web and mobile callbacks
-    const mobileProvider = {
-      ...provider,
-      redirectUri: `${provider.redirectUri.replace('/callback', '/mobile/callback')}`,
-    };
-
-    const tokenResponse = await exchangeCodeForToken(mobileProvider, code);
+    // Must use the same redirect_uri sent to GitHub during authorization
+    const tokenResponse = await exchangeCodeForToken(provider, code);
     const userInfo = await getGitHubUserInfo(tokenResponse.access_token);
 
     const db = await getDb();
     if (!db) {
-      res.redirect(302, `team-management://oauth-callback?error=db_unavailable`);
+      res.redirect(302, `${safeRedirect}?error=db_unavailable`);
       return;
     }
 
@@ -465,14 +473,14 @@ export async function handleGitHubMobileCallback(req: Request, res: Response): P
     const accessToken = await authService.generateAccessToken(user.id, user.email || '', user.name || undefined);
     const refreshToken = await authService.generateRefreshToken(user.id, user.email || '', user.name || undefined);
 
-    // Redirect to deep link — expo-web-browser captures this
-    const redirectUrl = `team-management://oauth-callback?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
+    // Redirect to the mobile app — expo-web-browser captures this deep link
+    const redirectUrl = `${safeRedirect}?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
     res.redirect(302, redirectUrl);
   } catch (error) {
     console.error('[OAuth] Mobile GitHub callback failed:', error);
     usedCodes.delete(code);
     const msg = error instanceof Error ? encodeURIComponent(error.message) : 'unknown';
-    res.redirect(302, `team-management://oauth-callback?error=${msg}`);
+    res.redirect(302, `${safeRedirect}?error=${msg}`);
   }
 }
 

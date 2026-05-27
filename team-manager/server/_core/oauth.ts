@@ -74,17 +74,29 @@ export function registerOAuthRoutes(app: Express) {
       return res.status(500).json({ error: "GitHub OAuth not configured" });
     }
     const isMobile = req.query.mobile === 'true';
-    const state = crypto.randomBytes(16).toString('hex');
-    // For mobile, pass a flag in state so the callback knows to redirect to the deep link
-    const stateWithMobile = isMobile ? `${state}:mobile` : state;
-    const url = generateAuthorizationUrl(provider, stateWithMobile);
+    const randomHex = crypto.randomBytes(16).toString('hex');
+
+    let stateValue: string;
+    if (isMobile) {
+      // Encode the mobile app's redirect URI in state so the callback can redirect
+      // to the right scheme (exp:// in Expo Go, team-management:// in builds).
+      const mobileRedirect = typeof req.query.mobile_redirect === 'string'
+        ? req.query.mobile_redirect
+        : 'team-management://oauth-callback';
+      stateValue = `${randomHex}:mobile:${encodeURIComponent(mobileRedirect)}`;
+    } else {
+      stateValue = randomHex;
+    }
+
+    const url = generateAuthorizationUrl(provider, stateValue);
     res.redirect(url);
   });
 
   // GitHub OAuth callback — handles both web and mobile
   app.get("/api/oauth/github/callback", (req, res) => {
     const state = typeof req.query.state === 'string' ? req.query.state : '';
-    const isMobile = state.endsWith(':mobile');
+    // Mobile state format: `${hex}:mobile:${encodedRedirectUri}`
+    const isMobile = state.includes(':mobile:') || state.endsWith(':mobile');
     if (isMobile) {
       return handleGitHubMobileCallback(req, res);
     }
