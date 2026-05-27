@@ -44,7 +44,6 @@
     "zustand": "^4.5.4",
     "@react-native-async-storage/async-storage": "1.23.1",
     "react-native-calendars": "^1.1302.0",
-    "victory-native": "^41.0.0",
     "date-fns": "^3.6.0",
     "zod": "^3.23.8",
     "superjson": "^2.2.1"
