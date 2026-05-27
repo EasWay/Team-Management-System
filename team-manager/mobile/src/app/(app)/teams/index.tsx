@@ -254,20 +254,27 @@ export default function TeamsScreen() {
 
             {/* Members list */}
             <ScrollView>
-              {(membersQuery.data as any[] ?? []).map((member: any) => (
-                <View key={member.id} className="flex-row items-center py-3 border-b border-slate-800">
-                  <View className="w-10 h-10 rounded-full bg-sky-700 items-center justify-center mr-3">
-                    <Text className="text-white font-bold text-base">
-                      {(member.name || member.email || 'U')[0].toUpperCase()}
-                    </Text>
+              {(membersQuery.data as any[] ?? []).map((member: any) => {
+                // Shape: { id, teamId, memberId, role, status, member: { id, name, email, ... } }
+                const displayName = member.member?.name || member.member?.email || 'Unknown';
+                const displayEmail = member.member?.email || '';
+                return (
+                  <View key={member.id} className="flex-row items-center py-3 border-b border-slate-800">
+                    <View className="w-10 h-10 rounded-full bg-sky-700 items-center justify-center mr-3">
+                      <Text className="text-white font-bold text-base">
+                        {displayName[0].toUpperCase()}
+                      </Text>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-white font-medium">{displayName}</Text>
+                      {displayEmail ? (
+                        <Text className="text-slate-400 text-sm">{displayEmail}</Text>
+                      ) : null}
+                    </View>
+                    <Badge label={member.role || 'member'} variant="default" />
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-white font-medium">{member.name || member.email}</Text>
-                    <Text className="text-slate-400 text-sm">{member.email}</Text>
-                  </View>
-                  <Badge label={member.role || 'member'} variant="default" />
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
           </View>
         </View>
