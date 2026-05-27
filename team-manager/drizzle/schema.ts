@@ -1920,3 +1920,17 @@ export type GoogleDriveConnection = typeof googleDriveConnections.$inferSelect;
 
 export type InsertGoogleDriveFileCache = typeof googleDriveFilesCache.$inferInsert;
 export type GoogleDriveFileCache = typeof googleDriveFilesCache.$inferSelect;
+
+// ─── Mobile Push Tokens ───────────────────────────────────────────────────────
+// Stores Expo push tokens for mobile push notification delivery.
+export const userPushTokens = pgTable("user_push_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => teamMembers.id, { onDelete: "cascade" }).notNull(),
+  pushToken: text("push_token").notNull(),
+  platform: text("platform"), // 'ios' | 'android'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type InsertUserPushToken = typeof userPushTokens.$inferInsert;
+export type UserPushToken = typeof userPushTokens.$inferSelect;
