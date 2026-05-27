@@ -717,7 +717,7 @@ export const appRouter = router({
   projects: router({
     create: protectedProcedure
       .input(z.object({
-        clientId: z.number(),
+        clientId: z.number().optional(),
         teamId: z.number(),
         name: z.string().min(1),
         definition: z.string().optional(),
@@ -2951,6 +2951,39 @@ export const appRouter = router({
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get statistics');
         }
+      }),
+
+    // Register mobile push token (Expo push token for APNs / FCM delivery)
+    registerPushToken: protectedProcedure
+      .input(z.object({
+        pushToken: z.string().min(1),
+        platform: z.enum(['ios', 'android', 'web']).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('User not authenticated');
+        const { userPushTokens } = await import('../drizzle/schema');
+        const db = await (await import('./db')).getDb();
+        if (!db) throw new Error('Database not available');
+        const { eq, and } = await import('drizzle-orm');
+        // Upsert: if token already exists for this user, update; otherwise insert
+        const existing = await db
+          .select()
+          .from(userPushTokens)
+          .where(and(eq(userPushTokens.userId, ctx.user.id), eq(userPushTokens.pushToken, input.pushToken)))
+          .limit(1);
+        if (existing.length > 0) {
+          await db
+            .update(userPushTokens)
+            .set({ platform: input.platform, updatedAt: new Date() })
+            .where(eq(userPushTokens.id, existing[0].id));
+        } else {
+          await db.insert(userPushTokens).values({
+            userId: ctx.user.id,
+            pushToken: input.pushToken,
+            platform: input.platform,
+          });
+        }
+        return { success: true };
       }),
   }),
 

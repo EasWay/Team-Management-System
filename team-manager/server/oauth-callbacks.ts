@@ -377,6 +377,106 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
 }
 
 /**
+ * GitHub OAuth callback for mobile apps — redirects to deep link with JWT tokens.
+ * The mobile app uses expo-web-browser which captures the redirect_uri callback.
+ */
+export async function handleGitHubMobileCallback(req: Request, res: Response): Promise<void> {
+  const code = req.query.code as string | undefined;
+
+  if (!code) {
+    const redirectUrl = `team-management://oauth-callback?error=missing_code`;
+    res.redirect(302, redirectUrl);
+    return;
+  }
+
+  if (usedCodes.has(code)) {
+    const redirectUrl = `team-management://oauth-callback?error=code_used`;
+    res.redirect(302, redirectUrl);
+    return;
+  }
+
+  usedCodes.add(code);
+
+  try {
+    const provider = getProvider('github');
+    if (!provider) {
+      res.redirect(302, `team-management://oauth-callback?error=not_configured`);
+      return;
+    }
+
+    // Use the same redirect_uri but handle both web and mobile callbacks
+    const mobileProvider = {
+      ...provider,
+      redirectUri: `${provider.redirectUri.replace('/callback', '/mobile/callback')}`,
+    };
+
+    const tokenResponse = await exchangeCodeForToken(mobileProvider, code);
+    const userInfo = await getGitHubUserInfo(tokenResponse.access_token);
+
+    const db = await getDb();
+    if (!db) {
+      res.redirect(302, `team-management://oauth-callback?error=db_unavailable`);
+      return;
+    }
+
+    const githubId = userInfo.id.toString();
+    let user = await db
+      .select()
+      .from(users)
+      .where(eq(users.openId, githubId))
+      .limit(1)
+      .then((rows: any[]) => rows[0]);
+
+    if (!user) {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          openId: githubId,
+          name: userInfo.name || userInfo.login,
+          email: userInfo.email,
+          role: 'user',
+        })
+        .returning();
+      user = newUser;
+    } else {
+      await db
+        .update(users)
+        .set({ name: userInfo.name || userInfo.login, email: userInfo.email, lastSignedIn: new Date() })
+        .where(eq(users.id, user.id));
+    }
+
+    await db.insert(teamMembers).values({
+      id: user.id,
+      name: user.name || user.email?.split('@')[0] || 'Unknown User',
+      email: user.email,
+      position: 'Member',
+    }).onConflictDoNothing({ target: teamMembers.id });
+
+    const expiresAt = tokenResponse.expires_in
+      ? new Date(Date.now() + tokenResponse.expires_in * 1000)
+      : undefined;
+
+    await storeOAuthToken(user.id, 'github', {
+      accessToken: tokenResponse.access_token,
+      refreshToken: tokenResponse.refresh_token,
+      expiresAt,
+    });
+
+    const accessToken = await authService.generateAccessToken(user.id, user.email || '', user.name || undefined);
+    const refreshToken = await authService.generateRefreshToken(user.id, user.email || '', user.name || undefined);
+
+    // Redirect to deep link — expo-web-browser captures this
+    const redirectUrl = `team-management://oauth-callback?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
+    res.redirect(302, redirectUrl);
+  } catch (error) {
+    console.error('[OAuth] Mobile GitHub callback failed:', error);
+    usedCodes.delete(code);
+    const msg = error instanceof Error ? encodeURIComponent(error.message) : 'unknown';
+    res.redirect(302, `team-management://oauth-callback?error=${msg}`);
+  }
+}
+
+/**
  * Logout handler - invalidates all OAuth tokens and session
  */
 export async function handleLogout(req: Request, res: Response): Promise<void> {

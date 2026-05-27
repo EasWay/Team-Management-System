@@ -73,17 +73,35 @@ export function registerOAuthRoutes(app: Express) {
     if (!provider) {
       return res.status(500).json({ error: "GitHub OAuth not configured" });
     }
+    const isMobile = req.query.mobile === 'true';
     const state = crypto.randomBytes(16).toString('hex');
-    const url = generateAuthorizationUrl(provider, state);
+    // For mobile, pass a flag in state so the callback knows to redirect to the deep link
+    const stateWithMobile = isMobile ? `${state}:mobile` : state;
+    const url = generateAuthorizationUrl(provider, stateWithMobile);
     res.redirect(url);
   });
 
-  // GitHub OAuth callback
-  app.get("/api/oauth/github/callback", handleGitHubCallback);
+  // GitHub OAuth callback — handles both web and mobile
+  app.get("/api/oauth/github/callback", (req, res) => {
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const isMobile = state.endsWith(':mobile');
+    if (isMobile) {
+      return handleGitHubMobileCallback(req, res);
+    }
+    return handleGitHubCallback(req, res);
+  });
+
+  // GitHub OAuth mobile callback — redirects to deep link with tokens
+  app.get("/api/oauth/github/mobile/callback", handleGitHubMobileCallback);
 
   // Google OAuth callback
   app.get("/api/oauth/google/callback", handleGoogleCallback);
 
   // Logout endpoint
   app.post("/api/oauth/logout", handleLogout);
+}
+
+async function handleGitHubMobileCallback(req: any, res: any) {
+  const { handleGitHubMobileCallback: mobileHandler } = await import('../oauth-callbacks');
+  return mobileHandler(req, res);
 }
