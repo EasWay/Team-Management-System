@@ -15,19 +15,66 @@ import { useTeamStore } from '@/store/teamStore';
 import { disconnectSocket } from '@/lib/socket';
 import { Button } from '@/components/Button';
 
-function SettingRow({ label, value, onToggle }: { label: string; value: boolean; onToggle: (v: boolean) => void }) {
+function SectionLabel({ title }: { title: string }) {
   return (
-    <View className="flex-row items-center justify-between py-4 border-b border-slate-800">
-      <Text className="text-slate-200 text-base">{label}</Text>
+    <Text
+      style={{
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#64748b',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        paddingHorizontal: 4,
+      }}
+    >
+      {title}
+    </Text>
+  );
+}
+
+function SettingRow({
+  label,
+  value,
+  onToggle,
+  isLast,
+}: {
+  label: string;
+  value: boolean;
+  onToggle: (v: boolean) => void;
+  isLast?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: 56,
+        paddingHorizontal: 16,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: 'rgba(51, 65, 85, 0.6)',
+      }}
+    >
+      <Text style={{ color: '#e2e8f0', fontSize: 15, fontWeight: '500', flex: 1 }}>
+        {label}
+      </Text>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: '#334155', true: '#0369a1' }}
-        thumbColor={value ? '#0ea5e9' : '#64748b'}
+        trackColor={{ false: '#1e293b', true: '#0369a1' }}
+        thumbColor={value ? '#0ea5e9' : '#475569'}
       />
     </View>
   );
 }
+
+const NAV_ITEMS = [
+  { emoji: '📁', label: 'Files', route: '/(app)/files' },
+  { emoji: '📅', label: 'Calendar', route: '/(app)/calendar' },
+  { emoji: '📊', label: 'Analytics', route: '/(app)/analytics' },
+  { emoji: '🏛️', label: 'Conference Room', route: '/(app)/conference' },
+];
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -45,7 +92,7 @@ export default function ProfileScreen() {
     onSuccess: () => prefsQuery.refetch(),
   });
 
-  const prefs = prefsQuery.data as any ?? {};
+  const prefs = (prefsQuery.data as any) ?? {};
 
   const handleTogglePref = (key: string, value: boolean) => {
     if (!teamId) return;
@@ -62,96 +109,188 @@ export default function ProfileScreen() {
           setLoggingOut(true);
           disconnectSocket();
           await logout();
-          router.replace('/(auth)/login');
+          router.replace('/(auth)/login' as any);
         },
       },
     ]);
   };
 
+  const initials = (user?.name ?? user?.email ?? 'U')
+    .split(' ')
+    .map((w: string) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const NOTIFICATION_ROWS = [
+    { key: 'pushEnabled', label: 'Push Notifications', default: true },
+    { key: 'emailEnabled', label: 'Email Notifications', default: true },
+    { key: 'taskAssignments', label: 'Task Assignments', default: true },
+    { key: 'taskDeadlines', label: 'Deadlines', default: true },
+    { key: 'approvalRequests', label: 'Approvals', default: true },
+    { key: 'mentions', label: 'Mentions', default: true },
+  ];
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Header */}
-        <View className="px-5 pt-4 pb-6">
-          <Text className="text-2xl font-bold text-white mb-1">Profile</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#020617' }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+
+        {/* ── Header ── */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 8 }}>
+          <Text style={{ fontSize: 26, fontWeight: '700', color: '#f8fafc', letterSpacing: -0.5 }}>
+            Settings
+          </Text>
         </View>
 
-        {/* Avatar & user info */}
-        <View className="mx-5 bg-slate-800 rounded-2xl p-5 mb-5 border border-slate-700 items-center">
-          <View className="w-20 h-20 rounded-full bg-sky-700 items-center justify-center mb-3">
-            <Text className="text-white text-3xl font-bold">
-              {(user?.name ?? user?.email ?? 'U')[0].toUpperCase()}
+        {/* ── Avatar Card ── */}
+        <View
+          style={{
+            marginHorizontal: 20,
+            marginTop: 20,
+            backgroundColor: '#0f172a',
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: 'rgba(51, 65, 85, 0.6)',
+            padding: 24,
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: '#0369a1',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 14,
+              shadowColor: '#0ea5e9',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.25,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.5 }}>
+              {initials}
             </Text>
           </View>
-          <Text className="text-white text-xl font-bold">{user?.name ?? 'User'}</Text>
-          <Text className="text-slate-400 text-sm mt-1">{user?.email}</Text>
+
+          <Text style={{ color: '#f8fafc', fontSize: 18, fontWeight: '700', marginBottom: 4, letterSpacing: -0.3 }}>
+            {user?.name ?? 'User'}
+          </Text>
+          <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '500', marginBottom: 12 }}>
+            {user?.email}
+          </Text>
+
           {activeTeam && (
-            <View className="mt-2 bg-sky-700/30 border border-sky-600 rounded-lg px-3 py-1">
-              <Text className="text-sky-300 text-xs font-medium">{activeTeam.name}</Text>
+            <View
+              style={{
+                backgroundColor: 'rgba(14, 165, 233, 0.12)',
+                borderColor: 'rgba(14, 165, 233, 0.35)',
+                borderWidth: 1,
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+              }}
+            >
+              <Text style={{ color: '#38bdf8', fontSize: 12, fontWeight: '600' }}>
+                {activeTeam.name}
+              </Text>
             </View>
           )}
         </View>
 
-        {/* Quick links */}
-        <View className="mx-5 bg-slate-800 rounded-2xl mb-5 border border-slate-700 overflow-hidden">
-          {[
-            { label: '📁 Files', route: '/(app)/files' },
-            { label: '📅 Calendar', route: '/(app)/calendar' },
-            { label: '📊 Analytics', route: '/(app)/analytics' },
-            { label: '🏛️ Conference Room', route: '/(app)/conference' },
-          ].map((item, idx) => (
-            <TouchableOpacity
-              key={item.label}
-              onPress={() => router.push(item.route as any)}
-              className={`flex-row items-center justify-between px-5 py-4 ${idx > 0 ? 'border-t border-slate-700' : ''}`}
-            >
-              <Text className="text-slate-200 text-base">{item.label}</Text>
-              <Text className="text-slate-500">›</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Notification preferences */}
-        <View className="mx-5 mb-5">
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 px-1">
-            Notifications
-          </Text>
-          <View className="bg-slate-800 rounded-2xl px-5 border border-slate-700">
-            <SettingRow
-              label="Push Notifications"
-              value={prefs.pushEnabled ?? true}
-              onToggle={(v) => handleTogglePref('pushEnabled', v)}
-            />
-            <SettingRow
-              label="Email Notifications"
-              value={prefs.emailEnabled ?? true}
-              onToggle={(v) => handleTogglePref('emailEnabled', v)}
-            />
-            <SettingRow
-              label="Task Assignments"
-              value={prefs.taskAssignments ?? true}
-              onToggle={(v) => handleTogglePref('taskAssignments', v)}
-            />
-            <SettingRow
-              label="Task Deadlines"
-              value={prefs.taskDeadlines ?? true}
-              onToggle={(v) => handleTogglePref('taskDeadlines', v)}
-            />
-            <SettingRow
-              label="Approval Requests"
-              value={prefs.approvalRequests ?? true}
-              onToggle={(v) => handleTogglePref('approvalRequests', v)}
-            />
-            <SettingRow
-              label="Mentions"
-              value={prefs.mentions ?? true}
-              onToggle={(v) => handleTogglePref('mentions', v)}
-            />
+        {/* ── Quick Navigation ── */}
+        <View style={{ marginHorizontal: 20, marginTop: 28 }}>
+          <SectionLabel title="Navigate" />
+          <View
+            style={{
+              backgroundColor: '#0f172a',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(51, 65, 85, 0.6)',
+              overflow: 'hidden',
+            }}
+          >
+            {NAV_ITEMS.map((item, idx) => (
+              <TouchableOpacity
+                key={item.route}
+                onPress={() => router.push(item.route as any)}
+                activeOpacity={0.75}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  minHeight: 56,
+                  paddingHorizontal: 16,
+                  borderTopWidth: idx === 0 ? 0 : 1,
+                  borderTopColor: 'rgba(51, 65, 85, 0.6)',
+                }}
+              >
+                <Text style={{ fontSize: 18, marginRight: 14 }}>{item.emoji}</Text>
+                <Text style={{ color: '#e2e8f0', fontSize: 15, fontWeight: '500', flex: 1 }}>
+                  {item.label}
+                </Text>
+                <Text style={{ color: '#334155', fontSize: 20, fontWeight: '300' }}>›</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Sign out */}
-        <View className="mx-5">
+        {/* ── Notifications ── */}
+        <View style={{ marginHorizontal: 20, marginTop: 28 }}>
+          <SectionLabel title="Notifications" />
+          <View
+            style={{
+              backgroundColor: '#0f172a',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(51, 65, 85, 0.6)',
+              overflow: 'hidden',
+            }}
+          >
+            {NOTIFICATION_ROWS.map((row, idx) => (
+              <SettingRow
+                key={row.key}
+                label={row.label}
+                value={prefs[row.key] ?? row.default}
+                onToggle={(v) => handleTogglePref(row.key, v)}
+                isLast={idx === NOTIFICATION_ROWS.length - 1}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* ── Account ── */}
+        <View style={{ marginHorizontal: 20, marginTop: 28 }}>
+          <SectionLabel title="Account" />
+          <View
+            style={{
+              backgroundColor: '#0f172a',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(51, 65, 85, 0.6)',
+              overflow: 'hidden',
+              marginBottom: 24,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                minHeight: 56,
+                paddingHorizontal: 16,
+              }}
+            >
+              <Text style={{ color: '#94a3b8', fontSize: 15, fontWeight: '500' }}>App Version</Text>
+              <Text style={{ color: '#475569', fontSize: 14, fontWeight: '500' }}>v1.0.0</Text>
+            </View>
+          </View>
+
           <Button
             label="Sign Out"
             onPress={handleLogout}
@@ -160,6 +299,7 @@ export default function ProfileScreen() {
             fullWidth
           />
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );

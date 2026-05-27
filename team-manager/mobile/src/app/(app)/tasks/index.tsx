@@ -9,6 +9,7 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/api';
@@ -36,6 +37,20 @@ function priorityVariant(p: string): 'danger' | 'warning' | 'info' | 'default' {
   if (p === 'medium') return 'info';
   return 'default';
 }
+
+const PRIORITY_ACCENT: Record<string, string> = {
+  urgent: '#f43f5e',
+  high: '#f59e0b',
+  medium: '#3b82f6',
+  low: '#475569',
+};
+
+const PRIORITY_DOT: Record<string, string> = {
+  urgent: '#f43f5e',
+  high: '#f59e0b',
+  medium: '#0ea5e9',
+  low: '#64748b',
+};
 
 interface Task {
   id: number;
@@ -130,49 +145,48 @@ export default function TasksScreen() {
   if (tasksQuery.isLoading && !tasksQuery.data) return <LoadingScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View className="px-5 pt-4 pb-3 flex-row justify-between items-center">
+      <View style={styles.header}>
         <View>
-          <Text className="text-2xl font-bold text-white">Tasks</Text>
-          {activeTeam && <Text className="text-slate-400 text-sm">{activeTeam.name}</Text>}
+          <Text style={styles.headerTitle}>Tasks</Text>
+          {activeTeam && (
+            <Text style={styles.headerSubtext}>{activeTeam.name}</Text>
+          )}
         </View>
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
-          className="bg-sky-600 rounded-xl px-4 py-2"
+          style={styles.newButton}
+          activeOpacity={0.8}
         >
-          <Text className="text-white font-semibold">+ New</Text>
+          <Text style={styles.newButtonText}>＋ New</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Status tabs */}
+      {/* Status filter tabs */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="px-5 mb-3"
-        contentContainerStyle={{ gap: 8 }}
+        style={styles.tabsScroll}
+        contentContainerStyle={styles.tabsContent}
       >
         {STATUSES.map((s) => {
           const count = allTasks.filter((t) => t.status === s.key).length;
+          const isActive = activeStatus === s.key;
           return (
             <TouchableOpacity
               key={s.key}
               onPress={() => setActiveStatus(s.key)}
-              className={`px-4 py-2 rounded-xl border flex-row items-center gap-2 ${
-                activeStatus === s.key
-                  ? 'bg-sky-600 border-sky-500'
-                  : 'bg-slate-800 border-slate-700'
-              }`}
+              style={[styles.tab, isActive ? styles.tabActive : styles.tabInactive]}
+              activeOpacity={0.75}
             >
-              <Text className="text-base">{s.emoji}</Text>
-              <Text className={`font-medium text-sm ${activeStatus === s.key ? 'text-white' : 'text-slate-300'}`}>
+              <Text style={styles.tabEmoji}>{s.emoji}</Text>
+              <Text style={[styles.tabLabel, isActive ? styles.tabLabelActive : styles.tabLabelInactive]}>
                 {s.label}
               </Text>
-              {count > 0 && (
-                <View className={`rounded-full min-w-5 h-5 items-center justify-center px-1 ${activeStatus === s.key ? 'bg-sky-500' : 'bg-slate-700'}`}>
-                  <Text className="text-xs text-white font-bold">{count}</Text>
-                </View>
-              )}
+              <View style={[styles.tabBadge, isActive ? styles.tabBadgeActive : styles.tabBadgeInactive]}>
+                <Text style={styles.tabBadgeText}>{count}</Text>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -183,58 +197,92 @@ export default function TasksScreen() {
         data={filtered}
         keyExtractor={(item) => String(item.id)}
         refreshControl={
-          <RefreshControl refreshing={tasksQuery.isFetching} onRefresh={() => tasksQuery.refetch()} tintColor="#0ea5e9" />
+          <RefreshControl
+            refreshing={tasksQuery.isFetching}
+            onRefresh={() => tasksQuery.refetch()}
+            tintColor="#0ea5e9"
+          />
         }
-        contentContainerStyle={{ padding: 20, paddingTop: 0 }}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <EmptyState title={`No ${activeStatus} tasks`} description="All clear here!" icon={STATUSES.find(s => s.key === activeStatus)?.emoji} />
+          <EmptyState
+            title={`No ${activeStatus} tasks`}
+            description="All clear here!"
+            icon={STATUSES.find((s) => s.key === activeStatus)?.emoji}
+          />
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity className="bg-slate-800 rounded-xl p-4 mb-3 border border-slate-700">
-            <View className="flex-row justify-between items-start mb-2">
-              <Text className="text-white font-semibold flex-1 mr-2 text-base">{item.title}</Text>
-              <Badge label={item.priority} variant={priorityVariant(item.priority)} />
-            </View>
-            {item.description ? (
-              <Text className="text-slate-400 text-sm mb-3" numberOfLines={2}>{item.description}</Text>
-            ) : null}
-            {item.dueDate && (
-              <Text className="text-slate-500 text-xs mb-3">
-                Due {format(new Date(item.dueDate), 'MMM d, yyyy')}
-              </Text>
-            )}
-            {/* Move actions */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-              {STATUSES.filter((s) => s.key !== item.status).map((s) => (
-                <TouchableOpacity
-                  key={s.key}
-                  onPress={() => handleMoveTask(item.id, s.key)}
-                  className="bg-slate-700 rounded-lg px-3 py-1.5"
+        renderItem={({ item }) => {
+          const accentColor = PRIORITY_ACCENT[item.priority] ?? '#475569';
+          return (
+            <View style={[styles.taskCard, { borderLeftColor: accentColor }]}>
+              {/* Title row */}
+              <View style={styles.taskTitleRow}>
+                <Text style={styles.taskTitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
+              </View>
+
+              {/* Description */}
+              {item.description ? (
+                <Text style={styles.taskDescription} numberOfLines={2}>
+                  {item.description}
+                </Text>
+              ) : null}
+
+              {/* Due date */}
+              {item.dueDate && (
+                <Text style={styles.taskDueDate}>
+                  📅 {format(new Date(item.dueDate), 'MMM d, yyyy')}
+                </Text>
+              )}
+
+              {/* Footer: priority badge + move actions */}
+              <View style={styles.taskFooter}>
+                <Badge label={item.priority} variant={priorityVariant(item.priority)} />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.moveActionsContent}
+                  style={styles.moveActionsScroll}
                 >
-                  <Text className="text-slate-300 text-xs">Move → {s.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </TouchableOpacity>
-        )}
+                  {STATUSES.filter((s) => s.key !== item.status).map((s) => (
+                    <TouchableOpacity
+                      key={s.key}
+                      onPress={() => handleMoveTask(item.id, s.key)}
+                      style={styles.moveButton}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={styles.moveButtonText}>→ {s.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          );
+        }}
       />
 
       {/* Create Modal */}
       <Modal visible={showCreate} animationType="slide" transparent>
-        <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl px-5 pt-6 pb-10 border-t border-slate-700">
-            <Text className="text-xl font-bold text-white mb-5">New Task</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            {/* Drag handle */}
+            <View style={styles.dragHandle} />
 
-            <Text className="text-slate-400 text-sm mb-1">Title *</Text>
+            <Text style={styles.modalTitle}>New Task</Text>
+
+            {/* Title field */}
+            <Text style={styles.fieldLabel}>TITLE *</Text>
             <TextInput
               value={form.title}
               onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
               placeholder="Task title"
               placeholderTextColor="#475569"
-              className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white mb-4"
+              style={styles.textInput}
             />
 
-            <Text className="text-slate-400 text-sm mb-1">Description</Text>
+            {/* Description field */}
+            <Text style={styles.fieldLabel}>DESCRIPTION</Text>
             <TextInput
               value={form.description}
               onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
@@ -242,25 +290,45 @@ export default function TasksScreen() {
               placeholderTextColor="#475569"
               multiline
               numberOfLines={3}
-              className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white mb-4"
+              style={[styles.textInput, styles.textInputMultiline]}
             />
 
-            <Text className="text-slate-400 text-sm mb-2">Priority</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
-              {['low', 'medium', 'high', 'urgent'].map((p) => (
-                <TouchableOpacity
-                  key={p}
-                  onPress={() => setForm((f) => ({ ...f, priority: p }))}
-                  className={`px-4 py-2 rounded-xl border ${form.priority === p ? 'bg-sky-600 border-sky-500' : 'bg-slate-800 border-slate-600'}`}
-                >
-                  <Text className={form.priority === p ? 'text-white font-semibold' : 'text-slate-300'}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Priority selector */}
+            <Text style={styles.fieldLabel}>PRIORITY</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.priorityPickerContent}
+              style={styles.priorityPickerScroll}
+            >
+              {(['low', 'medium', 'high', 'urgent'] as const).map((p) => {
+                const isSelected = form.priority === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setForm((f) => ({ ...f, priority: p }))}
+                    style={[
+                      styles.priorityPill,
+                      isSelected ? styles.priorityPillActive : styles.priorityPillInactive,
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.priorityDot, { backgroundColor: PRIORITY_DOT[p] }]} />
+                    <Text
+                      style={[
+                        styles.priorityPillText,
+                        isSelected ? styles.priorityPillTextActive : styles.priorityPillTextInactive,
+                      ]}
+                    >
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
-            <View className="flex-row gap-3">
+            {/* Actions */}
+            <View style={styles.modalActions}>
               <Button
                 label="Cancel"
                 onPress={() => setShowCreate(false)}
@@ -268,7 +336,7 @@ export default function TasksScreen() {
                 style={{ flex: 1 }}
               />
               <Button
-                label="Create"
+                label="Create Task"
                 onPress={handleCreate}
                 loading={createMutation.isPending}
                 style={{ flex: 1 }}
@@ -280,3 +348,285 @@ export default function TasksScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#020617',
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#f8fafc',
+    letterSpacing: -0.5,
+  },
+  headerSubtext: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  newButton: {
+    backgroundColor: '#0ea5e9',
+    borderRadius: 100,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  newButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  // Status tabs
+  tabsScroll: {
+    marginBottom: 12,
+  },
+  tabsContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 6,
+    minHeight: 44,
+  },
+  tabActive: {
+    backgroundColor: '#0ea5e9',
+    borderColor: '#38bdf8',
+  },
+  tabInactive: {
+    backgroundColor: '#1e293b',
+    borderColor: 'rgba(51,65,85,0.6)',
+  },
+  tabEmoji: {
+    fontSize: 14,
+  },
+  tabLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  tabLabelActive: {
+    color: '#ffffff',
+  },
+  tabLabelInactive: {
+    color: '#94a3b8',
+  },
+  tabBadge: {
+    borderRadius: 100,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  tabBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  tabBadgeInactive: {
+    backgroundColor: '#334155',
+  },
+  tabBadgeText: {
+    fontSize: 11,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+
+  // Task list
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+
+  // Task card
+  taskCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    // subtle overall border
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  taskTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  taskTitle: {
+    color: '#f8fafc',
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 22,
+  },
+  taskDescription: {
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
+  },
+  taskDueDate: {
+    color: '#64748b',
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  taskFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'nowrap',
+  },
+  moveActionsScroll: {
+    flex: 1,
+  },
+  moveActionsContent: {
+    gap: 6,
+    alignItems: 'center',
+  },
+  moveButton: {
+    backgroundColor: '#0f172a',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(51,65,85,0.8)',
+  },
+  moveButtonText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#0f172a',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderColor: 'rgba(51,65,85,0.6)',
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: '#334155',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#f8fafc',
+    marginBottom: 20,
+    letterSpacing: -0.3,
+  },
+
+  // Form fields
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748b',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  textInput: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    color: '#f8fafc',
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  textInputMultiline: {
+    minHeight: 88,
+    textAlignVertical: 'top',
+    paddingTop: 13,
+  },
+
+  // Priority picker
+  priorityPickerScroll: {
+    marginBottom: 20,
+  },
+  priorityPickerContent: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  priorityPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 100,
+    borderWidth: 1,
+    minHeight: 40,
+  },
+  priorityPillActive: {
+    backgroundColor: '#0c4a6e',
+    borderColor: '#0ea5e9',
+  },
+  priorityPillInactive: {
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+  },
+  priorityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  priorityPillText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  priorityPillTextActive: {
+    color: '#e0f2fe',
+  },
+  priorityPillTextInactive: {
+    color: '#94a3b8',
+  },
+
+  // Modal actions
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+});

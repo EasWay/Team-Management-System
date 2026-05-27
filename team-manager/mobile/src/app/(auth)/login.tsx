@@ -20,6 +20,17 @@ import { Button } from '@/components/Button';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const COLORS = {
+  bg: '#020617',
+  surface: '#0f172a',
+  card: '#1e293b',
+  border: 'rgba(51,65,85,0.8)',
+  primary: '#0ea5e9',
+  text: '#f8fafc',
+  muted: '#94a3b8',
+  subtle: '#334155',
+};
+
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
@@ -28,10 +39,11 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const handleEmailAuth = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing fields', 'Please enter email and password.');
+      Alert.alert('Missing fields', 'Please enter your email and password.');
       return;
     }
     setLoading(true);
@@ -76,7 +88,6 @@ export default function LoginScreen() {
 
         if (!accessToken) throw new Error('No access token received');
 
-        // Fetch user from backend using the token
         const userResp = await fetch(`${API_BASE_URL}/api/trpc/auth.me`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -101,22 +112,52 @@ export default function LoginScreen() {
     }
   };
 
+  const inputStyle = (field: string) => ({
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: focusedField === field ? COLORS.primary : COLORS.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: COLORS.text,
+    fontSize: 16,
+  });
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View className="flex-1 px-6 justify-center py-12">
-            {/* Header */}
-            <View className="mb-10">
-              <Text className="text-4xl font-bold text-white mb-2">Team Manager</Text>
-              <Text className="text-slate-400 text-base">
-                {mode === 'login' ? 'Sign in to continue' : 'Create your account'}
+          <View style={{ flex: 1, paddingHorizontal: 24, justifyContent: 'center', paddingVertical: 48 }}>
+
+            {/* Logo mark */}
+            <View style={{ alignItems: 'center', marginBottom: 40 }}>
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 20,
+                  backgroundColor: '#0369a1',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 20,
+                  shadowColor: '#0ea5e9',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 12,
+                  elevation: 8,
+                }}
+              >
+                <Text style={{ fontSize: 32 }}>⚡</Text>
+              </View>
+              <Text style={{ fontSize: 28, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 }}>
+                {mode === 'login' ? 'Welcome back' : 'Create account'}
+              </Text>
+              <Text style={{ fontSize: 15, color: COLORS.muted, marginTop: 6 }}>
+                {mode === 'login' ? 'Sign in to your workspace' : 'Join your team on TeamOS'}
               </Text>
             </View>
 
@@ -124,73 +165,114 @@ export default function LoginScreen() {
             <TouchableOpacity
               onPress={handleGitHubOAuth}
               disabled={oauthLoading}
-              className="bg-slate-800 border border-slate-600 rounded-xl p-4 flex-row items-center justify-center gap-3 mb-6"
+              style={{
+                backgroundColor: COLORS.card,
+                borderWidth: 1,
+                borderColor: COLORS.border,
+                borderRadius: 14,
+                paddingVertical: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                marginBottom: 24,
+                minHeight: 52,
+                opacity: oauthLoading ? 0.7 : 1,
+              }}
             >
               {oauthLoading ? (
-                <ActivityIndicator color="#94a3b8" />
+                <ActivityIndicator color={COLORS.muted} />
               ) : (
-                <Text className="text-2xl">🐙</Text>
+                <Text style={{ fontSize: 20 }}>🐙</Text>
               )}
-              <Text className="text-white font-semibold text-base">
+              <Text style={{ color: COLORS.text, fontWeight: '600', fontSize: 16 }}>
                 {oauthLoading ? 'Signing in...' : 'Continue with GitHub'}
               </Text>
             </TouchableOpacity>
 
             {/* Divider */}
-            <View className="flex-row items-center mb-6">
-              <View className="flex-1 h-px bg-slate-700" />
-              <Text className="text-slate-500 px-4 text-sm">or use email</Text>
-              <View className="flex-1 h-px bg-slate-700" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: COLORS.subtle }} />
+              <Text style={{ color: COLORS.muted, paddingHorizontal: 16, fontSize: 13 }}>or continue with email</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: COLORS.subtle }} />
             </View>
 
-            {/* Email */}
-            <View className="mb-4">
-              <Text className="text-slate-400 text-sm mb-2 font-medium">Email</Text>
+            {/* Email field */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: COLORS.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+                Email
+              </Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
                 placeholder="your@email.com"
-                placeholderTextColor="#475569"
+                placeholderTextColor={COLORS.subtle}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-base"
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+                style={inputStyle('email')}
               />
             </View>
 
-            {/* Password */}
-            <View className="mb-6">
-              <Text className="text-slate-400 text-sm mb-2 font-medium">Password</Text>
+            {/* Password field */}
+            <View style={{ marginBottom: 28 }}>
+              <Text style={{ color: COLORS.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
+                Password
+              </Text>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
-                placeholderTextColor="#475569"
+                placeholderTextColor={COLORS.subtle}
                 secureTextEntry
-                className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-base"
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+                style={inputStyle('password')}
               />
             </View>
 
             {/* Submit */}
-            <Button
-              label={mode === 'login' ? 'Sign In' : 'Create Account'}
+            <TouchableOpacity
               onPress={handleEmailAuth}
-              loading={loading}
-              fullWidth
-            />
+              disabled={loading}
+              style={{
+                backgroundColor: COLORS.primary,
+                borderRadius: 14,
+                paddingVertical: 15,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 8,
+                minHeight: 52,
+                opacity: loading ? 0.7 : 1,
+                shadowColor: COLORS.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 10,
+                elevation: 6,
+              }}
+            >
+              {loading && <ActivityIndicator color="white" size="small" />}
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>
+                {mode === 'login' ? 'Sign In' : 'Create Account'}
+              </Text>
+            </TouchableOpacity>
 
             {/* Mode toggle */}
             <TouchableOpacity
               onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="mt-6 items-center"
+              style={{ marginTop: 24, alignItems: 'center', paddingVertical: 8 }}
             >
-              <Text className="text-slate-400 text-sm">
+              <Text style={{ color: COLORS.muted, fontSize: 14 }}>
                 {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                <Text className="text-sky-400 font-semibold">
+                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>
                   {mode === 'login' ? 'Sign Up' : 'Sign In'}
                 </Text>
               </Text>
             </TouchableOpacity>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

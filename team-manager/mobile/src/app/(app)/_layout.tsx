@@ -8,9 +8,24 @@ import { setBadgeCount } from '@/lib/notifications';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
-    <View className="items-center pt-1">
-      <Text className={`text-xl ${focused ? 'opacity-100' : 'opacity-50'}`}>{emoji}</Text>
-      <Text className={`text-xs mt-0.5 ${focused ? 'text-sky-400 font-semibold' : 'text-slate-500'}`}>
+    <View style={{ alignItems: 'center', paddingTop: 4 }}>
+      <Text
+        style={{
+          fontSize: 22,
+          opacity: 1,
+          transform: [{ scale: focused ? 1.1 : 1 }],
+        }}
+      >
+        {emoji}
+      </Text>
+      <Text
+        style={{
+          fontSize: 10,
+          marginTop: 2,
+          color: focused ? '#38bdf8' : '#64748b',
+          fontWeight: focused ? '700' : '400',
+        }}
+      >
         {label}
       </Text>
     </View>
@@ -54,10 +69,10 @@ export default function AppLayout() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#0f172a',
-          borderTopColor: '#1e293b',
-          height: 72,
-          paddingBottom: 8,
+          backgroundColor: '#0a0f1e',
+          borderTopColor: '#0f172a',
+          height: 80,
+          paddingBottom: 12,
         },
       }}
     >

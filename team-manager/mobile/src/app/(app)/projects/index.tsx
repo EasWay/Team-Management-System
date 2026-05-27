@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { trpc } from '@/lib/api';
@@ -27,6 +28,17 @@ const STAGE_COLORS: Record<string, 'primary' | 'warning' | 'success' | 'danger' 
   qa: 'warning',
   completed: 'success',
   archived: 'default',
+};
+
+// Dot color per workflow stage
+const STAGE_DOT_COLOR: Record<string, string> = {
+  ideation: '#8b5cf6',    // violet
+  planning: '#0ea5e9',    // sky
+  development: '#f59e0b', // amber
+  review: '#f97316',      // orange
+  qa: '#a855f7',          // purple
+  completed: '#10b981',   // emerald
+  archived: '#64748b',    // slate
 };
 
 export default function ProjectsScreen() {
@@ -118,85 +130,115 @@ export default function ProjectsScreen() {
   if (projectsQuery.isLoading && !projectsQuery.data) return <LoadingScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <SafeAreaView style={styles.safeArea}>
       {/* Header */}
-      <View className="px-5 pt-4 pb-3">
-        <View className="flex-row justify-between items-center mb-3">
-          <View>
-            <Text className="text-2xl font-bold text-white">Projects</Text>
-            {activeTeam && <Text className="text-slate-400 text-sm">{activeTeam.name}</Text>}
-          </View>
-          <View className="flex-row gap-2">
-            <TouchableOpacity
-              onPress={() => setShowIdeation(true)}
-              className="bg-purple-600 rounded-xl px-3 py-2"
-            >
-              <Text className="text-white font-semibold text-sm">💡 Ideate</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setShowCreate(true)}
-              className="bg-sky-600 rounded-xl px-3 py-2"
-            >
-              <Text className="text-white font-semibold text-sm">+ New</Text>
-            </TouchableOpacity>
-          </View>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Projects</Text>
+          {activeTeam && (
+            <Text style={styles.headerSubtext}>{activeTeam.name}</Text>
+          )}
+        </View>
+        <View style={styles.headerActions}>
+          {/* Idea Lab icon button */}
+          <TouchableOpacity
+            onPress={() => setShowIdeation(true)}
+            style={styles.ideaButton}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.ideaButtonIcon}>💡</Text>
+          </TouchableOpacity>
+          {/* New project pill */}
+          <TouchableOpacity
+            onPress={() => setShowCreate(true)}
+            style={styles.newButton}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.newButtonText}>+ New</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* List */}
+      {/* Project list */}
       <FlatList
         data={projects}
         keyExtractor={(item) => String(item.id)}
         refreshControl={
-          <RefreshControl refreshing={projectsQuery.isFetching} onRefresh={() => projectsQuery.refetch()} tintColor="#0ea5e9" />
+          <RefreshControl
+            refreshing={projectsQuery.isFetching}
+            onRefresh={() => projectsQuery.refetch()}
+            tintColor="#0ea5e9"
+          />
         }
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <EmptyState title="No projects yet" description="Create a project or use the AI Idea Lab." icon="📁" />
+          <EmptyState
+            title="No projects yet"
+            description="Create a project or use the AI Idea Lab."
+            icon="📁"
+          />
         }
-        renderItem={({ item }) => (
-          <View className="bg-slate-800 rounded-xl p-4 mb-3 border border-slate-700">
-            <View className="flex-row justify-between items-start mb-2">
-              <Text className="text-white font-semibold text-base flex-1 mr-2">{item.name}</Text>
+        renderItem={({ item }) => {
+          const dotColor = STAGE_DOT_COLOR[item.workflowStage] ?? '#64748b';
+          return (
+            <View style={styles.projectCard}>
+              {/* Top row: name + chevron */}
+              <View style={styles.projectTopRow}>
+                <Text style={styles.projectName} numberOfLines={2}>
+                  {item.name}
+                </Text>
+                <Text style={styles.projectChevron}>›</Text>
+              </View>
+
+              {/* Stage indicator */}
               {item.workflowStage && (
-                <Badge
-                  label={item.workflowStage}
-                  variant={STAGE_COLORS[item.workflowStage] ?? 'default'}
-                />
+                <View style={styles.stageRow}>
+                  <View style={[styles.stageDot, { backgroundColor: dotColor }]} />
+                  <Text style={[styles.stageText, { color: dotColor }]}>
+                    {item.workflowStage.charAt(0).toUpperCase() + item.workflowStage.slice(1)}
+                  </Text>
+                </View>
+              )}
+
+              {/* Description */}
+              {item.description ? (
+                <Text style={styles.projectDescription} numberOfLines={2}>
+                  {item.description}
+                </Text>
+              ) : null}
+
+              {/* QA Score badge */}
+              {item.evaluationData?.overallScore != null && (
+                <View style={styles.scoreBadge}>
+                  <Text style={styles.scoreBadgeLabel}>QA Score</Text>
+                  <Text style={styles.scoreBadgeValue}>
+                    {item.evaluationData.overallScore}%
+                  </Text>
+                </View>
               )}
             </View>
-            {item.description ? (
-              <Text className="text-slate-400 text-sm mb-3" numberOfLines={2}>{item.description}</Text>
-            ) : null}
-            {/* Evaluation score */}
-            {item.evaluationData?.overallScore != null && (
-              <View className="flex-row items-center gap-2">
-                <Text className="text-slate-500 text-xs">QA Score:</Text>
-                <Text className="text-emerald-400 text-xs font-bold">
-                  {item.evaluationData.overallScore}%
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+          );
+        }}
       />
 
-      {/* Create Modal */}
+      {/* Create Project Modal */}
       <Modal visible={showCreate} animationType="slide" transparent>
-        <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-slate-900 rounded-t-3xl px-5 pt-6 pb-10 border-t border-slate-700">
-            <Text className="text-xl font-bold text-white mb-5">New Project</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.dragHandle} />
 
-            <Text className="text-slate-400 text-sm mb-1">Title *</Text>
+            <Text style={styles.modalTitle}>New Project</Text>
+
+            <Text style={styles.fieldLabel}>NAME *</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
               placeholder="Project name"
               placeholderTextColor="#475569"
-              className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white mb-4"
+              style={styles.textInput}
             />
 
-            <Text className="text-slate-400 text-sm mb-1">Description</Text>
+            <Text style={styles.fieldLabel}>DESCRIPTION</Text>
             <TextInput
               value={description}
               onChangeText={setDescription}
@@ -204,12 +246,22 @@ export default function ProjectsScreen() {
               placeholderTextColor="#475569"
               multiline
               numberOfLines={3}
-              className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white mb-6"
+              style={[styles.textInput, styles.textInputMultiline]}
             />
 
-            <View className="flex-row gap-3">
-              <Button label="Cancel" onPress={() => setShowCreate(false)} variant="secondary" style={{ flex: 1 }} />
-              <Button label="Create" onPress={handleCreate} loading={createMutation.isPending} style={{ flex: 1 }} />
+            <View style={styles.modalActions}>
+              <Button
+                label="Cancel"
+                onPress={() => setShowCreate(false)}
+                variant="secondary"
+                style={{ flex: 1 }}
+              />
+              <Button
+                label="Create"
+                onPress={handleCreate}
+                loading={createMutation.isPending}
+                style={{ flex: 1 }}
+              />
             </View>
           </View>
         </View>
@@ -217,19 +269,28 @@ export default function ProjectsScreen() {
 
       {/* Idea Lab Modal */}
       <Modal visible={showIdeation} animationType="slide" transparent>
-        <View className="flex-1 bg-black/60 justify-end">
+        <View style={styles.modalOverlay}>
           <ScrollView
             contentContainerStyle={{ justifyContent: 'flex-end', flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
           >
-            <View className="bg-slate-900 rounded-t-3xl px-5 pt-6 pb-10 border-t border-slate-700 max-h-screen">
-              <Text className="text-xl font-bold text-white mb-1">💡 Idea Lab</Text>
-              <Text className="text-slate-400 text-sm mb-4">
+            <View style={styles.ideaModalSheet}>
+              <View style={styles.dragHandle} />
+
+              {/* Idea Lab header */}
+              <View style={styles.ideaLabHeader}>
+                <Text style={styles.ideaLabTitle}>💡 Idea Lab</Text>
+                <View style={styles.ideaLabBadge}>
+                  <Text style={styles.ideaLabBadgeText}>AI</Text>
+                </View>
+              </View>
+              <Text style={styles.ideaLabSubtext}>
                 Paste your WhatsApp / Slack brainstorming chat and let AI extract a project plan.
               </Text>
 
               {!aiResult ? (
                 <>
+                  <Text style={styles.fieldLabel}>CHAT LOGS</Text>
                   <TextInput
                     value={chatLogs}
                     onChangeText={setChatLogs}
@@ -237,49 +298,67 @@ export default function ProjectsScreen() {
                     placeholderTextColor="#475569"
                     multiline
                     numberOfLines={8}
-                    className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white mb-5"
-                    style={{ minHeight: 150, textAlignVertical: 'top' }}
+                    style={[styles.textInput, styles.chatLogsInput]}
                   />
 
                   {processingAI && (
-                    <View className="items-center py-4 mb-4">
-                      <ActivityIndicator color="#a78bfa" size="large" />
-                      <Text className="text-purple-400 mt-3 font-medium">AI is thinking...</Text>
+                    <View style={styles.aiLoadingContainer}>
+                      <ActivityIndicator color="#8b5cf6" size="large" />
+                      <Text style={styles.aiLoadingText}>AI is thinking...</Text>
                     </View>
                   )}
 
-                  <View className="flex-row gap-3">
-                    <Button label="Cancel" onPress={() => { setShowIdeation(false); setAiResult(null); }} variant="secondary" style={{ flex: 1 }} />
+                  <View style={styles.modalActions}>
+                    <Button
+                      label="Cancel"
+                      onPress={() => { setShowIdeation(false); setAiResult(null); }}
+                      variant="secondary"
+                      style={{ flex: 1 }}
+                    />
                     <Button
                       label="Process"
                       onPress={handleProcessIdeation}
                       loading={processingAI}
-                      style={{ flex: 1, backgroundColor: '#7c3aed' }}
+                      style={[{ flex: 1 }, styles.processButton]}
                     />
                   </View>
                 </>
               ) : (
                 <>
-                  <View className="bg-slate-800 rounded-xl p-4 mb-4 border border-purple-500/30">
-                    <Text className="text-purple-400 font-bold mb-2">AI Analysis</Text>
-                    <Text className="text-white font-semibold mb-1">{aiResult.projectName ?? 'Unnamed Project'}</Text>
+                  {/* AI Result card */}
+                  <View style={styles.aiResultCard}>
+                    <View style={styles.aiResultHeader}>
+                      <View style={styles.aiResultDot} />
+                      <Text style={styles.aiResultLabel}>AI Analysis</Text>
+                    </View>
+                    <Text style={styles.aiResultProjectName}>
+                      {aiResult.projectName ?? 'Unnamed Project'}
+                    </Text>
                     {aiResult.summary && (
-                      <Text className="text-slate-300 text-sm mb-3">{aiResult.summary}</Text>
+                      <Text style={styles.aiResultSummary}>{aiResult.summary}</Text>
                     )}
                     {aiResult.speakers?.length > 0 && (
-                      <Text className="text-slate-400 text-xs">
-                        Participants: {aiResult.speakers.join(', ')}
-                      </Text>
+                      <View style={styles.aiResultParticipants}>
+                        <Text style={styles.aiResultParticipantsLabel}>Participants: </Text>
+                        <Text style={styles.aiResultParticipantsValue}>
+                          {aiResult.speakers.join(', ')}
+                        </Text>
+                      </View>
                     )}
                   </View>
 
-                  <View className="flex-row gap-3">
-                    <Button label="Discard" onPress={() => setAiResult(null)} variant="secondary" style={{ flex: 1 }} />
+                  <View style={styles.modalActions}>
+                    <Button
+                      label="Discard"
+                      onPress={() => setAiResult(null)}
+                      variant="secondary"
+                      style={{ flex: 1 }}
+                    />
                     <Button
                       label="Activate Project"
                       onPress={handleActivate}
                       loading={activateMutation.isPending}
-                      style={{ flex: 1, backgroundColor: '#059669' }}
+                      style={[{ flex: 1 }, styles.activateButton]}
                     />
                   </View>
                 </>
@@ -291,3 +370,339 @@ export default function ProjectsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#020617',
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#f8fafc',
+    letterSpacing: -0.5,
+  },
+  headerSubtext: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  ideaButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#5b21b6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ideaButtonIcon: {
+    fontSize: 20,
+  },
+  newButton: {
+    backgroundColor: '#0ea5e9',
+    borderRadius: 100,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  newButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  // Project list
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+
+  // Project card
+  projectCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(51,65,85,0.6)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  projectTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  projectName: {
+    color: '#f8fafc',
+    fontSize: 17,
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 8,
+    lineHeight: 24,
+  },
+  projectChevron: {
+    color: '#475569',
+    fontSize: 22,
+    fontWeight: '300',
+    marginTop: 1,
+  },
+  stageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  stageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  stageText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  projectDescription: {
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  scoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.25)',
+  },
+  scoreBadgeLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  scoreBadgeValue: {
+    color: '#34d399',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // Modal shared
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#0f172a',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderColor: 'rgba(51,65,85,0.6)',
+  },
+  ideaModalSheet: {
+    backgroundColor: '#0f172a',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderColor: 'rgba(51,65,85,0.6)',
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: '#334155',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#f8fafc',
+    marginBottom: 20,
+    letterSpacing: -0.3,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+
+  // Idea Lab header
+  ideaLabHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  ideaLabTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#f8fafc',
+    letterSpacing: -0.3,
+  },
+  ideaLabBadge: {
+    backgroundColor: 'rgba(139,92,246,0.2)',
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.4)',
+  },
+  ideaLabBadgeText: {
+    color: '#a78bfa',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  ideaLabSubtext: {
+    color: '#64748b',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+
+  // Form fields
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748b',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  textInput: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    color: '#f8fafc',
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  textInputMultiline: {
+    minHeight: 88,
+    textAlignVertical: 'top',
+    paddingTop: 13,
+  },
+  chatLogsInput: {
+    minHeight: 150,
+    textAlignVertical: 'top',
+    paddingTop: 13,
+  },
+
+  // AI processing
+  aiLoadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginBottom: 8,
+  },
+  aiLoadingText: {
+    color: '#a78bfa',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 12,
+  },
+
+  // AI result card
+  aiResultCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#8b5cf6',
+    borderTopWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderTopColor: 'rgba(51,65,85,0.6)',
+    borderRightColor: 'rgba(51,65,85,0.6)',
+    borderBottomColor: 'rgba(51,65,85,0.6)',
+  },
+  aiResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 10,
+  },
+  aiResultDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#8b5cf6',
+  },
+  aiResultLabel: {
+    color: '#a78bfa',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  aiResultProjectName: {
+    color: '#f8fafc',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  aiResultSummary: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  aiResultParticipants: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  aiResultParticipantsLabel: {
+    color: '#64748b',
+    fontSize: 12,
+  },
+  aiResultParticipantsValue: {
+    color: '#94a3b8',
+    fontSize: 12,
+  },
+
+  // Special buttons
+  processButton: {
+    backgroundColor: '#7c3aed',
+  },
+  activateButton: {
+    backgroundColor: '#059669',
+  },
+});

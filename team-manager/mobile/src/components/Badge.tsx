@@ -1,12 +1,35 @@
 import { View, Text } from 'react-native';
 
-const variantStyles: Record<string, { bg: string; text: string }> = {
-  default: { bg: 'bg-slate-700', text: 'text-slate-200' },
-  primary: { bg: 'bg-sky-600', text: 'text-white' },
-  success: { bg: 'bg-emerald-600', text: 'text-white' },
-  warning: { bg: 'bg-amber-500', text: 'text-white' },
-  danger: { bg: 'bg-red-600', text: 'text-white' },
-  info: { bg: 'bg-blue-600', text: 'text-white' },
+interface VariantStyle {
+  container: string;
+  text: string;
+}
+
+const variantStyles: Record<string, VariantStyle> = {
+  default: {
+    container: 'bg-slate-800 border border-slate-700',
+    text: 'text-slate-300',
+  },
+  primary: {
+    container: 'bg-sky-500/20 border border-sky-500/40',
+    text: 'text-sky-300',
+  },
+  success: {
+    container: 'bg-emerald-500/20 border border-emerald-500/40',
+    text: 'text-emerald-300',
+  },
+  warning: {
+    container: 'bg-amber-500/20 border border-amber-500/40',
+    text: 'text-amber-300',
+  },
+  danger: {
+    container: 'bg-rose-500/20 border border-rose-500/40',
+    text: 'text-rose-300',
+  },
+  info: {
+    container: 'bg-blue-500/20 border border-blue-500/40',
+    text: 'text-blue-300',
+  },
 };
 
 interface BadgeProps {
@@ -17,8 +40,8 @@ interface BadgeProps {
 export function Badge({ label, variant = 'default' }: BadgeProps) {
   const style = variantStyles[variant] ?? variantStyles.default;
   return (
-    <View className={`${style.bg} px-2 py-0.5 rounded-full`}>
-      <Text className={`${style.text} text-xs font-medium`}>{label}</Text>
+    <View className={`${style.container} px-2.5 py-1 rounded-full`}>
+      <Text className={`${style.text} text-xs font-semibold`}>{label}</Text>
     </View>
   );
 }
