@@ -1,41 +1,55 @@
 import { useEffect } from 'react';
 import { Tabs, useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Platform } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuthStore } from '@/store/authStore';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { setBadgeCount } from '@/lib/notifications';
 
-function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
-  return (
-    <View className="items-center pt-1">
-      <Text className={`text-xl ${focused ? 'opacity-100' : 'opacity-50'}`}>{emoji}</Text>
-      <Text className={`text-xs mt-0.5 ${focused ? 'text-sky-400 font-semibold' : 'text-slate-500'}`}>
-        {label}
-      </Text>
-    </View>
-  );
-}
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
+
+// Route names must match the actual file paths relative to (app)/
+// Files in subfolders: tasks/index.tsx → name="tasks/index"
+// Files at root:       index.tsx       → name="index"
+const TABS: { name: string; title: string; icon: IconName; activeIcon: IconName }[] = [
+  { name: 'index',          title: 'Office',   icon: 'home-outline',             activeIcon: 'home' },
+  { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline', activeIcon: 'checkmark-circle' },
+  { name: 'projects/index', title: 'Projects', icon: 'folder-outline',           activeIcon: 'folder' },
+  { name: 'teams/index',    title: 'Teams',    icon: 'people-outline',           activeIcon: 'people' },
+  { name: 'profile/index',  title: 'Profile',  icon: 'person-outline',           activeIcon: 'person' },
+];
 
 export default function AppLayout() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
-  const { setTeams } = useTeamStore();
+  const { setTeams, restoreActiveTeam } = useTeamStore();
 
-  const teamsQuery = trpc.teams.listAll.useQuery(undefined, { enabled: isAuthenticated });
+  // Use teams.list — returns ONLY the teams the current user belongs to.
+  // (teams.listAll returns every team in the DB with a LEFT JOIN, so
+  //  activeTeam could end up pointing at a team the user isn't in.)
+  const teamsQuery = trpc.teams.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: 4,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15000),
+    refetchOnMount: true,
+  });
+
   const unreadQuery = trpc.notifications.getUnreadCount.useQuery(
     { teamId: useTeamStore.getState().activeTeam?.id ?? 0 },
     { enabled: isAuthenticated && !!useTeamStore.getState().activeTeam?.id, refetchInterval: 30_000 }
   );
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/(auth)/login');
-    }
+    if (!isLoading && !isAuthenticated) router.replace('/(auth)/login');
   }, [isAuthenticated, isLoading]);
 
   useEffect(() => {
-    if (teamsQuery.data) setTeams(teamsQuery.data as any);
+    if (teamsQuery.data && teamsQuery.data.length > 0) {
+      setTeams(teamsQuery.data as any);
+      // After setting teams, restore the previously picked team (async storage)
+      restoreActiveTeam();
+    }
   }, [teamsQuery.data]);
 
   useEffect(() => {
@@ -47,60 +61,43 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: '#0f172a',
           borderTopColor: '#1e293b',
-          height: 72,
-          paddingBottom: 8,
+          borderTopWidth: 1,
+          height: Platform.OS === 'ios' ? 88 : 68,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: '#38bdf8',
+        tabBarInactiveTintColor: '#475569',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+          marginTop: 2,
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" label="Office" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="✅" label="Tasks" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="projects"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📁" label="Projects" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="teams"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="👥" label="Teams" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="👤" label="Profile" focused={focused} />
-          ),
-        }}
-      />
-      {/* Hidden tabs still registered for routing */}
-      <Tabs.Screen name="files" options={{ href: null }} />
-      <Tabs.Screen name="calendar" options={{ href: null }} />
-      <Tabs.Screen name="analytics" options={{ href: null }} />
-      <Tabs.Screen name="conference" options={{ href: null }} />
+      {TABS.map(tab => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.title,
+            tabBarIcon: ({ focused, color }) => (
+              <Ionicons
+                name={focused ? tab.activeIcon : tab.icon}
+                size={22}
+                color={color}
+              />
+            ),
+          }}
+        />
+      ))}
+      <Tabs.Screen name="files/index"      options={{ href: null }} />
+      <Tabs.Screen name="calendar/index"   options={{ href: null }} />
+      <Tabs.Screen name="analytics/index"  options={{ href: null }} />
+      <Tabs.Screen name="conference/index" options={{ href: null }} />
     </Tabs>
   );
 }

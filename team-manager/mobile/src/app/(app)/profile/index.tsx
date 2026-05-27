@@ -6,14 +6,26 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useTeamStore } from '@/store/teamStore';
 import { disconnectSocket } from '@/lib/socket';
 import { Button } from '@/components/Button';
+import { API_BASE_URL } from '@/lib/constants';
+
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const QUICK_LINKS: { label: string; icon: IconName; color: string; route: string }[] = [
+  { label: 'Files',         icon: 'folder-outline',    color: '#38bdf8', route: '/(app)/files' },
+  { label: 'Calendar',      icon: 'calendar-outline',  color: '#34d399', route: '/(app)/calendar' },
+  { label: 'Analytics',     icon: 'bar-chart-outline', color: '#a78bfa', route: '/(app)/analytics' },
+  { label: 'Conference Room', icon: 'videocam-outline', color: '#fb923c', route: '/(app)/conference' },
+];
 
 function SettingRow({ label, value, onToggle }: { label: string; value: boolean; onToggle: (v: boolean) => void }) {
   return (
@@ -94,19 +106,17 @@ export default function ProfileScreen() {
 
         {/* Quick links */}
         <View className="mx-5 bg-slate-800 rounded-2xl mb-5 border border-slate-700 overflow-hidden">
-          {[
-            { label: '📁 Files', route: '/(app)/files' },
-            { label: '📅 Calendar', route: '/(app)/calendar' },
-            { label: '📊 Analytics', route: '/(app)/analytics' },
-            { label: '🏛️ Conference Room', route: '/(app)/conference' },
-          ].map((item, idx) => (
+          {QUICK_LINKS.map((item, idx) => (
             <TouchableOpacity
               key={item.label}
               onPress={() => router.push(item.route as any)}
-              className={`flex-row items-center justify-between px-5 py-4 ${idx > 0 ? 'border-t border-slate-700' : ''}`}
+              className={`flex-row items-center px-5 py-4 gap-3 ${idx > 0 ? 'border-t border-slate-700' : ''}`}
             >
-              <Text className="text-slate-200 text-base">{item.label}</Text>
-              <Text className="text-slate-500">›</Text>
+              <View className="w-8 h-8 rounded-lg items-center justify-center" style={{ backgroundColor: item.color + '22' }}>
+                <Ionicons name={item.icon} size={18} color={item.color} />
+              </View>
+              <Text className="text-slate-200 text-base flex-1">{item.label}</Text>
+              <Ionicons name="chevron-forward" size={16} color="#475569" />
             </TouchableOpacity>
           ))}
         </View>
@@ -147,6 +157,29 @@ export default function ProfileScreen() {
               value={prefs.mentions ?? true}
               onToggle={(v) => handleTogglePref('mentions', v)}
             />
+          </View>
+        </View>
+
+        {/* Server info */}
+        <View className="mx-5 mb-5">
+          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+            Connection
+          </Text>
+          <View className="bg-slate-800 rounded-2xl px-5 py-4 border border-slate-700">
+            <View className="flex-row items-center gap-2 mb-1">
+              <Ionicons name="server-outline" size={14} color="#64748b" />
+              <Text className="text-slate-500 text-xs">Server</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                Clipboard.setString(API_BASE_URL);
+                Alert.alert('Copied', 'Server URL copied to clipboard.');
+              }}
+              className="flex-row items-center gap-2"
+            >
+              <Text className="text-slate-300 text-sm flex-1" numberOfLines={1}>{API_BASE_URL}</Text>
+              <Ionicons name="copy-outline" size={14} color="#475569" />
+            </TouchableOpacity>
           </View>
         </View>
 

@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { setupFileUpload } from "./fileUpload";
 import { initializeSocketServer } from "../socket-server";
 import { registerWebhookEndpoint } from "../github-webhooks";
+import { backfillTeamMemberStatus } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -32,6 +33,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Fix any team_members_collaborative rows with NULL status before serving traffic
+  await backfillTeamMemberStatus();
+
   const app = express();
   const server = createServer(app);
 

@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
@@ -28,9 +29,11 @@ export default function TeamsScreen() {
   const [teamDescription, setTeamDescription] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
 
+  const { isAuthenticated } = useAuthStore();
   const utils = trpc.useUtils();
 
-  const teamsQuery = trpc.teams.listAll.useQuery();
+  // My teams only — so switching team always stays within user's memberships
+  const teamsQuery = trpc.teams.list.useQuery(undefined, { enabled: isAuthenticated });
   const membersQuery = trpc.teams.getMembers.useQuery(
     { teamId: activeTeam?.id ?? 0 },
     { enabled: !!activeTeam?.id && showMembers }
@@ -38,12 +41,12 @@ export default function TeamsScreen() {
 
   const createMutation = trpc.teams.create.useMutation({
     onSuccess: () => {
-      utils.teams.listAll.invalidate();
+      utils.teams.list.invalidate();
       setShowCreate(false);
       setTeamName('');
       setTeamDescription('');
     },
-    onError: (err) => Alert.alert('Error', err.message),
+    onError: (err: any) => Alert.alert('Error', err.message),
   });
 
   const inviteMutation = trpc.teams.createInvitation.useMutation({
@@ -51,7 +54,7 @@ export default function TeamsScreen() {
       Alert.alert('Success', `Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
     },
-    onError: (err) => Alert.alert('Error', err.message),
+    onError: (err: any) => Alert.alert('Error', err.message),
   });
 
   const handleCreate = () => {
@@ -75,7 +78,10 @@ export default function TeamsScreen() {
     <SafeAreaView className="flex-1 bg-slate-900">
       {/* Header */}
       <View className="px-5 pt-4 pb-3 flex-row justify-between items-center">
-        <Text className="text-2xl font-bold text-white">Teams</Text>
+        <View>
+          <Text className="text-2xl font-bold text-white">Teams</Text>
+          <Text className="text-slate-400 text-sm mt-0.5">Your team memberships</Text>
+        </View>
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
           className="bg-sky-600 rounded-xl px-4 py-2"
@@ -86,17 +92,42 @@ export default function TeamsScreen() {
 
       {/* Active team banner */}
       {activeTeam && (
-        <View className="mx-5 mb-4 bg-sky-900/40 border border-sky-700 rounded-xl p-3">
-          <Text className="text-sky-300 text-xs font-semibold mb-1">ACTIVE TEAM</Text>
-          <Text className="text-white font-bold text-base">{activeTeam.name}</Text>
-          <View className="flex-row gap-2 mt-2">
+        <View className="mx-5 mb-4 bg-sky-900/40 border border-sky-700 rounded-2xl p-4">
+          <View className="flex-row items-center gap-2 mb-1">
+            <View className="w-6 h-6 rounded-full bg-sky-500 items-center justify-center">
+              <Ionicons name="checkmark" size={14} color="#fff" />
+            </View>
+            <Text className="text-sky-300 text-xs font-semibold uppercase tracking-wider">Active Team</Text>
+          </View>
+          <Text className="text-white font-bold text-lg">{activeTeam.name}</Text>
+          <View className="flex-row gap-2 mt-3">
             <TouchableOpacity
               onPress={() => setShowMembers(true)}
-              className="bg-sky-700 rounded-lg px-3 py-1"
+              className="bg-sky-700/60 border border-sky-600 rounded-lg px-3 py-1.5 flex-row items-center gap-1.5"
             >
-              <Text className="text-sky-100 text-xs font-medium">👥 Members</Text>
+              <Ionicons name="people-outline" size={13} color="#7dd3fc" />
+              <Text className="text-sky-200 text-xs font-medium">Members</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {/* Connection error banner */}
+      {teamsQuery.error && !teamsQuery.isFetching && (
+        <View className="mx-5 mb-3 bg-red-900/40 border border-red-700 rounded-2xl p-4">
+          <View className="flex-row items-center gap-2 mb-1">
+            <Ionicons name="cloud-offline-outline" size={16} color="#f87171" />
+            <Text className="text-red-400 text-sm font-semibold">Connection failed</Text>
+          </View>
+          <Text className="text-red-300 text-xs mb-3" numberOfLines={2}>
+            {(teamsQuery.error as any)?.message ?? 'Could not reach the server.'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => teamsQuery.refetch()}
+            className="bg-red-700/50 rounded-lg px-3 py-2 self-start"
+          >
+            <Text className="text-red-200 text-xs font-semibold">Retry</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -109,37 +140,51 @@ export default function TeamsScreen() {
         }
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
         ListEmptyComponent={
-          <EmptyState title="No teams yet" description="Create your first team to get started." icon="👥" />
+          teamsQuery.isLoading ? null : (
+            <EmptyState
+              title="No teams yet"
+              description="Create a team or ask someone to invite you."
+              icon="people-outline"
+              iconColor="#475569"
+            />
+          )
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => setActiveTeam(item)}
-            className={`rounded-xl p-4 mb-3 border ${
-              activeTeam?.id === item.id
-                ? 'bg-sky-900/40 border-sky-600'
-                : 'bg-slate-800 border-slate-700'
-            }`}
-          >
-            <View className="flex-row justify-between items-start">
-              <View className="flex-1">
-                <Text className="text-white font-semibold text-base">{item.name}</Text>
-                {item.description && (
-                  <Text className="text-slate-400 text-sm mt-1" numberOfLines={2}>{item.description}</Text>
+        renderItem={({ item }) => {
+          const isActive = activeTeam?.id === item.id;
+          return (
+            <TouchableOpacity
+              onPress={() => setActiveTeam(item)}
+              className={`rounded-2xl p-4 mb-3 border ${
+                isActive ? 'bg-sky-900/40 border-sky-600' : 'bg-slate-800 border-slate-700'
+              }`}
+            >
+              <View className="flex-row justify-between items-start">
+                <View className="flex-1">
+                  <Text className="text-white font-semibold text-base">{item.name}</Text>
+                  {item.description ? (
+                    <Text className="text-slate-400 text-sm mt-1" numberOfLines={2}>{item.description}</Text>
+                  ) : null}
+                </View>
+                {isActive && (
+                  <View className="bg-sky-600 rounded-full px-2 py-0.5 ml-2">
+                    <Text className="text-white text-xs font-bold">Active</Text>
+                  </View>
                 )}
               </View>
-              {activeTeam?.id === item.id && (
-                <View className="bg-sky-600 rounded-full px-2 py-0.5 ml-2">
-                  <Text className="text-white text-xs font-bold">Active</Text>
-                </View>
-              )}
-            </View>
-            {item.role && (
-              <View className="mt-2">
-                <Badge label={item.role} variant="primary" />
+              <View className="flex-row items-center gap-2 mt-2">
+                {(item.memberRole || item.role) && (
+                  <Badge label={item.memberRole || item.role} variant="primary" />
+                )}
+                {item.memberCount != null && (
+                  <View className="flex-row items-center gap-1">
+                    <Ionicons name="people-outline" size={12} color="#64748b" />
+                    <Text className="text-slate-500 text-xs">{item.memberCount}</Text>
+                  </View>
+                )}
               </View>
-            )}
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          );
+        }}
       />
 
       {/* Create Team Modal */}

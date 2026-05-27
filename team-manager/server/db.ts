@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, or, isNull, desc, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
@@ -474,6 +474,7 @@ export async function createTeam(
       teamId: newTeam.id,
       memberId: creatorId,
       role: 'admin',
+      status: 'active',
     });
 
     return {
@@ -481,6 +482,29 @@ export async function createTeam(
       memberRole: 'admin' as TeamRole,
     };
   });
+}
+
+/**
+ * One-time startup backfill: set status = 'active' for any
+ * team_members_collaborative rows that still have NULL status.
+ * These were created before migration 0009 added the status column.
+ * Safe to run multiple times (WHERE status IS NULL is a no-op once done).
+ */
+export async function backfillTeamMemberStatus(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    const result = await db
+      .update(teamMembersCollaborative)
+      .set({ status: 'active' })
+      .where(isNull(teamMembersCollaborative.status))
+      .returning({ id: teamMembersCollaborative.id });
+    if (result.length > 0) {
+      console.log(`[DB] Backfilled status='active' on ${result.length} team_members_collaborative row(s)`);
+    }
+  } catch (err) {
+    console.error('[DB] backfillTeamMemberStatus failed (non-fatal):', err);
+  }
 }
 
 /**
@@ -504,7 +528,18 @@ export async function getUserTeams(userId: number): Promise<(Team & { memberRole
       memberCount: sql<number>`count(distinct ${teamMembersCollaborative.memberId})`,
     })
     .from(teams)
-    .innerJoin(teamMembersCollaborative, and(eq(teams.id, teamMembersCollaborative.teamId), eq(teamMembersCollaborative.status, 'active')))
+    .innerJoin(
+      teamMembersCollaborative,
+      and(
+        eq(teams.id, teamMembersCollaborative.teamId),
+        // Treat NULL status as 'active' — rows inserted before migration 0009
+        // added the status column have NULL and must not be silently excluded.
+        or(
+          eq(teamMembersCollaborative.status, 'active'),
+          isNull(teamMembersCollaborative.status)
+        )
+      )
+    )
     .where(eq(teamMembersCollaborative.memberId, userId))
     .groupBy(teams.id, teamMembersCollaborative.role);
 
@@ -924,6 +959,7 @@ export async function acceptTeamInvitation(
         teamId: invitation.teamId,
         memberId,
         role: 'member',
+        status: 'active',
       })
       .returning();
 
