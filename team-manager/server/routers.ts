@@ -572,10 +572,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         try {
-          if (!ctx.user?.id) {
-            throw new Error('User not authenticated');
+          if (!ctx.user?.id) throw new Error('User not authenticated');
+          const task = await createTask(input, ctx.user.id);
+          // Push notification to assignee
+          if (input.assignedTo && input.assignedTo !== ctx.user.id) {
+            const { notifyMemberAboutTask } = await import('./idea-service');
+            notifyMemberAboutTask(input.assignedTo, 'task_assigned', input.title, task.id).catch(() => {});
           }
-          return await createTask(input, ctx.user.id);
+          return task;
         } catch (error) {
           handleDatabaseError(error);
         }
@@ -620,11 +624,19 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         try {
-          if (!ctx.user?.id) {
-            throw new Error('User not authenticated');
-          }
+          if (!ctx.user?.id) throw new Error('User not authenticated');
           const { id, ...updates } = input;
-          return await updateTask(id, updates, ctx.user.id);
+          const task = await updateTask(id, updates, ctx.user.id);
+          const { notifyMemberAboutTask } = await import('./idea-service');
+          // Notify newly assigned member
+          if (updates.assignedTo && updates.assignedTo !== ctx.user.id) {
+            notifyMemberAboutTask(updates.assignedTo, 'task_assigned', task.title, id).catch(() => {});
+          }
+          // Notify assignee when task is marked done
+          if (updates.status === 'done' && task.assignedTo && task.assignedTo !== ctx.user.id) {
+            notifyMemberAboutTask(task.assignedTo, 'task_completed', task.title, id).catch(() => {});
+          }
+          return task;
         } catch (error) {
           handleDatabaseError(error);
         }
@@ -3979,6 +3991,171 @@ export const appRouter = router({
         const { connectionId, ...data } = input;
         const { updateGoogleDriveConnection } = await import('./google-drive-service');
         return await updateGoogleDriveConnection(connectionId, data);
+      }),
+  }),
+
+  // ─── Telegram Idea Workflow ────────────────────────────────────────────────
+  ideas: router({
+    // List processed ideas in the PM's inbox
+    list: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        status: z.enum(['inbox', 'reviewing', 'sent_to_conference', 'archived', 'converted', 'all']).optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { processedIdeas, telegramUsers } = await import('../drizzle/schema');
+        const { eq, desc, ne } = await import('drizzle-orm');
+        const db = await getDb();
+        if (!db) return [];
+        const conditions: any[] = [eq(processedIdeas.teamId, input.teamId)];
+        if (input.status && input.status !== 'all') {
+          conditions.push(eq(processedIdeas.status, input.status));
+        }
+        const { and } = await import('drizzle-orm');
+        const rows = await db
+          .select()
+          .from(processedIdeas)
+          .leftJoin(telegramUsers, eq(processedIdeas.telegramUserId, telegramUsers.id))
+          .where(conditions.length > 1 ? and(...conditions) : conditions[0])
+          .orderBy(desc(processedIdeas.createdAt));
+        return rows.map(r => ({
+          ...r.processed_ideas,
+          submitter: r.telegram_users,
+        }));
+      }),
+
+    // Get a single processed idea with full detail
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { processedIdeas, telegramUsers, rawIdeas } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const db = await getDb();
+        if (!db) return null;
+        const [row] = await db
+          .select()
+          .from(processedIdeas)
+          .leftJoin(telegramUsers, eq(processedIdeas.telegramUserId, telegramUsers.id))
+          .leftJoin(rawIdeas, eq(processedIdeas.rawIdeaId, rawIdeas.id))
+          .where(eq(processedIdeas.id, input.id))
+          .limit(1);
+        if (!row) return null;
+        return { ...row.processed_ideas, submitter: row.telegram_users, rawIdea: row.raw_ideas };
+      }),
+
+    // PM updates their notes or status on an idea
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        pmNotes: z.string().optional(),
+        status: z.enum(['inbox', 'reviewing', 'archived']).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { processedIdeas } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const update: Record<string, unknown> = { updatedAt: new Date() };
+        if (input.pmNotes !== undefined) update.pmNotes = input.pmNotes;
+        if (input.status !== undefined) update.status = input.status;
+        await db.update(processedIdeas).set(update).where(eq(processedIdeas.id, input.id));
+        return { success: true };
+      }),
+
+    // PM sends a refined idea to the Conference Room
+    sendToConference: protectedProcedure
+      .input(z.object({
+        ideaId: z.number(),
+        pmNotes: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('User not authenticated');
+        const { sendIdeaToConference } = await import('./idea-service');
+        const approvalId = await sendIdeaToConference(input.ideaId, ctx.user.id, input.pmNotes);
+        return { approvalId };
+      }),
+
+    // Get the WhatsApp contact link for the idea originator
+    getWhatsAppLink: protectedProcedure
+      .input(z.object({
+        ideaId: z.number(),
+        message: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { processedIdeas, telegramUsers } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const db = await getDb();
+        if (!db) return null;
+        const [row] = await db
+          .select({ tg: telegramUsers, idea: processedIdeas })
+          .from(processedIdeas)
+          .leftJoin(telegramUsers, eq(processedIdeas.telegramUserId, telegramUsers.id))
+          .where(eq(processedIdeas.id, input.ideaId))
+          .limit(1);
+        if (!row?.tg?.whatsappNumber) return null;
+        const number = row.tg.whatsappNumber.replace(/\D/g, '');
+        const text = input.message
+          ?? `Hi ${row.tg.telegramFirstName ?? 'there'}, I'm reviewing your idea "${row.idea.title}". Can you share more context?`;
+        return {
+          url: `https://wa.me/${number}?text=${encodeURIComponent(text)}`,
+          name: row.tg.telegramFirstName ?? row.tg.telegramUsername ?? 'Unknown',
+          whatsapp: number,
+        };
+      }),
+
+    // Register a Telegram user with their WhatsApp number from the web/mobile UI
+    linkTelegramUser: protectedProcedure
+      .input(z.object({
+        telegramUsername: z.string(),
+        whatsappNumber: z.string(),
+        teamMemberId: z.number(),
+        teamId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { telegramUsers } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        await db
+          .update(telegramUsers)
+          .set({
+            teamMemberId: input.teamMemberId,
+            teamId: input.teamId,
+            whatsappNumber: input.whatsappNumber,
+            isRegistered: true,
+          })
+          .where(eq(telegramUsers.telegramUsername, input.telegramUsername));
+        return { success: true };
+      }),
+
+    // Stats for the PM dashboard
+    stats: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { processedIdeas } = await import('../drizzle/schema');
+        const { eq, and, count } = await import('drizzle-orm');
+        const db = await getDb();
+        if (!db) return { inbox: 0, reviewing: 0, sentToConference: 0, total: 0 };
+        const rows = await db
+          .select({ status: processedIdeas.status, cnt: count() })
+          .from(processedIdeas)
+          .where(eq(processedIdeas.teamId, input.teamId))
+          .groupBy(processedIdeas.status);
+        const result: Record<string, number> = {};
+        for (const row of rows) result[row.status] = Number(row.cnt);
+        return {
+          inbox: result.inbox ?? 0,
+          reviewing: result.reviewing ?? 0,
+          sentToConference: result.sent_to_conference ?? 0,
+          archived: result.archived ?? 0,
+          total: Object.values(result).reduce((a, b) => a + b, 0),
+        };
       }),
   }),
 });

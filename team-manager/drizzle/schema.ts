@@ -1934,3 +1934,78 @@ export const userPushTokens = pgTable("user_push_tokens", {
 
 export type InsertUserPushToken = typeof userPushTokens.$inferInsert;
 export type UserPushToken = typeof userPushTokens.$inferSelect;
+
+// ─── Telegram Idea Workflow ────────────────────────────────────────────────────
+
+/**
+ * Links a Telegram user to a team member so the PM can reach them via WhatsApp.
+ */
+export const telegramUsers = pgTable("telegram_users", {
+  id: serial("id").primaryKey(),
+  telegramId: text("telegram_id").notNull().unique(),
+  telegramUsername: text("telegram_username"),
+  telegramFirstName: text("telegram_first_name"),
+  teamMemberId: integer("team_member_id").references(() => teamMembers.id, { onDelete: "set null" }),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
+  whatsappNumber: text("whatsapp_number"), // e.g. "2348012345678" — used for wa.me links
+  isRegistered: boolean("is_registered").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type InsertTelegramUser = typeof telegramUsers.$inferInsert;
+export type TelegramUser = typeof telegramUsers.$inferSelect;
+
+/**
+ * Raw idea captured from Telegram before LLM processing.
+ */
+export const rawIdeas = pgTable("raw_ideas", {
+  id: serial("id").primaryKey(),
+  telegramUserId: integer("telegram_user_id").references(() => telegramUsers.id, { onDelete: "cascade" }).notNull(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
+  messageId: text("message_id"),                      // Telegram message ID
+  type: text("type").notNull(),                        // 'text' | 'image' | 'audio' | 'document'
+  rawText: text("raw_text"),                           // Original text or caption
+  mediaUrl: text("media_url"),                         // S3 URL after download
+  transcription: text("transcription"),                // For audio messages
+  status: text("status").default("pending").notNull(), // 'pending' | 'processing' | 'processed' | 'failed'
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+export type InsertRawIdea = typeof rawIdeas.$inferInsert;
+export type RawIdea = typeof rawIdeas.$inferSelect;
+
+/**
+ * LLM-refined idea ready for PM review.
+ */
+export const processedIdeas = pgTable("processed_ideas", {
+  id: serial("id").primaryKey(),
+  rawIdeaId: integer("raw_idea_id").references(() => rawIdeas.id, { onDelete: "cascade" }).notNull(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }),
+  telegramUserId: integer("telegram_user_id").references(() => telegramUsers.id, { onDelete: "set null" }),
+
+  // LLM output
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  refinedDescription: text("refined_description").notNull(),
+  category: text("category").notNull(),             // 'product' | 'process' | 'marketing' | 'technical' | 'other'
+  priority: text("priority").notNull(),             // 'low' | 'medium' | 'high' | 'critical'
+  estimatedImpact: text("estimated_impact"),
+  suggestedNextSteps: jsonb("suggested_next_steps"),// string[]
+  llmRawOutput: jsonb("llm_raw_output"),            // Full LLM response for audit
+
+  // PM workflow
+  pmNotes: text("pm_notes"),
+  status: text("status").default("inbox").notNull(), // 'inbox' | 'reviewing' | 'sent_to_conference' | 'archived' | 'converted'
+  sentToPmAt: timestamp("sent_to_pm_at"),
+  sentToConferenceAt: timestamp("sent_to_conference_at"),
+  approvalId: integer("approval_id"),               // Set when sent to conference room
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type InsertProcessedIdea = typeof processedIdeas.$inferInsert;
+export type ProcessedIdea = typeof processedIdeas.$inferSelect;

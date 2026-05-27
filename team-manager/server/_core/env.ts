@@ -8,4 +8,13 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   groqApiKey: process.env.GROQ_API_KEY ?? "",
+  // Telegram Idea Bot
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "team-manager-secret",
+  // Cron schedule for batching ideas to PM (default = every hour)
+  ideaCronSchedule: process.env.IDEA_CRON_SCHEDULE ?? "0 * * * *",
+  // Default team ID for Telegram ideas (users override with /register)
+  defaultTeamId: parseInt(process.env.DEFAULT_TEAM_ID ?? "0", 10),
+  // Public base URL for Telegram webhook registration
+  serverBaseUrl: process.env.SERVER_BASE_URL ?? "https://team-management-system-zq6x.onrender.com",
 };

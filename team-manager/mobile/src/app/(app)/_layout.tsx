@@ -23,6 +23,11 @@ export default function AppLayout() {
   const { setTeams } = useTeamStore();
 
   const teamsQuery = trpc.teams.listAll.useQuery(undefined, { enabled: isAuthenticated });
+  const statsQuery = trpc.ideas.stats.useQuery(
+    { teamId: useTeamStore.getState().activeTeam?.id ?? 0 },
+    { enabled: isAuthenticated && !!useTeamStore.getState().activeTeam?.id, refetchInterval: 60_000 }
+  );
+
   const unreadQuery = trpc.notifications.getUnreadCount.useQuery(
     { teamId: useTeamStore.getState().activeTeam?.id ?? 0 },
     { enabled: isAuthenticated && !!useTeamStore.getState().activeTeam?.id, refetchInterval: 30_000 }
@@ -86,6 +91,17 @@ export default function AppLayout() {
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji="👥" label="Teams" focused={focused} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="ideas"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="💡" label="Ideas" focused={focused} />
+          ),
+          tabBarBadge: (statsQuery.data as any)?.inbox > 0
+            ? (statsQuery.data as any).inbox
+            : undefined,
         }}
       />
       <Tabs.Screen

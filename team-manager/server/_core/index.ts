@@ -11,6 +11,8 @@ import { serveStatic, setupVite } from "./vite";
 import { setupFileUpload } from "./fileUpload";
 import { initializeSocketServer } from "../socket-server";
 import { registerWebhookEndpoint } from "../github-webhooks";
+import { registerTelegramRoutes, registerTelegramWebhook } from "../telegram-bot";
+import { startCronJobs } from "../cron-service";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -74,6 +76,9 @@ async function startServer() {
   // GitHub webhook endpoint (must be before other routes)
   registerWebhookEndpoint(app);
 
+  // Telegram idea bot webhook
+  registerTelegramRoutes(app);
+
   // Healthcheck route
   app.get('/healthcheck', (req, res) => {
     res.status(200).send('Service is awake');
@@ -108,6 +113,9 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Register Telegram webhook and start cron jobs after server is up
+    registerTelegramWebhook().catch(console.error);
+    startCronJobs();
   });
 }
 
