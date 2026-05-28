@@ -13,11 +13,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore } from '@/store/themeStore';
 import { getSocket } from '@/lib/socket';
 import { formatDistanceToNow } from 'date-fns';
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function MemberAvatar({ name, size = 50, unread = 0 }: { name?: string | null; size?: number; unread?: number }) {
+  const isDark = useThemeStore(state => state.isDark);
   const colors = ['#38bdf8', '#a78bfa', '#34d399', '#fb923c', '#f472b6', '#fbbf24'];
   const idx = ((name?.charCodeAt(0) ?? 0) + (name?.charCodeAt(1) ?? 0)) % colors.length;
   const color = colors[idx];
@@ -36,7 +38,7 @@ function MemberAvatar({ name, size = 50, unread = 0 }: { name?: string | null; s
         <View style={{
           position: 'absolute', top: -2, right: -2,
           minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 3,
-          backgroundColor: '#38bdf8', borderWidth: 2, borderColor: '#0a0f1e',
+          backgroundColor: '#38bdf8', borderWidth: 2, borderColor: isDark ? '#0a0f1e' : '#f8fafc',
           alignItems: 'center', justifyContent: 'center',
         }}>
           <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{unread > 99 ? '99+' : unread}</Text>
@@ -93,17 +95,19 @@ export default function MessagesScreen() {
     });
   };
 
+  const isDark = useThemeStore(state => state.isDark);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0a0f1e' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }}>
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
-            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
+            <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
               {activeTeam?.name ?? 'Team'}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: '#f1f5f9', fontSize: 24, fontWeight: '800' }}>Messages</Text>
+              <Text className="text-slate-900 dark:text-white" style={{ fontSize: 24, fontWeight: '800' }}>Messages</Text>
               {totalUnread > 0 && (
                 <View style={{ backgroundColor: '#38bdf8', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
                   <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{totalUnread}</Text>
@@ -132,13 +136,13 @@ export default function MessagesScreen() {
       ) : conversations.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
           <View style={{
-            width: 72, height: 72, borderRadius: 24, backgroundColor: '#0f172a',
-            borderWidth: 1, borderColor: '#1e293b', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+            width: 72, height: 72, borderRadius: 24, backgroundColor: isDark ? '#0f172a' : '#ffffff',
+            borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
           }}>
-            <Ionicons name="chatbubble-ellipses-outline" size={32} color="#334155" />
+            <Ionicons name="chatbubble-ellipses-outline" size={32} color={isDark ? '#334155' : '#94a3b8'} />
           </View>
-          <Text style={{ color: '#64748b', fontSize: 17, fontWeight: '700', marginBottom: 6 }}>No conversations yet</Text>
-          <Text style={{ color: '#334155', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+          <Text className="text-slate-900 dark:text-white" style={{ fontSize: 17, fontWeight: '700', marginBottom: 6 }}>No conversations yet</Text>
+          <Text className="text-slate-500 dark:text-slate-400" style={{ fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
             Send a message to a team member to start chatting.
           </Text>
           <TouchableOpacity
@@ -172,23 +176,25 @@ export default function MessagesScreen() {
                 style={{
                   flexDirection: 'row', alignItems: 'center',
                   paddingHorizontal: 20, paddingVertical: 14,
-                  borderBottomWidth: 1, borderBottomColor: '#0f172a',
-                  backgroundColor: hasUnread ? '#0ea5e908' : 'transparent',
+                  borderBottomWidth: 1, borderBottomColor: isDark ? '#0f172a' : '#e2e8f0',
+                  backgroundColor: hasUnread ? (isDark ? '#0ea5e908' : '#0ea5e904') : 'transparent',
                 }}
               >
                 <MemberAvatar name={item.partnerName} size={50} unread={item.unreadCount} />
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <Text
-                      style={{ color: hasUnread ? '#f1f5f9' : '#94a3b8', fontSize: 15, fontWeight: hasUnread ? '700' : '600', flex: 1 }}
+                      className="text-slate-900 dark:text-white"
+                      style={{ fontSize: 15, fontWeight: hasUnread ? '700' : '600', flex: 1, color: hasUnread ? undefined : (isDark ? '#94a3b8' : '#475569') }}
                       numberOfLines={1}
                     >
                       {item.partnerName ?? 'Team Member'}
                     </Text>
-                    <Text style={{ color: '#334155', fontSize: 11, marginLeft: 8 }}>{timeStr}</Text>
+                    <Text className="text-slate-400 dark:text-slate-500" style={{ fontSize: 11, marginLeft: 8 }}>{timeStr}</Text>
                   </View>
                   <Text
-                    style={{ color: hasUnread ? '#64748b' : '#334155', fontSize: 13, fontWeight: hasUnread ? '500' : '400' }}
+                    className="text-slate-500 dark:text-slate-400"
+                    style={{ fontSize: 13, fontWeight: hasUnread ? '500' : '400', color: hasUnread ? undefined : (isDark ? '#334155' : '#94a3b8') }}
                     numberOfLines={1}
                   >
                     {item.lastMessage || 'No messages yet'}
@@ -206,12 +212,12 @@ export default function MessagesScreen() {
       {/* New message member picker overlay */}
       {showPicker && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end', zIndex: 999 }}>
-          <View style={{ backgroundColor: '#0f172a', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTopWidth: 1, borderColor: '#1e293b', paddingBottom: 40 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: '#1e293b', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 16 }} />
+          <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTopWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', paddingBottom: 40 }}>
+            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1e293b' : '#cbd5e1', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 16 }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 16 }}>
-              <Text style={{ color: '#f1f5f9', fontSize: 18, fontWeight: '800' }}>New Message</Text>
+              <Text className="text-slate-900 dark:text-white" style={{ fontSize: 18, fontWeight: '800' }}>New Message</Text>
               <TouchableOpacity onPress={() => setShowPicker(false)}>
-                <Ionicons name="close" size={20} color="#475569" />
+                <Ionicons name="close" size={20} color={isDark ? '#475569' : '#64748b'} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -230,14 +236,14 @@ export default function MessagesScreen() {
                   >
                     <MemberAvatar name={member.name} size={44} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#f1f5f9', fontSize: 14, fontWeight: '600' }}>{member.name}</Text>
+                      <Text className="text-slate-900 dark:text-white" style={{ fontSize: 14, fontWeight: '600' }}>{member.name}</Text>
                       {item.officeRole && (
-                        <Text style={{ color: '#475569', fontSize: 11, marginTop: 1 }}>
+                        <Text className="text-slate-400 dark:text-slate-500" style={{ fontSize: 11, marginTop: 1 }}>
                           {item.officeRole.replace(/_/g, ' ')}
                         </Text>
                       )}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#334155" />
+                    <Ionicons name="chevron-forward" size={16} color={isDark ? '#334155' : '#cbd5e1'} />
                   </TouchableOpacity>
                 );
               }}
