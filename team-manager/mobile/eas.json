@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 10.0.0"
+    "version": ">= 10.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -10,7 +11,7 @@
         "buildType": "apk"
       },
       "ios": {
-        "buildType": "simulator"
+        "simulator": true
       }
     },
     "preview": {

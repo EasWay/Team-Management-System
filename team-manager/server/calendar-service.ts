@@ -92,7 +92,7 @@ export async function getCalendarEvents(
     if (filters?.userId) {
       return events.filter(event => {
         const assignedTo = event.assignedTo as number[] | null;
-        return assignedTo && assignedTo.includes(filters.userId);
+        return assignedTo && assignedTo.includes(filters.userId!);
       });
     }
     

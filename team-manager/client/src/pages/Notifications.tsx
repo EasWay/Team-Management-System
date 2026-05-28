@@ -50,7 +50,7 @@ const priorityIcons = {
 
 const priorityColors = {
   low: "text-blue-500",
-  normal: "text-gray-500",
+  normal: "text-muted-foreground",
   high: "text-orange-500",
   urgent: "text-red-500",
 };
@@ -303,7 +303,7 @@ export default function Notifications() {
               <div className="space-y-2">
                 {notifications.map((notification: any) => {
                   const PriorityIcon = priorityIcons[notification.priority as keyof typeof priorityIcons] || Bell;
-                  const priorityColor = priorityColors[notification.priority as keyof typeof priorityColors] || "text-gray-500";
+                  const priorityColor = priorityColors[notification.priority as keyof typeof priorityColors] || "text-muted-foreground";
 
                   return (
                     <div
@@ -504,7 +504,7 @@ export default function Notifications() {
                       <Label htmlFor="email">Email Notifications</Label>
                       <Switch
                         id="email"
-                        checked={preferences.emailEnabled}
+                        checked={preferences.emailEnabled ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ emailEnabled: checked })
                         }
@@ -514,7 +514,7 @@ export default function Notifications() {
                       <Label htmlFor="push">Push Notifications</Label>
                       <Switch
                         id="push"
-                        checked={preferences.pushEnabled}
+                        checked={preferences.pushEnabled ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ pushEnabled: checked })
                         }
@@ -524,7 +524,7 @@ export default function Notifications() {
                       <Label htmlFor="inApp">In-App Notifications</Label>
                       <Switch
                         id="inApp"
-                        checked={preferences.inAppEnabled}
+                        checked={preferences.inAppEnabled ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ inAppEnabled: checked })
                         }
@@ -541,7 +541,7 @@ export default function Notifications() {
                       <Label htmlFor="taskAssignments">Task Assignments</Label>
                       <Switch
                         id="taskAssignments"
-                        checked={preferences.taskAssignments}
+                        checked={preferences.taskAssignments ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ taskAssignments: checked })
                         }
@@ -551,7 +551,7 @@ export default function Notifications() {
                       <Label htmlFor="taskDeadlines">Task Deadlines</Label>
                       <Switch
                         id="taskDeadlines"
-                        checked={preferences.taskDeadlines}
+                        checked={preferences.taskDeadlines ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ taskDeadlines: checked })
                         }
@@ -561,7 +561,7 @@ export default function Notifications() {
                       <Label htmlFor="mentions">@Mentions</Label>
                       <Switch
                         id="mentions"
-                        checked={preferences.mentions}
+                        checked={preferences.mentions ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ mentions: checked })
                         }
@@ -571,7 +571,7 @@ export default function Notifications() {
                       <Label htmlFor="approvalRequests">Approval Requests</Label>
                       <Switch
                         id="approvalRequests"
-                        checked={preferences.approvalRequests}
+                        checked={preferences.approvalRequests ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ approvalRequests: checked })
                         }
@@ -581,7 +581,7 @@ export default function Notifications() {
                       <Label htmlFor="folderAlerts">Folder Alerts</Label>
                       <Switch
                         id="folderAlerts"
-                        checked={preferences.folderAlerts}
+                        checked={preferences.folderAlerts ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ folderAlerts: checked })
                         }
@@ -591,7 +591,7 @@ export default function Notifications() {
                       <Label htmlFor="projectUpdates">Project Updates</Label>
                       <Switch
                         id="projectUpdates"
-                        checked={preferences.projectUpdates}
+                        checked={preferences.projectUpdates ?? undefined}
                         onCheckedChange={(checked) =>
                           handleUpdatePreferences({ projectUpdates: checked })
                         }
@@ -607,7 +607,7 @@ export default function Notifications() {
                     <Label htmlFor="highPriorityOnly">High Priority Only</Label>
                     <Switch
                       id="highPriorityOnly"
-                      checked={preferences.highPriorityOnly}
+                      checked={preferences.highPriorityOnly ?? undefined}
                       onCheckedChange={(checked) =>
                         handleUpdatePreferences({ highPriorityOnly: checked })
                       }
@@ -622,7 +622,7 @@ export default function Notifications() {
                     <Label htmlFor="quietHours">Enable Quiet Hours</Label>
                     <Switch
                       id="quietHours"
-                      checked={preferences.quietHoursEnabled}
+                      checked={preferences.quietHoursEnabled ?? undefined}
                       onCheckedChange={(checked) =>
                         handleUpdatePreferences({ quietHoursEnabled: checked })
                       }
@@ -635,7 +635,7 @@ export default function Notifications() {
                         <Input
                           id="quietStart"
                           type="time"
-                          value={preferences.quietHoursStart || "22:00"}
+                          value={(preferences as any).quietHoursStart || "22:00"}
                           onChange={(e) =>
                             handleUpdatePreferences({ quietHoursStart: e.target.value })
                           }
@@ -646,7 +646,7 @@ export default function Notifications() {
                         <Input
                           id="quietEnd"
                           type="time"
-                          value={preferences.quietHoursEnd || "08:00"}
+                          value={(preferences as any).quietHoursEnd || "08:00"}
                           onChange={(e) =>
                             handleUpdatePreferences({ quietHoursEnd: e.target.value })
                           }
@@ -663,7 +663,7 @@ export default function Notifications() {
                     <Label htmlFor="dailyDigest">Enable Daily Digest Email</Label>
                     <Switch
                       id="dailyDigest"
-                      checked={preferences.dailyDigestEnabled}
+                      checked={preferences.dailyDigestEnabled ?? undefined}
                       onCheckedChange={(checked) =>
                         handleUpdatePreferences({ dailyDigestEnabled: checked })
                       }

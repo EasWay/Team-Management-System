@@ -65,7 +65,7 @@ export function RoleChangeDropdown({ teamId, userId, currentRole }: RoleChangeDr
               <Icon className="h-4 w-4 mr-2" />
               <div className="flex flex-col">
                 <span className="font-medium">{role.label}</span>
-                <span className="text-xs text-gray-500">{role.description}</span>
+                <span className="text-xs text-muted-foreground">{role.description}</span>
               </div>
             </DropdownMenuItem>
           );

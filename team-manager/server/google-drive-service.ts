@@ -27,6 +27,12 @@ function getDriveClient() {
   return google.drive({ version: "v3", auth: getAuthClient() });
 }
 
+function getDriveClientWithToken(accessToken: string) {
+  const auth = new google.auth.OAuth2();
+  auth.setCredentials({ access_token: accessToken });
+  return google.drive({ version: "v3", auth });
+}
+
 export interface DriveFile {
   id: string;
   name: string;
@@ -49,8 +55,21 @@ export async function listDriveFiles(folderId: string): Promise<DriveFile[]> {
       "files(id,name,mimeType,size,webViewLink,webContentLink,thumbnailLink,createdTime,modifiedTime,parents)",
     orderBy: "folder,name",
     pageSize: 200,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
   return (resp.data.files ?? []) as DriveFile[];
+}
+
+function getServiceAccountEmail(): string | null {
+  try {
+    const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (!raw) return null;
+    const creds = JSON.parse(raw);
+    return creds.client_email ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Upload a base64-encoded file to a Google Drive folder. */
@@ -59,22 +78,42 @@ export async function uploadDriveFile(data: {
   fileName: string;
   mimeType: string;
   content: string; // base64
+  userAccessToken?: string;
 }): Promise<DriveFile> {
-  const drive = getDriveClient();
+  const drive = data.userAccessToken
+    ? getDriveClientWithToken(data.userAccessToken)
+    : getDriveClient();
   const buffer = Buffer.from(data.content, "base64");
   const stream = Readable.from(buffer);
-  const resp = await drive.files.create({
-    requestBody: { name: data.fileName, parents: [data.folderId] },
-    media: { mimeType: data.mimeType, body: stream },
-    fields: "id,name,mimeType,size,webViewLink,webContentLink,createdTime,modifiedTime",
-  });
-  return resp.data as DriveFile;
+  try {
+    const resp = await drive.files.create({
+      supportsAllDrives: true,
+      requestBody: { name: data.fileName, parents: [data.folderId] },
+      media: { mimeType: data.mimeType, body: stream },
+      fields: "id,name,mimeType,size,webViewLink,webContentLink,createdTime,modifiedTime",
+    });
+    return resp.data as DriveFile;
+  } catch (err: any) {
+    const isPermissionOrQuotaError =
+      err?.message?.includes("storageQuota") ||
+      err?.message?.includes("storage quota") ||
+      err?.code === 403;
+
+    if (isPermissionOrQuotaError) {
+      const serviceEmail = getServiceAccountEmail();
+      const shareInstruction = serviceEmail
+        ? `Please share your Google Drive folder with: ${serviceEmail} (give it "Editor" access), then try again.`
+        : "Please share your Google Drive folder with the app's service account (Editor access), then try again.";
+      throw new Error(`Upload failed: The app does not have permission to upload to this folder. ${shareInstruction}`);
+    }
+    throw err;
+  }
 }
 
 /** Permanently delete a file from Google Drive. */
 export async function deleteDriveFile(fileId: string): Promise<void> {
   const drive = getDriveClient();
-  await drive.files.delete({ fileId });
+  await drive.files.delete({ fileId, supportsAllDrives: true });
 }
 
 /** Create a subfolder inside a Google Drive folder. */
@@ -84,6 +123,7 @@ export async function createDriveFolder(
 ): Promise<DriveFile> {
   const drive = getDriveClient();
   const resp = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name,
       mimeType: "application/vnd.google-apps.folder",
@@ -102,6 +142,7 @@ export async function updateDriveFile(
   const drive = getDriveClient();
   const resp = await drive.files.update({
     fileId,
+    supportsAllDrives: true,
     requestBody: update,
     fields: "id,name,mimeType,size,webViewLink,webContentLink,modifiedTime",
   });

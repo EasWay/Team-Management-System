@@ -2,13 +2,8 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -16,59 +11,19 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/lib/constants';
-import { Button } from '@/components/Button';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-
-  const handleEmailAuth = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing fields', 'Please enter email and password.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const endpoint = mode === 'login' ? 'auth.login' : 'auth.register';
-      const resp = await fetch(`${API_BASE_URL}/api/trpc/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ json: { email: email.trim(), password } }),
-      });
-      const json = await resp.json();
-      const data = json?.result?.data?.json ?? json?.result?.data;
-      if (!data?.accessToken) throw new Error(data?.message ?? 'Authentication failed');
-      const user = {
-        id: data.user?.id ?? data.userId,
-        email: data.user?.email ?? email,
-        name: data.user?.name ?? data.user?.email ?? email,
-        avatarUrl: data.user?.avatarUrl,
-      };
-      await setAuth(user, data.accessToken, data.refreshToken ?? '');
-      router.replace('/(app)');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed';
-      Alert.alert('Error', msg);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGitHubOAuth = async () => {
-    setOauthLoading(true);
+    setLoading(true);
     try {
-      // createURL adapts to the environment:
-      //   Expo Go  → exp://127.0.0.1:8081/--/oauth-callback  (captured by Custom Tab)
-      //   Dev/prod → team-management://oauth-callback
       const mobileRedirectUri = Linking.createURL('/oauth-callback');
-
       const result = await WebBrowser.openAuthSessionAsync(
         `${API_BASE_URL}/api/oauth/github?mobile=true&mobile_redirect=${encodeURIComponent(mobileRedirectUri)}`,
         mobileRedirectUri
@@ -87,117 +42,60 @@ export default function LoginScreen() {
         const userJson = await userResp.json();
         const userData = userJson?.result?.data?.json ?? userJson?.result?.data;
 
-        const user = {
-          id: userData?.id ?? 0,
-          email: userData?.email ?? '',
-          name: userData?.name ?? userData?.email ?? 'User',
-          avatarUrl: userData?.avatarUrl,
-        };
-
-        await setAuth(user, accessToken, refreshToken ?? '');
+        await setAuth(
+          {
+            id: userData?.id ?? 0,
+            email: userData?.email ?? '',
+            name: userData?.name ?? userData?.email ?? 'User',
+            avatarUrl: userData?.avatarUrl,
+          },
+          accessToken,
+          refreshToken ?? ''
+        );
         router.replace('/(app)');
       }
     } catch (err: unknown) {
+      const { Alert } = require('react-native');
       const msg = err instanceof Error ? err.message : 'OAuth failed';
-      Alert.alert('OAuth Error', msg);
+      Alert.alert('Sign In Failed', msg);
     } finally {
-      setOauthLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-slate-900">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="flex-1 px-6 justify-center py-12">
-            {/* Header */}
-            <View className="mb-10">
-              <Text className="text-4xl font-bold text-white mb-2">Team Manager</Text>
-              <Text className="text-slate-400 text-base">
-                {mode === 'login' ? 'Sign in to continue' : 'Create your account'}
-              </Text>
-            </View>
-
-            {/* GitHub OAuth */}
-            <TouchableOpacity
-              onPress={handleGitHubOAuth}
-              disabled={oauthLoading}
-              className="bg-slate-800 border border-slate-600 rounded-xl p-4 flex-row items-center justify-center gap-3 mb-6"
-            >
-              {oauthLoading ? (
-                <ActivityIndicator color="#94a3b8" />
-              ) : (
-                <Text className="text-2xl">🐙</Text>
-              )}
-              <Text className="text-white font-semibold text-base">
-                {oauthLoading ? 'Signing in...' : 'Continue with GitHub'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View className="flex-row items-center mb-6">
-              <View className="flex-1 h-px bg-slate-700" />
-              <Text className="text-slate-500 px-4 text-sm">or use email</Text>
-              <View className="flex-1 h-px bg-slate-700" />
-            </View>
-
-            {/* Email */}
-            <View className="mb-4">
-              <Text className="text-slate-400 text-sm mb-2 font-medium">Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="your@email.com"
-                placeholderTextColor="#475569"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-base"
-              />
-            </View>
-
-            {/* Password */}
-            <View className="mb-6">
-              <Text className="text-slate-400 text-sm mb-2 font-medium">Password</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor="#475569"
-                secureTextEntry
-                className="bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-base"
-              />
-            </View>
-
-            {/* Submit */}
-            <Button
-              label={mode === 'login' ? 'Sign In' : 'Create Account'}
-              onPress={handleEmailAuth}
-              loading={loading}
-              fullWidth
-            />
-
-            {/* Mode toggle */}
-            <TouchableOpacity
-              onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="mt-6 items-center"
-            >
-              <Text className="text-slate-400 text-sm">
-                {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                <Text className="text-sky-400 font-semibold">
-                  {mode === 'login' ? 'Sign Up' : 'Sign In'}
-                </Text>
-              </Text>
-            </TouchableOpacity>
+      <View className="flex-1 px-6 justify-center">
+        {/* Header */}
+        <View className="mb-12 items-center">
+          <View className="w-20 h-20 rounded-3xl bg-sky-600 items-center justify-center mb-6"
+            style={{ shadowColor: '#0ea5e9', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 6 } }}
+          >
+            <Ionicons name="people" size={36} color="white" />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Text className="text-4xl font-bold text-white mb-2">Team Manager</Text>
+          <Text className="text-slate-400 text-base text-center">
+            Sign in to collaborate with your team
+          </Text>
+        </View>
+
+        {/* GitHub OAuth */}
+        <TouchableOpacity
+          onPress={handleGitHubOAuth}
+          disabled={loading}
+          className="bg-slate-800 border border-slate-600 rounded-2xl p-4 flex-row items-center justify-center gap-3"
+          style={{ minHeight: 56 }}
+        >
+          {loading ? (
+            <ActivityIndicator color="#94a3b8" />
+          ) : (
+            <Ionicons name="logo-github" size={22} color="white" />
+          )}
+          <Text className="text-white font-semibold text-base">
+            {loading ? 'Signing in…' : 'Continue with GitHub'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }

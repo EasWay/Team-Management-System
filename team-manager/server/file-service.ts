@@ -173,7 +173,7 @@ export async function uploadFileVersion(data: {
     const uploadResult = await storagePut(fileName, data.file.buffer, data.file.mimeType);
     const fileUrl = uploadResult.url;
     
-    const newVersion = existingFile.version + 1;
+    const newVersion = (existingFile.version ?? 0) + 1;
     
     // Mark old version as not latest
     await db.update(files)

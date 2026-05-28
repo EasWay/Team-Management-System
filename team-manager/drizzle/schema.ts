@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, integer, jsonb, varchar, index, unique, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean, integer, jsonb, varchar, index, unique, date, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Users table
@@ -1095,7 +1095,7 @@ export const notifications = pgTable("notifications", {
   actionLabel: text("action_label"),
   
   // Status
-  isRead: boolean("is_read").default(false),
+  isRead: boolean("read").default(false),
   readAt: timestamp("read_at"),
   
   // Delivery status
@@ -1656,7 +1656,7 @@ export const permissionRoles = pgTable("permission_roles", {
   
   // Hierarchy
   level: integer("level").default(0), // 0 = lowest, higher = more permissions
-  inheritsFrom: integer("inherits_from").references(() => permissionRoles.id),
+  inheritsFrom: integer("inherits_from").references((): AnyPgColumn => permissionRoles.id),
   
   // Status
   isActive: boolean("is_active").default(true),

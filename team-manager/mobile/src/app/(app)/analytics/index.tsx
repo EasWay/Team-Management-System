@@ -220,18 +220,18 @@ export default function AnalyticsScreen() {
         )}
 
         {/* Member performance */}
-        {perf?.members?.length > 0 && (
+        {perf?.memberMetrics?.length > 0 && (
           <View className="mx-5 bg-white dark:bg-slate-800 rounded-2xl p-5 mb-8 border border-slate-200 dark:border-slate-700">
             <Text className="text-slate-900 dark:text-white font-semibold text-base mb-4">Member Performance</Text>
-            {perf.members.slice(0, 8).map((m: any) => {
+            {perf.memberMetrics.slice(0, 8).map((m: any) => {
               const total = m.totalTasks ?? 1;
               const completed = m.completedTasks ?? 0;
-              const pct = Math.min((completed / total) * 100, 100);
+              const pct = Math.min(total > 0 ? (completed / total) * 100 : 0, 100);
               const barColor =
                 pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f87171';
-              const name = m.name ?? m.email ?? `Member ${m.userId}`;
+              const name = m.memberName ?? `Member ${m.memberId}`;
               return (
-                <View key={m.userId ?? m.id} className="mb-4 last:mb-0">
+                <View key={m.memberId} className="mb-4 last:mb-0">
                   <View className="flex-row justify-between items-center mb-1.5">
                     <View className="flex-row items-center gap-2">
                       <View className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 items-center justify-center">
@@ -257,7 +257,7 @@ export default function AnalyticsScreen() {
           </View>
         )}
 
-        {!dash && !perf && (
+        {!dash && !perf?.memberMetrics?.length && (
           <View className="mx-5 bg-white dark:bg-slate-800 rounded-2xl p-8 items-center border border-slate-200 dark:border-slate-700">
             <Ionicons name="bar-chart-outline" size={40} color="#94a3b8" />
             <Text className="text-slate-500 dark:text-slate-400 font-medium mt-3">No data yet</Text>

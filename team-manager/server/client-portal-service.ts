@@ -26,13 +26,15 @@ export async function createClientPortalAccess(data: {
   whiteLabel?: boolean;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, 10);
 
+    const { password: _pwd, ...dataWithoutPassword } = data;
     const [access] = await db.insert(clientPortalAccess).values({
-      ...data,
+      ...dataWithoutPassword,
       passwordHash,
-      password: undefined,
     }).returning();
 
     return access;
@@ -47,6 +49,8 @@ export async function createClientPortalAccess(data: {
  */
 export async function clientLogin(email: string, password: string) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [access] = await db.select()
       .from(clientPortalAccess)
       .where(eq(clientPortalAccess.email, email));
@@ -98,6 +102,8 @@ export async function clientLogin(email: string, password: string) {
  */
 export async function verifyClientToken(token: string) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [access] = await db.select()
       .from(clientPortalAccess)
       .where(
@@ -128,6 +134,8 @@ export async function verifyClientToken(token: string) {
  */
 export async function getClientPortalAccess(clientId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [access] = await db.select()
       .from(clientPortalAccess)
       .where(eq(clientPortalAccess.clientId, clientId));
@@ -153,6 +161,8 @@ export async function updateClientPortalAccess(clientId: number, data: Partial<{
   whiteLabel: boolean;
 }>) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [access] = await db.update(clientPortalAccess)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(clientPortalAccess.clientId, clientId))
@@ -170,6 +180,8 @@ export async function updateClientPortalAccess(clientId: number, data: Partial<{
  */
 export async function getClientProjects(clientId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Get client's visible projects
     const visibleProjects = await db.select({
       project: projects,
@@ -205,6 +217,8 @@ export async function getClientProjects(clientId: number) {
  */
 export async function getClientProjectDetails(clientId: number, projectId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Check visibility
     const [visibility] = await db.select()
       .from(clientProjectVisibility)
@@ -234,7 +248,7 @@ export async function getClientProjectDetails(clientId: number, projectId: numbe
     }
 
     // Get project files if allowed
-    let projectFiles = [];
+    let projectFiles: any[] = [];
     if (!visibility || visibility.canViewFiles) {
       projectFiles = await db.select()
         .from(files)
@@ -277,6 +291,8 @@ export async function createClientFeedback(data: {
   attachments?: any;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [feedback] = await db.insert(clientFeedback).values(data).returning();
 
     // Log activity
@@ -303,6 +319,8 @@ export async function getClientFeedback(clientId: number, filters?: {
   status?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [eq(clientFeedback.clientId, clientId)];
 
     if (filters?.projectId) {
@@ -334,6 +352,8 @@ export async function getTeamFeedback(teamId: number, filters?: {
   clientId?: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [eq(clientFeedback.teamId, teamId)];
 
     if (filters?.projectId) {
@@ -365,6 +385,8 @@ export async function getTeamFeedback(teamId: number, filters?: {
  */
 export async function respondToFeedback(feedbackId: number, response: string, reviewedBy: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [feedback] = await db.update(clientFeedback)
       .set({
         response,
@@ -398,6 +420,8 @@ export async function logClientActivity(data: {
   metadata?: any;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     await db.insert(clientActivityLog).values(data);
   } catch (error) {
     console.error('Error logging client activity:', error);
@@ -410,6 +434,8 @@ export async function logClientActivity(data: {
  */
 export async function getClientActivityLog(clientId: number, limit?: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     let query = db.select()
       .from(clientActivityLog)
       .where(eq(clientActivityLog.clientId, clientId))
@@ -443,6 +469,8 @@ export async function setProjectVisibility(data: {
   customDescription?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Check if visibility record exists
     const [existing] = await db.select()
       .from(clientProjectVisibility)
@@ -478,6 +506,8 @@ export async function setProjectVisibility(data: {
  */
 export async function getProjectVisibility(clientId: number, projectId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [visibility] = await db.select()
       .from(clientProjectVisibility)
       .where(
@@ -499,6 +529,8 @@ export async function getProjectVisibility(clientId: number, projectId: number) 
  */
 export async function getClientDashboard(clientId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Get client info
     const [client] = await db.select()
       .from(clients)
@@ -547,6 +579,8 @@ export async function getClientDashboard(clientId: number) {
  */
 export async function changeClientPassword(clientId: number, oldPassword: string, newPassword: string) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [access] = await db.select()
       .from(clientPortalAccess)
       .where(eq(clientPortalAccess.clientId, clientId));
@@ -581,6 +615,8 @@ export async function changeClientPassword(clientId: number, oldPassword: string
  */
 export async function getClientStatistics(teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const stats = await db.select({
       totalClients: sql<number>`count(DISTINCT ${clientPortalAccess.clientId})`,
       activeClients: sql<number>`count(DISTINCT ${clientPortalAccess.clientId}) FILTER (WHERE ${clientPortalAccess.isActive} = true)`,

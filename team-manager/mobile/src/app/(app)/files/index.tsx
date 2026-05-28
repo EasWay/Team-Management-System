@@ -17,7 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
-import { File as ExpoFile } from 'expo-file-system';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
@@ -87,6 +86,21 @@ function getFileMeta(mimeType: string, isFolder = false): FileMeta {
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
+
+/** Read any URI (file://, content://, https://) as a base64 string. */
+async function readAsBase64(uri: string): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.substring(result.indexOf(',') + 1));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 // ─── Reusable components ────────────────────────────────────────────────────────
 
@@ -262,13 +276,7 @@ function FileBrowser({
       const asset = result.assets[0];
       setUploading(true);
 
-      // Read file as base64 using the new expo-file-system File API
-      const expoFile = new ExpoFile(asset.uri);
-      const buffer = await expoFile.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
+      const base64 = await readAsBase64(asset.uri);
 
       await utils.client.googleDrive.driveUploadFile.mutate({
         folderId: currentFolder.id,
@@ -637,12 +645,9 @@ function UploadOnlySheet({
       const asset = result.assets[0];
       setUploading(true);
 
-      const expoFile = new ExpoFile(asset.uri);
-      const buffer = await expoFile.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: 'base64',
+      });
 
       await utils.client.googleDrive.driveUploadFile.mutate({
         folderId,
@@ -956,9 +961,6 @@ export default function FilesScreen() {
             <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               Team Shared
             </Text>
-            <Text style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
-              All members can view, upload & download
-            </Text>
           </View>
 
           <FolderCard
@@ -987,9 +989,6 @@ export default function FilesScreen() {
           <View style={{ marginBottom: 12, marginTop: 12 }}>
             <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               Member Folders
-            </Text>
-            <Text style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
-              Your folder: full access · Others: upload only
             </Text>
           </View>
 
@@ -1043,34 +1042,6 @@ export default function FilesScreen() {
             })
           )}
 
-          {/* Access info */}
-          <View style={{
-            marginTop: 8, backgroundColor: '#0f172a', borderRadius: 16,
-            padding: 16, borderWidth: 1, borderColor: '#1e293b',
-          }}>
-            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>
-              Access Rules
-            </Text>
-            {[
-              { icon: 'folder-open-outline' as IonIconName, color: '#38bdf8', label: 'Team Folder', desc: 'View, upload & download for all members' },
-              { icon: 'person-circle-outline' as IonIconName, color: '#34d399', label: 'Your Folder', desc: 'Full access: browse, upload, download, delete' },
-              { icon: 'people-outline' as IonIconName, color: '#64748b', label: "Others' Folders", desc: 'Upload only — cannot view contents' },
-              { icon: 'briefcase-outline' as IonIconName, color: '#fbbf24', label: 'Project Manager', desc: 'Full access to all folders' },
-            ].map(rule => (
-              <View key={rule.label} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                <View style={{
-                  width: 28, height: 28, borderRadius: 8, backgroundColor: rule.color + '18',
-                  alignItems: 'center', justifyContent: 'center', marginTop: 1,
-                }}>
-                  <Ionicons name={rule.icon} size={14} color={rule.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '600' }}>{rule.label}</Text>
-                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 1, lineHeight: 16 }}>{rule.desc}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
         </View>
       </ScrollView>
 

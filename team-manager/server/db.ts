@@ -2,10 +2,10 @@ import { eq, and, or, isNull, desc, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
-import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage } from "../drizzle/schema";
+import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage, notifications } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
-import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted } from './socket-server';
+import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted, broadcastToMember } from './socket-server';
 import { encrypt, decrypt, generateToken } from './crypto';
 import { GitHubService, parseGitHubUrl } from './github-service';
 
@@ -14,10 +14,11 @@ export const TEAM_PERMISSIONS: Record<string, string[]> = {
   admin: ['create_team', 'delete_team', 'update_team', 'invite_member', 'remove_member', 'change_role', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document'],
   team_lead: ['update_team', 'invite_member', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document'],
   developer: ['create_task', 'update_task'],
+  member: ['create_task', 'update_task'],
   viewer: [],
 };
 
-export type TeamRole = 'admin' | 'team_lead' | 'developer' | 'viewer';
+export type TeamRole = 'admin' | 'team_lead' | 'developer' | 'member' | 'viewer';
 
 export function hasPermission(role: TeamRole, permission: string): boolean {
   const permissions = TEAM_PERMISSIONS[role];
@@ -71,6 +72,117 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function ensureMissingTables(): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db || !_pool) return;
+    await _pool.query(`
+      CREATE TABLE IF NOT EXISTS "google_drive_connections" (
+        "id" serial PRIMARY KEY,
+        "team_id" integer REFERENCES "teams"("id") ON DELETE cascade,
+        "user_id" integer REFERENCES "team_members"("id") ON DELETE cascade,
+        "office_role" text,
+        "connection_type" text NOT NULL,
+        "drive_id" text,
+        "drive_name" text,
+        "drive_url" text NOT NULL,
+        "access_token" text,
+        "refresh_token" text,
+        "token_expires_at" timestamp,
+        "auto_sync" boolean DEFAULT false,
+        "sync_folders" jsonb,
+        "last_synced_at" timestamp,
+        "is_active" boolean DEFAULT true,
+        "connected_by" integer NOT NULL REFERENCES "team_members"("id"),
+        "created_at" timestamp DEFAULT now(),
+        "updated_at" timestamp DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS "google_drive_connections_team_id_idx" ON "google_drive_connections" ("team_id");
+      CREATE INDEX IF NOT EXISTS "google_drive_connections_user_id_idx" ON "google_drive_connections" ("user_id");
+      CREATE INDEX IF NOT EXISTS "google_drive_connections_office_role_idx" ON "google_drive_connections" ("office_role");
+
+      CREATE TABLE IF NOT EXISTS "google_drive_files_cache" (
+        "id" serial PRIMARY KEY,
+        "connection_id" integer NOT NULL REFERENCES "google_drive_connections"("id") ON DELETE cascade,
+        "google_file_id" text NOT NULL UNIQUE,
+        "file_name" text NOT NULL,
+        "mime_type" text NOT NULL,
+        "file_size" integer,
+        "web_view_link" text,
+        "web_content_link" text,
+        "thumbnail_link" text,
+        "parent_folder_id" text,
+        "folder_path" text,
+        "created_time" timestamp,
+        "modified_time" timestamp,
+        "owners" jsonb,
+        "last_fetched_at" timestamp DEFAULT now(),
+        "created_at" timestamp DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS "google_drive_files_cache_connection_id_idx" ON "google_drive_files_cache" ("connection_id");
+      CREATE INDEX IF NOT EXISTS "google_drive_files_cache_google_file_id_idx" ON "google_drive_files_cache" ("google_file_id");
+
+      CREATE TABLE IF NOT EXISTS "chat_messages" (
+        "id" serial PRIMARY KEY,
+        "team_id" integer NOT NULL REFERENCES "teams"("id") ON DELETE cascade,
+        "from_member_id" integer NOT NULL REFERENCES "team_members"("id") ON DELETE cascade,
+        "to_member_id" integer NOT NULL REFERENCES "team_members"("id") ON DELETE cascade,
+        "content" text NOT NULL,
+        "message_type" text DEFAULT 'text',
+        "file_url" text,
+        "file_name" text,
+        "read_at" timestamp,
+        "created_at" timestamp DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS "chat_messages_from_idx" ON "chat_messages" ("from_member_id");
+      CREATE INDEX IF NOT EXISTS "chat_messages_to_idx" ON "chat_messages" ("to_member_id");
+      CREATE INDEX IF NOT EXISTS "chat_messages_team_idx" ON "chat_messages" ("team_id");
+    `);
+    console.log("[Database] Ensured google_drive_connections, google_drive_files_cache, and chat_messages tables exist.");
+  } catch (err) {
+    console.warn("[Database] ensureMissingTables error:", err);
+  }
+}
+
+export async function sendNotification(params: {
+  userId: number;
+  teamId: number;
+  type: string;
+  title: string;
+  message: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  taskId?: number;
+  projectId?: number;
+  actionUrl?: string;
+  actionLabel?: string;
+}) {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const [notif] = await db
+      .insert(notifications)
+      .values({
+        userId: params.userId,
+        teamId: params.teamId,
+        type: params.type as any,
+        title: params.title,
+        message: params.message,
+        priority: (params.priority || 'medium') as any,
+        taskId: params.taskId ?? null,
+        projectId: params.projectId ?? null,
+        actionUrl: params.actionUrl ?? null,
+        actionLabel: params.actionLabel ?? null,
+        isRead: false,
+        sentInApp: true,
+      })
+      .returning();
+    broadcastToMember(params.userId, 'notification', notif);
+    return notif;
+  } catch (err) {
+    console.error('[Notification] Failed to send notification:', err);
+  }
 }
 
 // Transaction wrapper for error handling and rollback
@@ -676,6 +788,7 @@ export async function getCollaborativeTeamMembers(
       memberId: teamMembersCollaborative.memberId,
       role: teamMembersCollaborative.role,
       status: teamMembersCollaborative.status,
+      officeRole: teamMembersCollaborative.officeRole,
       joinedAt: teamMembersCollaborative.joinedAt,
       member: teamMembers,
     })
@@ -1175,6 +1288,31 @@ export async function checkTeamPermission(
   return hasPermission(membership.role as TeamRole, permission);
 }
 
+/**
+ * Get a user's role in a team (null if not a member)
+ */
+export async function getMemberRoleInTeam(
+  teamId: number,
+  userId: number
+): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [membership] = await db
+    .select({ role: teamMembersCollaborative.role })
+    .from(teamMembersCollaborative)
+    .where(
+      and(
+        eq(teamMembersCollaborative.teamId, teamId),
+        eq(teamMembersCollaborative.memberId, userId),
+        eq(teamMembersCollaborative.status, 'active')
+      )
+    )
+    .limit(1);
+
+  return membership?.role ?? null;
+}
+
 // Task Management Operations
 
 /**
@@ -1263,6 +1401,21 @@ export async function createTask(
     // Broadcast task created event to team members (real-time sync)
     broadcastTaskCreated(task.teamId, created);
 
+    // Notify assignee of new task assignment
+    if (created.assignedTo && created.assignedTo !== creatorId) {
+      await sendNotification({
+        userId: created.assignedTo,
+        teamId: task.teamId,
+        type: 'task_assignment',
+        title: 'New Task Assigned',
+        message: `You have been assigned: "${created.title}"`,
+        priority: (created.priority || 'medium') as any,
+        taskId: created.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+
     return created;
   });
 }
@@ -1323,7 +1476,7 @@ export async function getTasksByTeam(
     .orderBy(desc(tasks.createdAt));
 
   // Enrich with creator names in a second query for simplicity
-  const allCreatorIds = [...new Set(rows.map(r => r.task.createdBy).filter(Boolean))] as number[];
+  const allCreatorIds = Array.from(new Set(rows.map(r => r.task.createdBy).filter(Boolean))) as number[];
   let creatorMap: Record<number, string | null> = {};
   if (allCreatorIds.length > 0) {
     const creators = await db
@@ -1404,6 +1557,13 @@ export async function updateTask(
       throw new ValidationError('Insufficient permissions to update task');
     }
 
+    // If a status change is requested, only the assignee is allowed
+    if (updates.status !== undefined && updates.status !== existingTask.status) {
+      if (existingTask.assignedTo && existingTask.assignedTo !== updatedBy) {
+        throw new ValidationError('Only the task assignee can change the task status');
+      }
+    }
+
     // Validate assignee if being updated
     if (updates.assignedTo !== undefined && updates.assignedTo !== null) {
       const [assignee] = await db
@@ -1465,6 +1625,35 @@ export async function updateTask(
 
     // Broadcast task updated event to team members (real-time sync)
     broadcastTaskUpdated(existingTask.teamId, updated);
+
+    // Notify assignee when task is updated by someone else
+    if (existingTask.assignedTo && existingTask.assignedTo !== updatedBy) {
+      await sendNotification({
+        userId: existingTask.assignedTo,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Updated',
+        message: `A task assigned to you was updated: "${existingTask.title}"`,
+        priority: 'low',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+    // Notify creator when assignee updates status
+    if (updates.status && existingTask.createdBy && existingTask.createdBy !== updatedBy) {
+      await sendNotification({
+        userId: existingTask.createdBy,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Status Changed',
+        message: `Task "${existingTask.title}" status changed to ${updates.status}`,
+        priority: 'low',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
 
     return updated;
   });
@@ -1573,6 +1762,11 @@ export async function moveTask(
       throw new ValidationError('Insufficient permissions to move task');
     }
 
+    // Only the task assignee can move (change status of) a task
+    if (existingTask.assignedTo && existingTask.assignedTo !== movedBy) {
+      throw new ValidationError('Only the task assignee can change the task status');
+    }
+
     // Update the task status
     const [updated] = await db
       .update(tasks)
@@ -1600,6 +1794,94 @@ export async function moveTask(
 
     // Broadcast task moved event to team members (real-time sync)
     broadcastTaskMoved(existingTask.teamId, taskId, newStatus, 0);
+
+    // Notify creator when someone else moves the task
+    if (existingTask.createdBy && existingTask.createdBy !== movedBy) {
+      await sendNotification({
+        userId: existingTask.createdBy,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Moved',
+        message: `Task "${existingTask.title}" was moved to ${newStatus}`,
+        priority: 'low',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+
+    return updated;
+  });
+}
+
+/**
+ * Reopen a completed task (only by task creator, requires a reason)
+ */
+export async function reopenTask(
+  taskId: number,
+  reason: string,
+  reopenedBy: number
+): Promise<Task> {
+  return await withTransaction(async (db) => {
+    const [existingTask] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+
+    if (!existingTask) {
+      throw new NotFoundError(`Task with ID ${taskId} does not exist`);
+    }
+
+    if (!existingTask.teamId) {
+      throw new ValidationError('Task has no associated team');
+    }
+
+    if (existingTask.status !== 'done') {
+      throw new ValidationError('Only completed tasks can be reopened');
+    }
+
+    if (existingTask.createdBy !== reopenedBy) {
+      throw new ValidationError('Only the task creator can reopen a completed task');
+    }
+
+    const [updated] = await db
+      .update(tasks)
+      .set({ status: 'todo', updatedAt: new Date() })
+      .where(eq(tasks.id, taskId))
+      .returning();
+
+    await db.insert(activities).values({
+      teamId: existingTask.teamId,
+      userId: reopenedBy,
+      type: 'task_reopened',
+      entityId: taskId,
+      entityType: 'task',
+      description: `Reopened task: ${existingTask.title}`,
+      metadata: {
+        taskTitle: existingTask.title,
+        previousStatus: 'done',
+        newStatus: 'todo',
+        reason,
+      },
+    });
+
+    broadcastTaskUpdated(existingTask.teamId, updated);
+
+    // Notify assignee that task was reopened
+    if (existingTask.assignedTo) {
+      await sendNotification({
+        userId: existingTask.assignedTo,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Reopened',
+        message: `Task "${existingTask.title}" has been reopened. Reason: ${reason}`,
+        priority: 'medium',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
 
     return updated;
   });
@@ -2898,7 +3180,7 @@ export async function configureTeamApproval(
  * ============================================================================
  */
 
-export type WorkflowStage = 'ideation' | 'design' | 'business' | 'development' | 'testing' | 'review' | 'completed';
+export type WorkflowStage = 'ideation' | 'design' | 'business' | 'development' | 'testing' | 'review' | 'completed' | 'research' | 'architecture' | 'backend' | 'fullstack' | 'ai';
 export type WorkflowRole = 'designer' | 'business_strategist' | 'backend_dev' | 'frontend_dev' | 'qa_tester' | 'reviewer';
 
 export interface HandoffRecord {
@@ -3326,7 +3608,7 @@ export async function getMyWorkQueue(
   return {
     tasks: userTasks,
     projects: userProjects,
-    role: membership.role,
+    role: membership.role ?? undefined,
   };
 }
 
@@ -3406,20 +3688,7 @@ export async function acceptHandoff(
  * ============================================================================
  */
 
-export type WorkflowStage = 'ideation' | 'research' | 'architecture' | 'design' | 'backend' | 'fullstack' | 'ai' | 'testing' | 'review' | 'completed';
 export type AssignedRole = 'project_manager' | 'lead_researcher' | 'systems_architect' | 'backend_engineer' | 'fullstack_engineer' | 'ai_engineer' | 'qa_tester' | 'designer';
-
-export interface HandoffRecord {
-  from: string;
-  to: string;
-  fromUserId?: number;
-  toUserId?: number;
-  deliverables: any[];
-  timestamp: string;
-  comments?: string;
-  approved?: boolean;
-  approvalId?: number;
-}
 
 export interface Deliverable {
   type: 'figma' | 'github' | 'pdf' | 'link' | 'document' | 'image';
@@ -3622,7 +3891,7 @@ export async function handoffToNextStage(
         {
           entityType,
           entityId,
-          teamId: entity.teamId,
+          teamId: entity.teamId!,
           fromStage,
           toStage: handoffData.toStage,
           deliverables: entity.deliverables,
@@ -3676,10 +3945,10 @@ export async function handoffToNextStage(
       .set({
         workflowStage: handoffData.toStage,
         assignedRole: handoffData.toRole,
-        assignedTo: handoffData.toUserId || entity.assignedTo,
+        assignedTo: (handoffData.toUserId || (entity as any).assignedTo) as any,
         handoffHistory,
         updatedAt: new Date(),
-      })
+      } as any)
       .where(eq(table.id, entityId))
       .returning();
 
@@ -4202,10 +4471,10 @@ export async function getChatConversations(
     .from(chatMessages)
     .where(and(eq(chatMessages.toMemberId, memberId), eq(chatMessages.teamId, teamId)));
 
-  const partnerIds = [...new Set([
+  const partnerIds = Array.from(new Set([
     ...sent.map(r => r.partnerId),
     ...received.map(r => r.partnerId),
-  ])];
+  ]));
 
   if (partnerIds.length === 0) return [];
 
@@ -4285,4 +4554,123 @@ export async function markMessagesAsRead(
         isNull(chatMessages.readAt)
       )
     );
+}
+
+// ============= ADMIN FUNCTIONS =============
+
+export async function listAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  const result = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      loginMethod: users.loginMethod,
+      createdAt: users.createdAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(users)
+    .orderBy(users.createdAt);
+
+  return result;
+}
+
+export async function getUserTeamMemberships(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  return db
+    .select({
+      teamId: teamMembersCollaborative.teamId,
+      teamName: teams.name,
+      role: teamMembersCollaborative.role,
+      officeRole: teamMembersCollaborative.officeRole,
+      status: teamMembersCollaborative.status,
+    })
+    .from(teamMembersCollaborative)
+    .innerJoin(teams, eq(teams.id, teamMembersCollaborative.teamId))
+    .where(eq(teamMembersCollaborative.memberId, userId));
+}
+
+export async function setUserSystemRole(userId: number, role: 'admin' | 'user') {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+
+  // Also update all team memberships to admin/developer
+  if (role === 'admin') {
+    await db
+      .update(teamMembersCollaborative)
+      .set({ role: 'admin' })
+      .where(eq(teamMembersCollaborative.memberId, userId));
+  }
+}
+
+export async function removeUserFromSystem(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  // Remove from team memberships first (cascade should handle, but be explicit)
+  await db.delete(teamMembersCollaborative).where(eq(teamMembersCollaborative.memberId, userId));
+  await db.delete(teamMembers).where(eq(teamMembers.id, userId));
+  await db.delete(users).where(eq(users.id, userId));
+}
+
+export async function addUserToSystem(params: {
+  name: string;
+  email: string;
+  teamId: number;
+  role: string;
+  officeRole: string;
+  position: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  // Check email not already taken
+  const existing = await db.select().from(users).where(eq(users.email, params.email)).limit(1);
+  if (existing.length > 0) throw new Error('A user with this email already exists');
+
+  // Create user
+  const [newUser] = await db.insert(users).values({
+    email: params.email,
+    name: params.name,
+    loginMethod: 'github',
+    role: 'user',
+  }).returning();
+
+  // Create team member profile
+  await db.insert(teamMembers).values({
+    id: newUser.id,
+    name: params.name,
+    email: params.email,
+    position: params.position,
+  }).onConflictDoNothing({ target: teamMembers.id });
+
+  // Add to team
+  await db.insert(teamMembersCollaborative).values({
+    teamId: params.teamId,
+    memberId: newUser.id,
+    role: params.role,
+    officeRole: params.officeRole,
+    status: 'active',
+  });
+
+  // Send welcome notification
+  await sendNotification({
+    userId: newUser.id,
+    teamId: params.teamId,
+    type: 'team_messages',
+    title: 'Welcome to the team!',
+    message: `You have been added to the team as ${params.officeRole.replace(/_/g, ' ')}.`,
+    priority: 'medium',
+    actionUrl: '/',
+    actionLabel: 'Go to Dashboard',
+  });
+
+  return newUser;
 }

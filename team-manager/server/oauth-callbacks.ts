@@ -16,11 +16,16 @@ import { authService } from './_core/auth';
 
 // Track used OAuth codes to prevent duplicate exchanges
 const usedCodes = new Set<string>();
+setInterval(() => usedCodes.clear(), 5 * 60 * 1000);
 
-// Clean up old codes after 5 minutes
-setInterval(() => {
-  usedCodes.clear();
-}, 5 * 60 * 1000);
+// Pending Google connect flows (state → { userId, mobileRedirect? })
+const pendingGoogleConnects = new Map<string, { userId: number; mobileRedirect?: string }>();
+setInterval(() => pendingGoogleConnects.clear(), 15 * 60 * 1000);
+
+export function addPendingGoogleConnect(state: string, userId: number, mobileRedirect?: string) {
+  pendingGoogleConnects.set(state, { userId, mobileRedirect });
+  setTimeout(() => pendingGoogleConnects.delete(state), 10 * 60 * 1000);
+}
 
 interface OAuthTokenResponse {
   access_token: string;
@@ -207,6 +212,29 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       .limit(1)
       .then(rows => rows[0]);
 
+    if (!user && userInfo.email) {
+      // Check for a pre-created account with matching email (e.g. seeded members)
+      user = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userInfo.email))
+        .limit(1)
+        .then(rows => rows[0]);
+
+      if (user) {
+        console.log('[OAuth] Linking GitHub ID to existing account by email:', user.id);
+        await db
+          .update(users)
+          .set({
+            openId: githubId,
+            name: userInfo.name || userInfo.login,
+            lastSignedIn: new Date(),
+          })
+          .where(eq(users.id, user.id));
+        user = { ...user, openId: githubId, name: userInfo.name || userInfo.login };
+      }
+    }
+
     if (!user) {
       console.log('[OAuth] Creating new user...');
       const [newUser] = await db
@@ -221,7 +249,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
 
       user = newUser;
       console.log('[OAuth] New user created:', user.id);
-    } else {
+    } else if (user.openId === githubId) {
       console.log('[OAuth] Updating existing user:', user.id);
       await db
         .update(users)
@@ -280,7 +308,8 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
 }
 
 /**
- * Google OAuth callback handler
+ * Google OAuth callback handler — handles both connect flows (add Drive to existing account)
+ * and standard login flows.
  */
 export async function handleGoogleCallback(req: Request, res: Response): Promise<void> {
   const code = req.query.code as string | undefined;
@@ -291,6 +320,39 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
     return;
   }
 
+  // Connect flow: user already logged in, just adding Google for Drive access
+  const connectData = pendingGoogleConnects.get(state);
+  if (connectData) {
+    pendingGoogleConnects.delete(state);
+    const mobileRedirect = connectData.mobileRedirect ?? 'team-management://oauth-callback';
+    try {
+      const provider = getProvider('google');
+      if (!provider) throw new Error('Google OAuth not configured');
+
+      const tokenResponse = await exchangeCodeForToken(provider, code);
+      const expiresAt = tokenResponse.expires_in
+        ? new Date(Date.now() + tokenResponse.expires_in * 1000)
+        : undefined;
+
+      await storeOAuthToken(connectData.userId, 'google', {
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt,
+      });
+
+      if (connectData.mobileRedirect) {
+        return res.redirect(302, `${mobileRedirect}?connected=google`);
+      }
+      return res.redirect(302, '/?connected=google');
+    } catch (error) {
+      console.error('[OAuth] Google connect failed', error);
+      const msg = error instanceof Error ? encodeURIComponent(error.message) : 'unknown';
+      if (connectData.mobileRedirect) return res.redirect(302, `${mobileRedirect}?error=${msg}`);
+      return res.status(500).json({ error: 'Google connect failed' });
+    }
+  }
+
+  // Standard login flow
   try {
     const provider = getProvider('google');
     if (!provider) {
@@ -298,10 +360,7 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       return;
     }
 
-    // Exchange code for token
     const tokenResponse = await exchangeCodeForToken(provider, code);
-
-    // Get user info
     const userInfo = await getGoogleUserInfo(tokenResponse.access_token);
 
     const db = await getDb();
@@ -310,7 +369,6 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       return;
     }
 
-    // Find or create user
     const googleId = userInfo.id;
     let user = await db
       .select()
@@ -320,31 +378,18 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       .then(rows => rows[0]);
 
     if (!user) {
-      // Create new user
       const [newUser] = await db
         .insert(users)
-        .values({
-          openId: googleId,
-          name: userInfo.name,
-          email: userInfo.email,
-          role: 'user',
-        })
+        .values({ openId: googleId, name: userInfo.name, email: userInfo.email, role: 'user' })
         .returning();
-
       user = newUser;
     } else {
-      // Update existing user
       await db
         .update(users)
-        .set({
-          name: userInfo.name,
-          email: userInfo.email,
-          lastSignedIn: new Date(),
-        })
+        .set({ name: userInfo.name, email: userInfo.email, lastSignedIn: new Date() })
         .where(eq(users.id, user.id));
     }
 
-    // Ensure user is in teamMembers table (prevents foreign key errors)
     await db.insert(teamMembers).values({
       id: user.id,
       name: user.name || user.email?.split('@')[0] || 'Unknown User',
@@ -352,7 +397,6 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       position: 'Member',
     }).onConflictDoNothing({ target: teamMembers.id });
 
-    // Store OAuth token
     const expiresAt = tokenResponse.expires_in
       ? new Date(Date.now() + tokenResponse.expires_in * 1000)
       : undefined;
@@ -363,11 +407,9 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       expiresAt,
     });
 
-    // Generate JWT tokens
     const accessToken = await authService.generateAccessToken(user.id, user.email || '', user.name || undefined);
     const refreshToken = await authService.generateRefreshToken(user.id, user.email || '', user.name || undefined);
 
-    // Redirect to frontend with tokens in URL (will be stored in localStorage)
     const redirectUrl = `/?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`;
     res.redirect(302, redirectUrl);
   } catch (error) {

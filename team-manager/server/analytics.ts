@@ -116,7 +116,9 @@ async function calculateStageMetrics(allTasks: any[]) {
  */
 async function calculateMemberMetrics(teamId: number, allTasks: any[]) {
   // Get team members
-  const members = await getDb()
+  const db = await getDb();
+  if (!db) return [];
+  const members = await db
     .select({
       id: teamMembers.id,
       name: teamMembers.name,
@@ -126,7 +128,7 @@ async function calculateMemberMetrics(teamId: number, allTasks: any[]) {
     .innerJoin(teamMembers, eq(teamMembersCollaborative.memberId, teamMembers.id))
     .where(eq(teamMembersCollaborative.teamId, teamId));
 
-  const memberMetrics = members.map(member => {
+  const memberMetrics = members.map((member: typeof members[0]) => {
     const assignedTasks = allTasks.filter(t => t.assignedTo === member.id);
     const completedTasks = assignedTasks.filter(t => t.status === 'done');
     const inProgressTasks = assignedTasks.filter(t => t.status === 'in_progress');
@@ -178,7 +180,9 @@ async function calculateQualityMetrics(teamId: number, timeRange?: TimeRange) {
       conditions.push(lte(projects.evaluatedAt, timeRange.endDate));
     }
 
-    const evaluatedProjects = await getDb()
+    const db2 = await getDb();
+    if (!db2) throw new Error('Database not available');
+    const evaluatedProjects = await db2
       .select()
       .from(projects)
       .where(and(...conditions, sql`${projects.evaluationData} IS NOT NULL`))
@@ -242,7 +246,9 @@ export async function getProjectAnalytics(teamId: number, timeRange?: TimeRange)
       conditions.push(lte(projects.createdAt, timeRange.endDate));
     }
 
-    const allProjects = await getDb()
+    const db3 = await getDb();
+    if (!db3) throw new Error('Database not available');
+    const allProjects = await db3
       .select()
       .from(projects)
       .where(and(...conditions));
@@ -312,12 +318,14 @@ export async function getProjectAnalytics(teamId: number, timeRange?: TimeRange)
 export async function getBottleneckAnalysis(teamId: number) {
   try {
     // Get all tasks and projects with handoff history
-    const allTasks = await getDb()
+    const db4 = await getDb();
+    if (!db4) throw new Error('Database not available');
+    const allTasks = await db4
       .select()
       .from(tasks)
       .where(eq(tasks.teamId, teamId));
 
-    const allProjects = await getDb()
+    const allProjects = await db4
       .select()
       .from(projects)
       .where(eq(projects.teamId, teamId));
@@ -327,16 +335,17 @@ export async function getBottleneckAnalysis(teamId: number) {
     // Analyze task handoffs
     for (const task of allTasks) {
       if (task.handoffHistory && Array.isArray(task.handoffHistory)) {
-        for (let i = 0; i < task.handoffHistory.length - 1; i++) {
-          const handoff = task.handoffHistory[i];
-          const nextHandoff = task.handoffHistory[i + 1];
-          const office = handoff.toRole || handoff.fromRole || 'unknown';
-          
+        const taskHandoffs = task.handoffHistory as any[];
+        for (let i = 0; i < taskHandoffs.length - 1; i++) {
+          const handoffItem: any = taskHandoffs[i];
+          const nextHandoffItem: any = taskHandoffs[i + 1];
+          const office = handoffItem.toRole || handoffItem.fromRole || 'unknown';
+
           if (!officeMetrics[office]) {
             officeMetrics[office] = { totalTime: 0, count: 0, items: 0 };
           }
 
-          const timeSpent = new Date(nextHandoff.timestamp).getTime() - new Date(handoff.timestamp).getTime();
+          const timeSpent = new Date(nextHandoffItem.timestamp).getTime() - new Date(handoffItem.timestamp).getTime();
           officeMetrics[office].totalTime += timeSpent;
           officeMetrics[office].count += 1;
         }
@@ -346,16 +355,17 @@ export async function getBottleneckAnalysis(teamId: number) {
     // Analyze project handoffs
     for (const project of allProjects) {
       if (project.handoffHistory && Array.isArray(project.handoffHistory)) {
-        for (let i = 0; i < project.handoffHistory.length - 1; i++) {
-          const handoff = project.handoffHistory[i];
-          const nextHandoff = project.handoffHistory[i + 1];
-          const office = handoff.toRole || handoff.fromRole || 'unknown';
-          
+        const projectHandoffs = project.handoffHistory as any[];
+        for (let i = 0; i < projectHandoffs.length - 1; i++) {
+          const projHandoffItem: any = projectHandoffs[i];
+          const projNextHandoffItem: any = projectHandoffs[i + 1];
+          const office = projHandoffItem.toRole || projHandoffItem.fromRole || 'unknown';
+
           if (!officeMetrics[office]) {
             officeMetrics[office] = { totalTime: 0, count: 0, items: 0 };
           }
 
-          const timeSpent = new Date(nextHandoff.timestamp).getTime() - new Date(handoff.timestamp).getTime();
+          const timeSpent = new Date(projNextHandoffItem.timestamp).getTime() - new Date(projHandoffItem.timestamp).getTime();
           officeMetrics[office].totalTime += timeSpent;
           officeMetrics[office].count += 1;
         }
@@ -386,7 +396,9 @@ export async function getVelocityTracking(teamId: number, weeks: number = 12) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - (weeks * 7));
 
-    const completedTasks = await getDb()
+    const db5 = await getDb();
+    if (!db5) throw new Error('Database not available');
+    const completedTasks = await db5
       .select()
       .from(tasks)
       .where(
@@ -437,7 +449,9 @@ export async function getVelocityTracking(teamId: number, weeks: number = 12) {
 export async function getOfficeWorkloadDistribution(teamId: number) {
   try {
     // Get all active tasks and projects
-    const activeTasks = await getDb()
+    const db6 = await getDb();
+    if (!db6) throw new Error('Database not available');
+    const activeTasks = await db6
       .select()
       .from(tasks)
       .where(
@@ -447,7 +461,7 @@ export async function getOfficeWorkloadDistribution(teamId: number) {
         )
       );
 
-    const activeProjects = await getDb()
+    const activeProjects = await db6
       .select()
       .from(projects)
       .where(
@@ -502,7 +516,9 @@ export async function getBurndownData(teamId: number, sprintDays: number = 14) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - sprintDays);
 
-    const allTasks = await getDb()
+    const db7 = await getDb();
+    if (!db7) throw new Error('Database not available');
+    const allTasks = await db7
       .select()
       .from(tasks)
       .where(
