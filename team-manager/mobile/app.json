@@ -52,7 +52,7 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#0f172a",
-          "sounds": ["./assets/notification-sound.wav"],
+          "sounds": ["./assets/notification_sound.wav"],
           "androidMode": "default"
         }
       ],
