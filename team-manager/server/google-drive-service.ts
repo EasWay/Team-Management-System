@@ -49,6 +49,8 @@ export async function listDriveFiles(folderId: string): Promise<DriveFile[]> {
       "files(id,name,mimeType,size,webViewLink,webContentLink,thumbnailLink,createdTime,modifiedTime,parents)",
     orderBy: "folder,name",
     pageSize: 200,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
   return (resp.data.files ?? []) as DriveFile[];
 }
@@ -63,18 +65,29 @@ export async function uploadDriveFile(data: {
   const drive = getDriveClient();
   const buffer = Buffer.from(data.content, "base64");
   const stream = Readable.from(buffer);
-  const resp = await drive.files.create({
-    requestBody: { name: data.fileName, parents: [data.folderId] },
-    media: { mimeType: data.mimeType, body: stream },
-    fields: "id,name,mimeType,size,webViewLink,webContentLink,createdTime,modifiedTime",
-  });
-  return resp.data as DriveFile;
+  try {
+    const resp = await drive.files.create({
+      supportsAllDrives: true,
+      requestBody: { name: data.fileName, parents: [data.folderId] },
+      media: { mimeType: data.mimeType, body: stream },
+      fields: "id,name,mimeType,size,webViewLink,webContentLink,createdTime,modifiedTime",
+    });
+    return resp.data as DriveFile;
+  } catch (err: any) {
+    if (err?.message?.includes("storageQuota") || err?.message?.includes("storage quota")) {
+      throw new Error(
+        "Upload failed: The connected Google Drive folder must be in a Shared Drive (not a personal Drive). " +
+        "Please reconnect using a Google Workspace Shared Drive folder."
+      );
+    }
+    throw err;
+  }
 }
 
 /** Permanently delete a file from Google Drive. */
 export async function deleteDriveFile(fileId: string): Promise<void> {
   const drive = getDriveClient();
-  await drive.files.delete({ fileId });
+  await drive.files.delete({ fileId, supportsAllDrives: true });
 }
 
 /** Create a subfolder inside a Google Drive folder. */
@@ -84,6 +97,7 @@ export async function createDriveFolder(
 ): Promise<DriveFile> {
   const drive = getDriveClient();
   const resp = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name,
       mimeType: "application/vnd.google-apps.folder",
@@ -102,6 +116,7 @@ export async function updateDriveFile(
   const drive = getDriveClient();
   const resp = await drive.files.update({
     fileId,
+    supportsAllDrives: true,
     requestBody: update,
     fields: "id,name,mimeType,size,webViewLink,webContentLink,modifiedTime",
   });
