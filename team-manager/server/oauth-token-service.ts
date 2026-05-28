@@ -124,22 +124,83 @@ export function isTokenExpired(expiresAt?: Date): boolean {
 }
 
 /**
- * Refresh an OAuth token (placeholder - provider-specific implementation needed)
+ * Refresh a Google access token using the stored refresh token
+ */
+async function refreshGoogleToken(userId: number, tokenData: TokenData): Promise<TokenData | null> {
+  if (!tokenData.refreshToken) return null;
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  try {
+    const resp = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: tokenData.refreshToken,
+        grant_type: 'refresh_token',
+      }).toString(),
+    });
+
+    if (!resp.ok) return null;
+
+    const data = await resp.json() as { access_token?: string; expires_in?: number };
+    if (!data.access_token) return null;
+
+    const expiresAt = data.expires_in
+      ? new Date(Date.now() + data.expires_in * 1000)
+      : undefined;
+
+    const refreshed: TokenData = {
+      accessToken: data.access_token,
+      refreshToken: tokenData.refreshToken,
+      expiresAt,
+    };
+
+    await storeOAuthToken(userId, 'google', refreshed);
+    return refreshed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get a valid (non-expired) OAuth token, refreshing automatically if needed.
+ * Use this instead of getOAuthToken whenever the token will be used for an API call.
+ */
+export async function getValidOAuthToken(
+  userId: number,
+  provider: OAuthProviderName
+): Promise<TokenData | null> {
+  const tokenData = await getOAuthToken(userId, provider);
+  if (!tokenData) return null;
+
+  // Refresh if expired or expiring within the next 5 minutes
+  const soonExpired = tokenData.expiresAt
+    ? new Date() >= new Date(tokenData.expiresAt.getTime() - 5 * 60 * 1000)
+    : false;
+
+  if (soonExpired && provider === 'google') {
+    const refreshed = await refreshGoogleToken(userId, tokenData);
+    if (refreshed) return refreshed;
+  }
+
+  return tokenData;
+}
+
+/**
+ * Refresh an OAuth token
  */
 export async function refreshOAuthToken(
   userId: number,
   provider: OAuthProviderName
 ): Promise<TokenData | null> {
   const tokenData = await getOAuthToken(userId, provider);
-  
-  if (!tokenData || !tokenData.refreshToken) {
-    return null;
-  }
-  
-  // Provider-specific refresh logic would go here
-  // For now, this is a placeholder that returns null
-  // Each provider (GitHub, Google) has different refresh token endpoints
-  console.warn(`Token refresh not implemented for provider: ${provider}`);
+  if (!tokenData) return null;
+  if (provider === 'google') return refreshGoogleToken(userId, tokenData);
   return null;
 }
 
