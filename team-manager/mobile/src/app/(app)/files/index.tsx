@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
-import { File as ExpoFile } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
@@ -263,12 +263,9 @@ function FileBrowser({
       setUploading(true);
 
       // Read file as base64 using the new expo-file-system File API
-      const expoFile = new ExpoFile(asset.uri);
-      const buffer = await expoFile.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
       await utils.client.googleDrive.driveUploadFile.mutate({
         folderId: currentFolder.id,
@@ -637,12 +634,9 @@ function UploadOnlySheet({
       const asset = result.assets[0];
       setUploading(true);
 
-      const expoFile = new ExpoFile(asset.uri);
-      const buffer = await expoFile.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
       await utils.client.googleDrive.driveUploadFile.mutate({
         folderId,
