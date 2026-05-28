@@ -94,10 +94,23 @@ export async function uploadDriveFile(data: {
     });
     return resp.data as DriveFile;
   } catch (err: any) {
+    const errMessage: string = err?.message ?? '';
+    const errCode = err?.code ?? err?.status ?? err?.response?.status;
+
+    if (
+      errCode === 404 ||
+      errMessage.includes('File not found') ||
+      errMessage.includes('notFound')
+    ) {
+      throw new Error(
+        'Upload failed: Google Drive folder not found. Please connect your Google account in Profile → Connections, then try again.'
+      );
+    }
+
     const isPermissionOrQuotaError =
-      err?.message?.includes("storageQuota") ||
-      err?.message?.includes("storage quota") ||
-      err?.code === 403;
+      errMessage.includes("storageQuota") ||
+      errMessage.includes("storage quota") ||
+      errCode === 403;
 
     if (isPermissionOrQuotaError) {
       const serviceEmail = getServiceAccountEmail();

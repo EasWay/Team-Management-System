@@ -240,6 +240,7 @@ function FileBrowser({
   const [creatingFolder, setCreatingFolder] = useState(false);
 
   const utils = trpc.useUtils();
+  const googleStatusQuery = trpc.googleDrive.googleConnectionStatus.useQuery();
 
   const filesQuery = trpc.googleDrive.driveListFiles.useQuery(
     { folderId: currentFolder.id, teamId },
@@ -266,6 +267,15 @@ function FileBrowser({
   });
 
   const handleUpload = useCallback(async () => {
+    if (!googleStatusQuery.data?.connected) {
+      Alert.alert(
+        'Google Account Required',
+        'You need to connect your Google account before uploading files.\n\nGo to Profile → Connections → Connect Google.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         copyToCacheDirectory: true,
@@ -633,8 +643,18 @@ function UploadOnlySheet({
 }) {
   const [uploading, setUploading] = useState(false);
   const utils = trpc.useUtils();
+  const googleStatusQuery = trpc.googleDrive.googleConnectionStatus.useQuery();
 
   const handleUpload = async () => {
+    if (!googleStatusQuery.data?.connected) {
+      Alert.alert(
+        'Google Account Required',
+        'You need to connect your Google account before uploading files.\n\nGo to Profile → Connections → Connect Google.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         copyToCacheDirectory: true,
@@ -645,9 +665,7 @@ function UploadOnlySheet({
       const asset = result.assets[0];
       setUploading(true);
 
-      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: 'base64',
-      });
+      const base64 = await readAsBase64(asset.uri);
 
       await utils.client.googleDrive.driveUploadFile.mutate({
         folderId,
