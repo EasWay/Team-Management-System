@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { trpc, buildTRPCClient } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore } from '@/store/themeStore';
 import { registerPushToken, setupNotificationResponseListener } from '@/lib/notifications';
 import { getSocket } from '@/lib/socket';
 
@@ -23,10 +24,12 @@ const trpcClient = buildTRPCClient();
 
 export default function RootLayout() {
   const { loadFromStorage, isAuthenticated } = useAuthStore();
+  const { load: loadTheme } = useThemeStore();
   const notifSubRef = useRef<ReturnType<typeof setupNotificationResponseListener> | null>(null);
 
   useEffect(() => {
     loadFromStorage();
+    loadTheme();
   }, []);
 
   useEffect(() => {
@@ -48,6 +51,8 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(app)" />
+              {/* OAuth deep-link callback — must be registered so expo-router doesn't 404 */}
+              <Stack.Screen name="oauth-callback" />
             </Stack>
           </SafeAreaProvider>
         </GestureHandlerRootView>

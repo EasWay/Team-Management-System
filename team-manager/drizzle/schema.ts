@@ -99,6 +99,9 @@ export const tasks = pgTable("tasks", {
   assignedRole: text("assigned_role"), // 'designer', 'business_strategist', 'backend_dev', 'frontend_dev', etc.
   handoffHistory: jsonb("handoff_history"), // array of {from, to, deliverables, timestamp, comments}
   deliverables: jsonb("deliverables"), // {type: 'figma'|'github'|'pdf'|'link', url, description, uploadedAt}
+  // Progress & categorization
+  completionPercentage: integer("completion_percentage").default(0), // 0-100
+  tags: jsonb("tags"), // array of strings e.g. ['frontend', 'design', 'urgent']
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1934,3 +1937,42 @@ export const userPushTokens = pgTable("user_push_tokens", {
 
 export type InsertUserPushToken = typeof userPushTokens.$inferInsert;
 export type UserPushToken = typeof userPushTokens.$inferSelect;
+
+// ─── Direct Chat Messages ──────────────────────────────────────────────────────
+// WhatsApp-style 1:1 messaging between team members
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
+  fromMemberId: integer("from_member_id").references(() => teamMembers.id, { onDelete: "cascade" }).notNull(),
+  toMemberId: integer("to_member_id").references(() => teamMembers.id, { onDelete: "cascade" }).notNull(),
+  content: text("content").notNull(),
+  messageType: text("message_type").default("text"), // 'text' | 'image' | 'file'
+  fileUrl: text("file_url"),
+  fileName: text("file_name"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  fromIdx: index("chat_messages_from_idx").on(table.fromMemberId),
+  toIdx: index("chat_messages_to_idx").on(table.toMemberId),
+  teamIdx: index("chat_messages_team_idx").on(table.teamId),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  team: one(teams, {
+    fields: [chatMessages.teamId],
+    references: [teams.id],
+  }),
+  from: one(teamMembers, {
+    fields: [chatMessages.fromMemberId],
+    references: [teamMembers.id],
+    relationName: "sender",
+  }),
+  to: one(teamMembers, {
+    fields: [chatMessages.toMemberId],
+    references: [teamMembers.id],
+    relationName: "recipient",
+  }),
+}));
+
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+export type ChatMessage = typeof chatMessages.$inferSelect;

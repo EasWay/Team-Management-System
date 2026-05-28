@@ -1,7 +1,7 @@
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { authService } from "./_core/auth";
-import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats } from "./db";
+import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead } from "./db";
 import { parsePRDText } from "./_core/prdParser";
 import { processIdeation } from "./_core/ideationEngine";
 import { evaluateProject, quickEvaluate } from "./_core/projectEvaluator";
@@ -569,13 +569,15 @@ export const appRouter = router({
         status: z.enum(['todo', 'in_progress', 'review', 'done']),
         dueDate: z.date().optional(),
         githubPrUrl: z.string().url().optional(),
+        tags: z.array(z.string()).optional(),
+        completionPercentage: z.number().min(0).max(100).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         try {
           if (!ctx.user?.id) {
             throw new Error('User not authenticated');
           }
-          return await createTask(input, ctx.user.id);
+          return await createTask(input as any, ctx.user.id);
         } catch (error) {
           handleDatabaseError(error);
         }
@@ -586,7 +588,10 @@ export const appRouter = router({
         teamId: z.number(),
         status: z.string().optional(),
         assignedTo: z.number().optional(),
+        createdBy: z.number().optional(),
         priority: z.string().optional(),
+        /** Pass the current member's ID to see only their tasks (assigned+created). PM sees all. */
+        viewerMemberId: z.number().optional(),
       }))
       .query(async ({ input }) => {
         try {
@@ -594,6 +599,20 @@ export const appRouter = router({
           return await getTasksByTeam(teamId, filters);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get tasks');
+        }
+      }),
+
+    updateProgress: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        completionPercentage: z.number().min(0).max(100),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) throw new Error('User not authenticated');
+          return await updateTask(input.id, { completionPercentage: input.completionPercentage } as any, ctx.user.id);
+        } catch (error) {
+          handleDatabaseError(error);
         }
       }),
 
@@ -3979,6 +3998,156 @@ export const appRouter = router({
         const { connectionId, ...data } = input;
         const { updateGoogleDriveConnection } = await import('./google-drive-service');
         return await updateGoogleDriveConnection(connectionId, data);
+      }),
+
+    // ── Drive API operations (requires GOOGLE_SERVICE_ACCOUNT_JSON) ──
+
+    /** List files in a Google Drive folder */
+    driveListFiles: protectedProcedure
+      .input(z.object({
+        folderId: z.string().min(1),
+        teamId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const { listDriveFiles } = await import('./google-drive-service');
+        return await listDriveFiles(input.folderId);
+      }),
+
+    /** Upload a base64-encoded file to Google Drive */
+    driveUploadFile: protectedProcedure
+      .input(z.object({
+        folderId: z.string().min(1),
+        fileName: z.string().min(1),
+        mimeType: z.string().min(1),
+        content: z.string().min(1), // base64
+        teamId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const { uploadDriveFile } = await import('./google-drive-service');
+        return await uploadDriveFile({
+          folderId: input.folderId,
+          fileName: input.fileName,
+          mimeType: input.mimeType,
+          content: input.content,
+        });
+      }),
+
+    /** Delete a file from Google Drive */
+    driveDeleteFile: protectedProcedure
+      .input(z.object({
+        fileId: z.string().min(1),
+        teamId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const { deleteDriveFile } = await import('./google-drive-service');
+        await deleteDriveFile(input.fileId);
+        return { success: true };
+      }),
+
+    /** Create a subfolder in Google Drive */
+    driveCreateFolder: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        parentFolderId: z.string().min(1),
+        teamId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const { createDriveFolder } = await import('./google-drive-service');
+        return await createDriveFolder(input.name, input.parentFolderId);
+      }),
+
+    /** Rename a file/folder in Google Drive */
+    driveRenameFile: protectedProcedure
+      .input(z.object({
+        fileId: z.string().min(1),
+        name: z.string().min(1),
+        teamId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const { updateDriveFile } = await import('./google-drive-service');
+        return await updateDriveFile(input.fileId, { name: input.name });
+      }),
+  }),
+
+  // ─── Direct Messaging (WhatsApp-style) ────────────────────────────────────────
+  chat: router({
+    /** Get list of conversations for the current member */
+    getConversations: protectedProcedure
+      .input(z.object({
+        memberId: z.number(),
+        teamId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        return await getChatConversations(input.memberId, input.teamId);
+      }),
+
+    /** Get messages between two members */
+    getMessages: protectedProcedure
+      .input(z.object({
+        memberA: z.number(),
+        memberB: z.number(),
+        teamId: z.number(),
+        limit: z.number().min(1).max(100).optional(),
+        before: z.date().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await getChatMessages(
+          input.memberA,
+          input.memberB,
+          input.teamId,
+          input.limit ?? 50,
+          input.before
+        );
+      }),
+
+    /** Send a message */
+    send: protectedProcedure
+      .input(z.object({
+        fromMemberId: z.number(),
+        toMemberId: z.number(),
+        teamId: z.number(),
+        content: z.string().min(1).max(4000),
+        messageType: z.enum(['text', 'image', 'file']).optional(),
+        fileUrl: z.string().url().optional(),
+        fileName: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const msg = await sendChatMessage(
+          input.fromMemberId,
+          input.toMemberId,
+          input.teamId,
+          input.content,
+          input.messageType ?? 'text',
+          input.fileUrl,
+          input.fileName
+        );
+        // Broadcast via socket
+        try {
+          const { getSocketServer } = await import('./socket-server');
+          const io = getSocketServer();
+          if (io) {
+            io.to(`member:${input.toMemberId}`).emit('chatMessage', msg);
+            io.to(`member:${input.fromMemberId}`).emit('chatMessage', msg);
+          }
+        } catch {}
+        return msg;
+      }),
+
+    /** Mark messages from a sender as read */
+    markRead: protectedProcedure
+      .input(z.object({
+        fromMemberId: z.number(),
+        toMemberId: z.number(),
+        teamId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        await markMessagesAsRead(input.fromMemberId, input.toMemberId, input.teamId);
+        return { ok: true };
       }),
   }),
 });
