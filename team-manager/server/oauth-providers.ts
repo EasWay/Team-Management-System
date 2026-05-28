@@ -62,7 +62,7 @@ function getProviderConfig(provider: OAuthProviderName): OAuthProviderConfig | n
         authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenUrl: 'https://oauth2.googleapis.com/token',
         userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
-        scopes: ['openid', 'email', 'profile'],
+        scopes: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/drive'],
       };
       
     case 'manus':

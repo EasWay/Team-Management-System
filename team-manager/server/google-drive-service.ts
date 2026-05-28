@@ -27,6 +27,12 @@ function getDriveClient() {
   return google.drive({ version: "v3", auth: getAuthClient() });
 }
 
+function getDriveClientWithToken(accessToken: string) {
+  const auth = new google.auth.OAuth2();
+  auth.setCredentials({ access_token: accessToken });
+  return google.drive({ version: "v3", auth });
+}
+
 export interface DriveFile {
   id: string;
   name: string;
@@ -72,8 +78,11 @@ export async function uploadDriveFile(data: {
   fileName: string;
   mimeType: string;
   content: string; // base64
+  userAccessToken?: string;
 }): Promise<DriveFile> {
-  const drive = getDriveClient();
+  const drive = data.userAccessToken
+    ? getDriveClientWithToken(data.userAccessToken)
+    : getDriveClient();
   const buffer = Buffer.from(data.content, "base64");
   const stream = Readable.from(buffer);
   try {

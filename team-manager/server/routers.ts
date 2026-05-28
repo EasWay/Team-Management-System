@@ -4043,11 +4043,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user?.id) throw new Error('Not authenticated');
         const { uploadDriveFile } = await import('./google-drive-service');
+        const { getOAuthToken } = await import('./oauth-token-service');
+        const googleToken = await getOAuthToken(ctx.user.id, 'google');
         return await uploadDriveFile({
           folderId: input.folderId,
           fileName: input.fileName,
           mimeType: input.mimeType,
           content: input.content,
+          userAccessToken: googleToken?.accessToken,
         });
       }),
 
