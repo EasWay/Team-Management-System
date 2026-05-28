@@ -79,6 +79,11 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
   io.on('connection', (socket: AuthenticatedSocket) => {
     console.log(`[Socket.io] User connected: ${socket.name} (ID: ${socket.userId})`);
 
+    // Auto-join personal room for direct messaging
+    if (socket.userId) {
+      socket.join(`member:${socket.userId}`);
+    }
+
     // Handle team room joining
     socket.on('joinTeam', (teamId: number) => {
       const roomName = `team:${teamId}`;

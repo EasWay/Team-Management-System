@@ -1,6 +1,112 @@
 import { getDb } from "./db";
 import { googleDriveConnections, googleDriveFilesCache, teamMembers } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { google } from "googleapis";
+import { Readable } from "stream";
+
+// ─── Drive API helpers ────────────────────────────────────────────────────────
+
+/** Extract the Google Drive folder ID from a Drive URL. */
+export function extractFolderIdFromUrl(url: string): string | null {
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+/** Build a GoogleAuth client from the service-account JSON stored in env. */
+function getAuthClient() {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON env var is not set");
+  const credentials = JSON.parse(raw);
+  return new google.auth.GoogleAuth({
+    credentials,
+    scopes: ["https://www.googleapis.com/auth/drive"],
+  });
+}
+
+function getDriveClient() {
+  return google.drive({ version: "v3", auth: getAuthClient() });
+}
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: string | null;
+  webViewLink?: string | null;
+  webContentLink?: string | null;
+  thumbnailLink?: string | null;
+  createdTime?: string | null;
+  modifiedTime?: string | null;
+  parents?: string[] | null;
+}
+
+/** List files / subfolders in a Google Drive folder. */
+export async function listDriveFiles(folderId: string): Promise<DriveFile[]> {
+  const drive = getDriveClient();
+  const resp = await drive.files.list({
+    q: `'${folderId}' in parents and trashed = false`,
+    fields:
+      "files(id,name,mimeType,size,webViewLink,webContentLink,thumbnailLink,createdTime,modifiedTime,parents)",
+    orderBy: "folder,name",
+    pageSize: 200,
+  });
+  return (resp.data.files ?? []) as DriveFile[];
+}
+
+/** Upload a base64-encoded file to a Google Drive folder. */
+export async function uploadDriveFile(data: {
+  folderId: string;
+  fileName: string;
+  mimeType: string;
+  content: string; // base64
+}): Promise<DriveFile> {
+  const drive = getDriveClient();
+  const buffer = Buffer.from(data.content, "base64");
+  const stream = Readable.from(buffer);
+  const resp = await drive.files.create({
+    requestBody: { name: data.fileName, parents: [data.folderId] },
+    media: { mimeType: data.mimeType, body: stream },
+    fields: "id,name,mimeType,size,webViewLink,webContentLink,createdTime,modifiedTime",
+  });
+  return resp.data as DriveFile;
+}
+
+/** Permanently delete a file from Google Drive. */
+export async function deleteDriveFile(fileId: string): Promise<void> {
+  const drive = getDriveClient();
+  await drive.files.delete({ fileId });
+}
+
+/** Create a subfolder inside a Google Drive folder. */
+export async function createDriveFolder(
+  name: string,
+  parentFolderId: string,
+): Promise<DriveFile> {
+  const drive = getDriveClient();
+  const resp = await drive.files.create({
+    requestBody: {
+      name,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [parentFolderId],
+    },
+    fields: "id,name,mimeType,webViewLink,createdTime",
+  });
+  return resp.data as DriveFile;
+}
+
+/** Rename / move a file. */
+export async function updateDriveFile(
+  fileId: string,
+  update: { name?: string },
+): Promise<DriveFile> {
+  const drive = getDriveClient();
+  const resp = await drive.files.update({
+    fileId,
+    requestBody: update,
+    fields: "id,name,mimeType,size,webViewLink,webContentLink,modifiedTime",
+  });
+  return resp.data as DriveFile;
+}
 
 /**
  * Google Drive Service

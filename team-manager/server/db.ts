@@ -2,7 +2,7 @@ import { eq, and, or, isNull, desc, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
-import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval } from "../drizzle/schema";
+import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
 import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted } from './socket-server';
@@ -1269,7 +1269,7 @@ export async function createTask(
 
 /**
  * Get tasks by team with optional filtering
- * Requirement 3.1: Task retrieval with filtering
+ * Supports member-scoped view: only show tasks assigned to OR created by viewerMemberId
  */
 export async function getTasksByTeam(
   teamId: number,
@@ -1277,12 +1277,13 @@ export async function getTasksByTeam(
     status?: string;
     assignedTo?: number;
     priority?: string;
+    createdBy?: number;
+    /** When set, returns only tasks where assignedTo=viewerMemberId OR createdBy=viewerMemberId */
+    viewerMemberId?: number;
   }
-): Promise<Task[]> {
+): Promise<(Task & { assignee?: { id: number; name: string | null } | null; creator?: { id: number; name: string | null } | null })[]> {
   const db = await getDb();
-  if (!db) {
-    return [];
-  }
+  if (!db) return [];
 
   const conditions = [eq(tasks.teamId, teamId)];
 
@@ -1292,15 +1293,55 @@ export async function getTasksByTeam(
   if (filters?.assignedTo) {
     conditions.push(eq(tasks.assignedTo, filters.assignedTo));
   }
+  if (filters?.createdBy) {
+    conditions.push(eq(tasks.createdBy, filters.createdBy));
+  }
   if (filters?.priority) {
     conditions.push(eq(tasks.priority, filters.priority));
   }
+  if (filters?.viewerMemberId) {
+    // Member scope: tasks they created OR were assigned to
+    conditions.push(
+      or(
+        eq(tasks.assignedTo, filters.viewerMemberId),
+        eq(tasks.createdBy, filters.viewerMemberId)
+      )!
+    );
+  }
 
-  return await db
-    .select()
+  const assigneeTm = { id: teamMembers.id, name: teamMembers.name };
+
+  const rows = await db
+    .select({
+      task: tasks,
+      assigneeName: teamMembers.name,
+      assigneeId: teamMembers.id,
+    })
     .from(tasks)
+    .leftJoin(teamMembers, eq(tasks.assignedTo, teamMembers.id))
     .where(and(...conditions))
-    .orderBy(tasks.createdAt);
+    .orderBy(desc(tasks.createdAt));
+
+  // Enrich with creator names in a second query for simplicity
+  const allCreatorIds = [...new Set(rows.map(r => r.task.createdBy).filter(Boolean))] as number[];
+  let creatorMap: Record<number, string | null> = {};
+  if (allCreatorIds.length > 0) {
+    const creators = await db
+      .select({ id: teamMembers.id, name: teamMembers.name })
+      .from(teamMembers)
+      .where(
+        allCreatorIds.length === 1
+          ? eq(teamMembers.id, allCreatorIds[0])
+          : or(...allCreatorIds.map(id => eq(teamMembers.id, id)))!
+      );
+    creatorMap = Object.fromEntries(creators.map(c => [c.id, c.name]));
+  }
+
+  return rows.map(r => ({
+    ...r.task,
+    assignee: r.assigneeId ? { id: r.assigneeId, name: r.assigneeName } : null,
+    creator: r.task.createdBy ? { id: r.task.createdBy, name: creatorMap[r.task.createdBy] ?? null } : null,
+  }));
 }
 
 /**
@@ -4066,4 +4107,182 @@ export async function getEvaluationStats(teamId: number): Promise<{
     readyForLaunch,
     needsWork,
   };
+}
+
+// ─── Chat Message Functions ────────────────────────────────────────────────────
+
+/**
+ * Send a direct message from one member to another
+ */
+export async function sendChatMessage(
+  fromMemberId: number,
+  toMemberId: number,
+  teamId: number,
+  content: string,
+  messageType: 'text' | 'image' | 'file' = 'text',
+  fileUrl?: string,
+  fileName?: string
+): Promise<ChatMessage> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  const [msg] = await db
+    .insert(chatMessages)
+    .values({ fromMemberId, toMemberId, teamId, content, messageType, fileUrl, fileName })
+    .returning();
+
+  return msg;
+}
+
+/**
+ * Get messages between two members (conversation thread)
+ */
+export async function getChatMessages(
+  memberA: number,
+  memberB: number,
+  teamId: number,
+  limit = 50,
+  before?: Date
+): Promise<(ChatMessage & { fromName: string | null; toName: string | null })[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const fromAlias = teamMembers;
+
+  const conditions = [
+    eq(chatMessages.teamId, teamId),
+    or(
+      and(eq(chatMessages.fromMemberId, memberA), eq(chatMessages.toMemberId, memberB)),
+      and(eq(chatMessages.fromMemberId, memberB), eq(chatMessages.toMemberId, memberA))
+    )!,
+  ];
+
+  if (before) {
+    conditions.push(lte(chatMessages.createdAt, before));
+  }
+
+  const rows = await db
+    .select({
+      msg: chatMessages,
+      fromName: sql<string | null>`(SELECT name FROM ${fromAlias} WHERE id = ${chatMessages.fromMemberId})`,
+      toName: sql<string | null>`(SELECT name FROM ${fromAlias} WHERE id = ${chatMessages.toMemberId})`,
+    })
+    .from(chatMessages)
+    .where(and(...conditions))
+    .orderBy(desc(chatMessages.createdAt))
+    .limit(limit);
+
+  return rows.map(r => ({ ...r.msg, fromName: r.fromName, toName: r.toName })).reverse();
+}
+
+/**
+ * Get list of unique conversation partners for a member
+ */
+export async function getChatConversations(
+  memberId: number,
+  teamId: number
+): Promise<{
+  partnerId: number;
+  partnerName: string | null;
+  lastMessage: string;
+  lastMessageAt: Date | null;
+  unreadCount: number;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Find all unique partners
+  const sent = await db
+    .selectDistinct({ partnerId: chatMessages.toMemberId })
+    .from(chatMessages)
+    .where(and(eq(chatMessages.fromMemberId, memberId), eq(chatMessages.teamId, teamId)));
+
+  const received = await db
+    .selectDistinct({ partnerId: chatMessages.fromMemberId })
+    .from(chatMessages)
+    .where(and(eq(chatMessages.toMemberId, memberId), eq(chatMessages.teamId, teamId)));
+
+  const partnerIds = [...new Set([
+    ...sent.map(r => r.partnerId),
+    ...received.map(r => r.partnerId),
+  ])];
+
+  if (partnerIds.length === 0) return [];
+
+  const result = await Promise.all(
+    partnerIds.map(async (partnerId) => {
+      // Get last message
+      const [lastMsg] = await db
+        .select()
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.teamId, teamId),
+            or(
+              and(eq(chatMessages.fromMemberId, memberId), eq(chatMessages.toMemberId, partnerId)),
+              and(eq(chatMessages.fromMemberId, partnerId), eq(chatMessages.toMemberId, memberId))
+            )!
+          )
+        )
+        .orderBy(desc(chatMessages.createdAt))
+        .limit(1);
+
+      // Get unread count
+      const [unreadRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(chatMessages)
+        .where(
+          and(
+            eq(chatMessages.teamId, teamId),
+            eq(chatMessages.fromMemberId, partnerId),
+            eq(chatMessages.toMemberId, memberId),
+            isNull(chatMessages.readAt)
+          )
+        );
+
+      // Get partner name
+      const [partner] = await db
+        .select({ id: teamMembers.id, name: teamMembers.name })
+        .from(teamMembers)
+        .where(eq(teamMembers.id, partnerId))
+        .limit(1);
+
+      return {
+        partnerId,
+        partnerName: partner?.name ?? null,
+        lastMessage: lastMsg?.content ?? '',
+        lastMessageAt: lastMsg?.createdAt ?? null,
+        unreadCount: Number(unreadRow?.count ?? 0),
+      };
+    })
+  );
+
+  // Sort by last message time desc
+  return result.sort((a, b) =>
+    (b.lastMessageAt?.getTime() ?? 0) - (a.lastMessageAt?.getTime() ?? 0)
+  );
+}
+
+/**
+ * Mark messages from a sender to a recipient as read
+ */
+export async function markMessagesAsRead(
+  fromMemberId: number,
+  toMemberId: number,
+  teamId: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(chatMessages)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(chatMessages.teamId, teamId),
+        eq(chatMessages.fromMemberId, fromMemberId),
+        eq(chatMessages.toMemberId, toMemberId),
+        isNull(chatMessages.readAt)
+      )
+    );
 }

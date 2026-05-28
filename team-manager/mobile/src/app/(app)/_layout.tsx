@@ -11,11 +11,11 @@ import { setBadgeCount } from '@/lib/notifications';
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TABS: { name: string; title: string; icon: IconName; activeIcon: IconName }[] = [
-  { name: 'index',          title: 'Office',   icon: 'home-outline',             activeIcon: 'home' },
-  { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline', activeIcon: 'checkmark-circle' },
-  { name: 'projects/index', title: 'Projects', icon: 'folder-outline',           activeIcon: 'folder' },
-  { name: 'teams/index',    title: 'Teams',    icon: 'people-outline',           activeIcon: 'people' },
-  { name: 'profile/index',  title: 'Profile',  icon: 'person-outline',           activeIcon: 'person' },
+  { name: 'index',          title: 'Office',   icon: 'home-outline',              activeIcon: 'home' },
+  { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline',  activeIcon: 'checkmark-circle' },
+  { name: 'projects/index', title: 'Projects', icon: 'folder-outline',            activeIcon: 'folder' },
+  { name: 'messages/index', title: 'Chat',     icon: 'chatbubble-ellipses-outline', activeIcon: 'chatbubble-ellipses' },
+  { name: 'profile/index',  title: 'Profile',  icon: 'person-outline',            activeIcon: 'person' },
 ];
 
 export default function AppLayout() {
@@ -100,7 +100,8 @@ export default function AppLayout() {
       <Tabs.Screen name="calendar/index"   options={{ href: null }} />
       <Tabs.Screen name="analytics/index"  options={{ href: null }} />
       <Tabs.Screen name="conference/index" options={{ href: null }} />
-      <Tabs.Screen name="messages/index"   options={{ href: null }} />
+      <Tabs.Screen name="teams/index"      options={{ href: null }} />
+      <Tabs.Screen name="chat/[userId]"    options={{ href: null }} />
     </Tabs>
   );
 }

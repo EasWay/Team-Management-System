@@ -51,6 +51,8 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(app)" />
+              {/* OAuth deep-link callback — must be registered so expo-router doesn't 404 */}
+              <Stack.Screen name="oauth-callback" />
             </Stack>
           </SafeAreaProvider>
         </GestureHandlerRootView>

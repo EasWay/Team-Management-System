@@ -134,8 +134,10 @@ export default function ProjectsScreen() {
   const { activeTeam } = useTeamStore();
   const [filter, setFilter]           = useState<FilterKey>('all');
   const [search, setSearch]           = useState('');
-  const [showCreate, setShowCreate]   = useState(false);
+  const [showCreate, setShowCreate]     = useState(false);
   const [showIdeation, setShowIdeation] = useState(false);
+  const [showDetail, setShowDetail]     = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [title, setTitle]             = useState('');
   const [description, setDescription] = useState('');
   const [chatLogs, setChatLogs]       = useState('');
@@ -143,6 +145,11 @@ export default function ProjectsScreen() {
   const [aiResult, setAiResult]       = useState<any>(null);
 
   const utils = trpc.useUtils();
+
+  const projectDetailQuery = trpc.projects.getById.useQuery(
+    { id: selectedProjectId ?? 0 },
+    { enabled: !!selectedProjectId && showDetail }
+  );
 
   const projectsQuery = trpc.projects.list.useQuery(
     { teamId: activeTeam?.id ?? 0 },
@@ -339,7 +346,10 @@ export default function ProjectsScreen() {
           renderItem={({ item }) => (
             <ProjectCard
               item={item}
-              onPress={() => {/* future: open project detail */}}
+              onPress={() => {
+                setSelectedProjectId(item.id);
+                setShowDetail(true);
+              }}
             />
           )}
         />
@@ -403,6 +413,210 @@ export default function ProjectsScreen() {
               <Button label="Cancel" onPress={() => setShowCreate(false)} variant="secondary" style={{ flex: 1 }} />
               <Button label="Create" onPress={handleCreate} loading={createMutation.isPending} style={{ flex: 1 }} />
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Project Detail Modal ── */}
+      <Modal visible={showDetail} animationType="slide" transparent onRequestClose={() => setShowDetail(false)}>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View
+            className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700"
+            style={{ maxHeight: '92%' }}
+          >
+            {/* Handle */}
+            <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mt-4 mb-2" />
+
+            {projectDetailQuery.isLoading ? (
+              <View className="items-center justify-center py-16">
+                <ActivityIndicator color="#38bdf8" size="large" />
+                <Text className="text-slate-400 mt-3 text-sm">Loading project…</Text>
+              </View>
+            ) : (() => {
+              const p = projectDetailQuery.data as any;
+              if (!p) return (
+                <View className="items-center justify-center py-16">
+                  <Text className="text-slate-400">Project not found</Text>
+                </View>
+              );
+              const palette = coverPalette(p.name ?? '');
+              const stageMeta = STAGE_META[p.workflowStage] ?? STAGE_META.ideation;
+              const evalScore = p.evaluationData?.overallScore;
+              const deliverablesList: any[] = Array.isArray(p.deliverables) ? p.deliverables : [];
+              const handoffList: any[] = Array.isArray(p.handoffHistory) ? p.handoffHistory : [];
+
+              return (
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                  {/* Cover header */}
+                  <View style={{ height: 130, backgroundColor: palette.bg, borderRadius: 0 }} className="items-center justify-center relative">
+                    <View style={{
+                      width: 80, height: 80, borderRadius: 20,
+                      borderWidth: 1, borderColor: palette.accent + '50',
+                      backgroundColor: palette.accent + '15',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name={palette.icon} size={36} color={palette.accent} />
+                    </View>
+                    {evalScore != null && (
+                      <View className="absolute top-3 right-3 flex-row items-center gap-1 bg-emerald-900/80 rounded-xl px-2.5 py-1">
+                        <Ionicons name="star" size={11} color="#34d399" />
+                        <Text style={{ color: '#34d399', fontSize: 12, fontWeight: '700' }}>{evalScore}%</Text>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => setShowDetail(false)}
+                      className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/30 items-center justify-center"
+                    >
+                      <Ionicons name="close" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Main info */}
+                  <View className="px-5 pt-5">
+                    <View className="flex-row items-start justify-between gap-2 mb-3">
+                      <Text className="text-slate-900 dark:text-white text-xl font-bold flex-1 leading-tight">{p.name}</Text>
+                      <View style={{ backgroundColor: stageMeta.bg, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
+                        <Text style={{ color: stageMeta.color, fontSize: 11, fontWeight: '700' }}>{stageMeta.label}</Text>
+                      </View>
+                    </View>
+
+                    {/* Dates */}
+                    <View className="flex-row gap-4 mb-4">
+                      {p.dateReceived && (
+                        <View className="flex-row items-center gap-1.5">
+                          <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
+                          <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                            Started {format(new Date(p.dateReceived), 'MMM d, yyyy')}
+                          </Text>
+                        </View>
+                      )}
+                      {p.dateEnded && (
+                        <View className="flex-row items-center gap-1.5">
+                          <Ionicons name="flag-outline" size={13} color="#94a3b8" />
+                          <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                            Due {format(new Date(p.dateEnded), 'MMM d, yyyy')}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Description */}
+                    {(p.description || p.definition) && (
+                      <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 mb-4 border border-slate-200 dark:border-slate-700">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">About</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 text-sm leading-5">
+                          {p.definition || p.description}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Evaluation scores */}
+                    {p.evaluationData && (
+                      <View className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-200 dark:border-emerald-700/40">
+                        <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">QA Evaluation</Text>
+                        {[
+                          { label: 'Design', value: p.evaluationData.designAlignment },
+                          { label: 'Business', value: p.evaluationData.businessAlignment },
+                          { label: 'Technical', value: p.evaluationData.technicalQuality },
+                          { label: 'Testing', value: p.evaluationData.testingProtocol },
+                        ].filter(x => x.value != null).map((item) => (
+                          <View key={item.label} className="mb-2">
+                            <View className="flex-row justify-between mb-1">
+                              <Text className="text-slate-600 dark:text-slate-400 text-xs">{item.label}</Text>
+                              <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">{item.value}%</Text>
+                            </View>
+                            <View className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <View
+                                className="h-full bg-emerald-500 rounded-full"
+                                style={{ width: `${item.value}%` }}
+                              />
+                            </View>
+                          </View>
+                        ))}
+                        {p.evaluationData.readyForLaunch && (
+                          <View className="flex-row items-center gap-1.5 mt-2">
+                            <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                            <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">Ready for Launch</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Deliverables */}
+                    {deliverablesList.length > 0 && (
+                      <View className="mb-4">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Deliverables</Text>
+                        {deliverablesList.map((d: any, i: number) => (
+                          <View key={i} className="flex-row items-center gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 mb-2 border border-slate-200 dark:border-slate-700">
+                            <View className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 items-center justify-center">
+                              <Ionicons
+                                name={d.type === 'github' ? 'logo-github' : d.type === 'figma' ? 'color-palette-outline' : 'link-outline'}
+                                size={14}
+                                color="#38bdf8"
+                              />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-slate-900 dark:text-white text-sm font-medium">{d.description || d.type}</Text>
+                              {d.url && <Text className="text-sky-500 text-xs mt-0.5" numberOfLines={1}>{d.url}</Text>}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Handoff history */}
+                    {handoffList.length > 0 && (
+                      <View className="mb-4">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Handoff History</Text>
+                        {handoffList.map((h: any, i: number) => (
+                          <View key={i} className="flex-row items-start gap-3 mb-3">
+                            <View className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/40 items-center justify-center mt-0.5">
+                              <Ionicons name="arrow-forward" size={11} color="#a78bfa" />
+                            </View>
+                            <View className="flex-1">
+                              <Text className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                                {h.from} → {h.to}
+                              </Text>
+                              {h.comments && (
+                                <Text className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">{h.comments}</Text>
+                              )}
+                              {h.timestamp && (
+                                <Text className="text-slate-300 dark:text-slate-600 text-xs mt-0.5">
+                                  {format(new Date(h.timestamp), 'MMM d, yyyy')}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* AI ideation summary */}
+                    {p.ideationData?.finalDecisionReport?.projectName && (
+                      <View className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4 mb-4 border border-purple-200 dark:border-purple-700/40">
+                        <Text className="text-purple-600 dark:text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">
+                          AI Ideation Report
+                        </Text>
+                        <Text className="text-slate-700 dark:text-slate-300 text-sm leading-5">
+                          {p.ideationData.finalDecisionReport.executiveSummary || 'No summary available.'}
+                        </Text>
+                        {p.ideationData.speakers?.length > 0 && (
+                          <View className="flex-row flex-wrap gap-1.5 mt-3">
+                            {p.ideationData.speakers.map((s: any, i: number) => (
+                              <View key={i} className="bg-purple-100 dark:bg-purple-800/40 rounded-full px-2.5 py-1">
+                                <Text className="text-purple-600 dark:text-purple-300 text-xs font-medium">
+                                  {typeof s === 'string' ? s : s.name}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                </ScrollView>
+              );
+            })()}
           </View>
         </View>
       </Modal>

@@ -70,3 +70,12 @@ export function onActivityCreated(cb: (data: unknown) => void) {
   socketInstance?.on('activityCreated', cb);
   return () => socketInstance?.off('activityCreated', cb);
 }
+
+export function onChatMessage(cb: (data: unknown) => void) {
+  socketInstance?.on('chatMessage', cb);
+  return () => socketInstance?.off('chatMessage', cb);
+}
+
+export function joinMemberRoom(memberId: number) {
+  socketInstance?.emit('joinMember', memberId);
+}

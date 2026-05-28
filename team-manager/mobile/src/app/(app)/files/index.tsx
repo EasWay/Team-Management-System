@@ -1,257 +1,1123 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  Alert,
   RefreshControl,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+  Modal,
   Linking,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
+import { File as ExpoFile } from 'expo-file-system';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
-import { LoadingScreen } from '@/components/LoadingScreen';
-import { EmptyState } from '@/components/EmptyState';
-import { API_BASE_URL, STORAGE_KEYS } from '@/lib/constants';
-import { SecureStorage } from '@/lib/secureStorage';
-import { format } from 'date-fns';
+import { useAuthStore } from '@/store/authStore';
 
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
+type IonIconName = React.ComponentProps<typeof Ionicons>['name'];
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: string | null;
+  webViewLink?: string | null;
+  webContentLink?: string | null;
+  thumbnailLink?: string | null;
+  createdTime?: string | null;
+  modifiedTime?: string | null;
 }
 
-function fileIcon(mimeType: string = ''): { icon: IconName; color: string } {
-  if (mimeType.startsWith('image/'))   return { icon: 'image-outline',         color: '#38bdf8' };
-  if (mimeType === 'application/pdf')  return { icon: 'document-text-outline', color: '#f87171' };
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel'))
-    return { icon: 'grid-outline', color: '#4ade80' };
-  if (mimeType.includes('word') || mimeType.includes('document'))
-    return { icon: 'document-outline', color: '#60a5fa' };
-  if (mimeType.includes('zip') || mimeType.includes('archive'))
-    return { icon: 'archive-outline', color: '#fb923c' };
-  return { icon: 'attach-outline', color: '#94a3b8' };
+interface FolderEntry {
+  id: string;
+  name: string;
+  ownerId?: number | null; // which member owns this folder (null = team folder)
 }
 
-export default function FilesScreen() {
-  const router = useRouter();
-  const { activeTeam } = useTeamStore();
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function extractFolderId(url: string): string | null {
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function formatBytes(bytes?: string | null): string {
+  const n = Number(bytes ?? 0);
+  if (!n) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+interface FileMeta { icon: IonIconName; color: string; label: string }
+
+function getFileMeta(mimeType: string, isFolder = false): FileMeta {
+  if (isFolder) return { icon: 'folder', color: '#fbbf24', label: 'Folder' };
+  if (mimeType.startsWith('image/')) return { icon: 'image-outline', color: '#34d399', label: 'Image' };
+  if (mimeType.includes('pdf')) return { icon: 'document-text-outline', color: '#f87171', label: 'PDF' };
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv'))
+    return { icon: 'grid-outline', color: '#34d399', label: 'Spreadsheet' };
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint'))
+    return { icon: 'easel-outline', color: '#fb923c', label: 'Slides' };
+  if (mimeType.includes('document') || mimeType.includes('word'))
+    return { icon: 'document-outline', color: '#60a5fa', label: 'Document' };
+  if (mimeType.includes('video')) return { icon: 'videocam-outline', color: '#a78bfa', label: 'Video' };
+  if (mimeType.includes('audio')) return { icon: 'musical-notes-outline', color: '#f472b6', label: 'Audio' };
+  if (mimeType.includes('zip') || mimeType.includes('compressed') || mimeType.includes('archive'))
+    return { icon: 'archive-outline', color: '#94a3b8', label: 'Archive' };
+  if (mimeType.includes('code') || mimeType.includes('javascript') || mimeType.includes('python') || mimeType.includes('html'))
+    return { icon: 'code-slash-outline', color: '#38bdf8', label: 'Code' };
+  return { icon: 'document-outline', color: '#64748b', label: 'File' };
+}
+
+const FOLDER_MIME = 'application/vnd.google-apps.folder';
+
+// ─── Reusable components ────────────────────────────────────────────────────────
+
+function FileRow({
+  file,
+  canDelete,
+  teamId,
+  onNavigate,
+  onRefresh,
+}: {
+  file: DriveFile;
+  canDelete: boolean;
+  teamId: number;
+  onNavigate: (id: string, name: string) => void;
+  onRefresh: () => void;
+}) {
+  const isFolder = file.mimeType === FOLDER_MIME;
+  const meta = getFileMeta(file.mimeType, isFolder);
+  const utils = trpc.useUtils();
+
+  const deleteMutation = trpc.googleDrive.driveDeleteFile.useMutation({
+    onSuccess: () => {
+      utils.googleDrive.driveListFiles.invalidate();
+      onRefresh();
+    },
+    onError: (e: any) => Alert.alert('Delete failed', e.message),
+  });
+
+  const handleOpen = () => {
+    const url = file.webViewLink ?? file.webContentLink;
+    if (url) Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open file.'));
+    else Alert.alert('No preview', 'This file has no preview link.');
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      `Delete "${file.name}"?`,
+      isFolder ? 'This will permanently delete the folder and all its contents.' : 'This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate({ fileId: file.id, teamId }),
+        },
+      ],
+    );
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={isFolder ? () => onNavigate(file.id, file.name) : handleOpen}
+      activeOpacity={0.75}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#0f172a',
+        gap: 14,
+      }}
+    >
+      {/* Icon */}
+      <View style={{
+        width: 44, height: 44, borderRadius: 14,
+        backgroundColor: meta.color + '18', borderWidth: 1, borderColor: meta.color + '30',
+        alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        {deleteMutation.isPending
+          ? <ActivityIndicator size="small" color={meta.color} />
+          : <Ionicons name={meta.icon} size={22} color={meta.color} />}
+      </View>
+
+      {/* Info */}
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: '#f1f5f9', fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
+          {file.name}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+          {!isFolder && file.size && (
+            <Text style={{ color: '#475569', fontSize: 11 }}>{formatBytes(file.size)}</Text>
+          )}
+          {file.modifiedTime && (
+            <Text style={{ color: '#334155', fontSize: 11 }}>{formatDate(file.modifiedTime)}</Text>
+          )}
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {canDelete && !isFolder && (
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={{ padding: 8 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={17} color="#ef4444" />
+          </TouchableOpacity>
+        )}
+        <Ionicons
+          name={isFolder ? 'chevron-forward' : 'open-outline'}
+          size={16}
+          color="#334155"
+        />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── File Browser ──────────────────────────────────────────────────────────────
+
+function FileBrowser({
+  rootFolderId,
+  rootName,
+  teamId,
+  canDelete,
+  canUpload,
+  onClose,
+}: {
+  rootFolderId: string;
+  rootName: string;
+  teamId: number;
+  canDelete: boolean;
+  canUpload: boolean;
+  onClose: () => void;
+}) {
+  // Folder navigation stack: [{id, name}, ...]
+  const [stack, setStack] = useState<{ id: string; name: string }[]>([
+    { id: rootFolderId, name: rootName },
+  ]);
+  const currentFolder = stack[stack.length - 1];
+
   const [uploading, setUploading] = useState(false);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
   const utils = trpc.useUtils();
 
-  const filesQuery = trpc.files.list.useQuery(
-    { teamId: activeTeam?.id ?? 0 },
-    { enabled: !!activeTeam?.id }
+  const filesQuery = trpc.googleDrive.driveListFiles.useQuery(
+    { folderId: currentFolder.id, teamId },
+    { retry: 1 },
   );
 
-  const deleteMutation = trpc.files.delete.useMutation({
-    onSuccess: () => utils.files.list.invalidate(),
-    onError: (err: any) => Alert.alert('Error', err.message),
+  const files: DriveFile[] = (filesQuery.data as DriveFile[] | undefined) ?? [];
+  const folders = files.filter(f => f.mimeType === FOLDER_MIME);
+  const regularFiles = files.filter(f => f.mimeType !== FOLDER_MIME);
+  const sorted = [...folders, ...regularFiles]; // folders first
+
+  const createFolderMutation = trpc.googleDrive.driveCreateFolder.useMutation({
+    onSuccess: () => {
+      utils.googleDrive.driveListFiles.invalidate();
+      filesQuery.refetch();
+      setShowNewFolder(false);
+      setNewFolderName('');
+      setCreatingFolder(false);
+    },
+    onError: (e: any) => {
+      Alert.alert('Error', e.message);
+      setCreatingFolder(false);
+    },
   });
 
-  const uploadFile = async (uri: string, name: string, type: string) => {
-    setUploading(true);
+  const handleUpload = useCallback(async () => {
     try {
-      const token = await SecureStorage.get(STORAGE_KEYS.ACCESS_TOKEN);
-      const formData = new FormData();
-      formData.append('file', { uri, name, type } as any);
-      if (activeTeam?.id) formData.append('teamId', String(activeTeam.id));
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.length) return;
 
-      const response = await fetch(`${API_BASE_URL}/api/upload`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
+      const asset = result.assets[0];
+      setUploading(true);
+
+      // Read file as base64 using the new expo-file-system File API
+      const expoFile = new ExpoFile(asset.uri);
+      const buffer = await expoFile.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+
+      await utils.client.googleDrive.driveUploadFile.mutate({
+        folderId: currentFolder.id,
+        fileName: asset.name,
+        mimeType: asset.mimeType ?? 'application/octet-stream',
+        content: base64,
+        teamId,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
-      await utils.files.list.invalidate();
-      Alert.alert('Uploaded!', `${name} uploaded successfully.`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Upload failed';
-      Alert.alert('Upload Error', msg);
+      utils.googleDrive.driveListFiles.invalidate();
+      filesQuery.refetch();
+    } catch (err: any) {
+      Alert.alert('Upload failed', err?.message ?? 'Unknown error');
+    } finally {
+      setUploading(false);
+    }
+  }, [currentFolder.id, teamId]);
+
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) return;
+    setCreatingFolder(true);
+    createFolderMutation.mutate({
+      name: newFolderName.trim(),
+      parentFolderId: currentFolder.id,
+      teamId,
+    });
+  };
+
+  const navigateInto = (id: string, name: string) => {
+    setStack(prev => [...prev, { id, name }]);
+  };
+
+  const navigateBack = () => {
+    if (stack.length === 1) { onClose(); return; }
+    setStack(prev => prev.slice(0, -1));
+  };
+
+  const isServiceNotConfigured =
+    filesQuery.isError &&
+    (filesQuery.error as any)?.message?.includes('GOOGLE_SERVICE_ACCOUNT_JSON');
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0a0f1e' }}>
+      {/* Header */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        paddingHorizontal: 20, paddingVertical: 14,
+        borderBottomWidth: 1, borderBottomColor: '#0f172a',
+      }}>
+        <TouchableOpacity
+          onPress={navigateBack}
+          style={{
+            width: 36, height: 36, borderRadius: 18,
+            backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={stack.length === 1 ? 'close' : 'arrow-back'} size={18} color="#64748b" />
+        </TouchableOpacity>
+
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: '#f1f5f9', fontSize: 17, fontWeight: '700' }} numberOfLines={1}>
+            {currentFolder.name}
+          </Text>
+          {/* Breadcrumb */}
+          {stack.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                {stack.map((s, i) => (
+                  <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {i > 0 && <Ionicons name="chevron-forward" size={10} color="#334155" />}
+                    <Text
+                      style={{
+                        color: i === stack.length - 1 ? '#64748b' : '#334155',
+                        fontSize: 11,
+                        fontWeight: i === stack.length - 1 ? '600' : '400',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {s.name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Actions row */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {canUpload && (
+            <TouchableOpacity
+              onPress={() => setShowNewFolder(true)}
+              style={{
+                width: 36, height: 36, borderRadius: 18,
+                backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="folder-open-outline" size={17} color="#64748b" />
+            </TouchableOpacity>
+          )}
+          {canUpload && (
+            <TouchableOpacity
+              onPress={handleUpload}
+              disabled={uploading}
+              style={{
+                paddingHorizontal: 14, height: 36, borderRadius: 18,
+                backgroundColor: '#0ea5e9',
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 3 },
+              }}
+            >
+              {uploading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
+              }
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
+                {uploading ? 'Uploading…' : 'Upload'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Content */}
+      {filesQuery.isLoading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#38bdf8" />
+          <Text style={{ color: '#475569', fontSize: 13, marginTop: 12 }}>Loading files…</Text>
+        </View>
+      ) : isServiceNotConfigured ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }}>
+          <View style={{
+            width: 64, height: 64, borderRadius: 20, backgroundColor: '#fbbf2415',
+            alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+          }}>
+            <Ionicons name="key-outline" size={28} color="#fbbf24" />
+          </View>
+          <Text style={{ color: '#f1f5f9', fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+            Google Drive not configured
+          </Text>
+          <Text style={{ color: '#475569', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+            Add your <Text style={{ color: '#38bdf8', fontWeight: '600' }}>GOOGLE_SERVICE_ACCOUNT_JSON</Text> to the server environment variables to enable in-app file browsing.
+          </Text>
+        </View>
+      ) : filesQuery.isError ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }}>
+          <Ionicons name="warning-outline" size={40} color="#ef4444" />
+          <Text style={{ color: '#f1f5f9', fontSize: 16, fontWeight: '600', marginTop: 12, marginBottom: 6, textAlign: 'center' }}>
+            Couldn't load files
+          </Text>
+          <Text style={{ color: '#475569', fontSize: 12, textAlign: 'center' }}>
+            {(filesQuery.error as any)?.message ?? 'Check that the service account has access to this folder.'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => filesQuery.refetch()}
+            style={{
+              marginTop: 20, backgroundColor: '#0f172a', borderWidth: 1, borderColor: '#1e293b',
+              borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10,
+            }}
+          >
+            <Text style={{ color: '#94a3b8', fontSize: 13, fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : sorted.length === 0 ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
+          <View style={{
+            width: 64, height: 64, borderRadius: 20, backgroundColor: '#0f172a',
+            borderWidth: 1, borderColor: '#1e293b', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+          }}>
+            <Ionicons name="folder-open-outline" size={28} color="#334155" />
+          </View>
+          <Text style={{ color: '#64748b', fontSize: 16, fontWeight: '600', marginBottom: 6 }}>Empty folder</Text>
+          {canUpload && (
+            <Text style={{ color: '#334155', fontSize: 13, textAlign: 'center' }}>
+              Tap <Text style={{ color: '#38bdf8', fontWeight: '600' }}>Upload</Text> to add files here.
+            </Text>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          data={sorted}
+          keyExtractor={item => item.id}
+          refreshControl={
+            <RefreshControl
+              refreshing={filesQuery.isFetching && !filesQuery.isLoading}
+              onRefresh={() => filesQuery.refetch()}
+              tintColor="#0ea5e9"
+            />
+          }
+          renderItem={({ item }) => (
+            <FileRow
+              file={item}
+              canDelete={canDelete || item.mimeType === FOLDER_MIME ? canDelete : canDelete}
+              teamId={teamId}
+              onNavigate={navigateInto}
+              onRefresh={() => filesQuery.refetch()}
+            />
+          )}
+          ListFooterComponent={<View style={{ height: 100 }} />}
+        />
+      )}
+
+      {/* New Folder Modal */}
+      <Modal visible={showNewFolder} animationType="slide" transparent onRequestClose={() => setShowNewFolder(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: '#0f172a', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            borderTopWidth: 1, borderColor: '#1e293b', padding: 24, paddingBottom: 40,
+          }}>
+            <View style={{ width: 40, height: 4, backgroundColor: '#1e293b', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+            <Text style={{ color: '#f1f5f9', fontSize: 18, fontWeight: '800', marginBottom: 16 }}>New Folder</Text>
+            <TextInput
+              value={newFolderName}
+              onChangeText={setNewFolderName}
+              placeholder="Folder name"
+              placeholderTextColor="#334155"
+              autoFocus
+              style={{
+                backgroundColor: '#0a0f1e', borderWidth: 1, borderColor: '#1e293b',
+                borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
+                color: '#f1f5f9', fontSize: 14, marginBottom: 16,
+              }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { setShowNewFolder(false); setNewFolderName(''); }}
+                style={{ flex: 1, borderWidth: 1, borderColor: '#1e293b', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#475569', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCreateFolder}
+                disabled={creatingFolder || !newFolderName.trim()}
+                style={{
+                  flex: 1,
+                  backgroundColor: newFolderName.trim() ? '#0ea5e9' : '#1e293b',
+                  borderRadius: 14, paddingVertical: 14, alignItems: 'center',
+                }}
+              >
+                {creatingFolder
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Create</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+// ─── Folder Card (home view) ───────────────────────────────────────────────────
+
+function FolderCard({
+  title,
+  subtitle,
+  icon,
+  color,
+  badge,
+  driveUrl,
+  canBrowse,
+  onPress,
+  onConnect,
+}: {
+  title: string;
+  subtitle?: string;
+  icon: IonIconName;
+  color: string;
+  badge?: string;
+  driveUrl?: string | null;
+  canBrowse: boolean;
+  onPress: () => void;
+  onConnect?: () => void;
+}) {
+  const folderId = driveUrl ? extractFolderId(driveUrl) : null;
+  const connected = !!folderId;
+
+  return (
+    <TouchableOpacity
+      onPress={connected && canBrowse ? onPress : connected ? onConnect : onConnect}
+      activeOpacity={0.8}
+      style={{
+        backgroundColor: '#0f172a',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: connected ? color + '30' : '#1e293b',
+        padding: 16,
+        marginBottom: 12,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <View style={{
+          width: 52, height: 52, borderRadius: 16,
+          backgroundColor: color + '18', borderWidth: 1, borderColor: color + '30',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons name={icon} size={24} color={color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+            <Text style={{ color: '#f1f5f9', fontSize: 15, fontWeight: '700' }} numberOfLines={1}>
+              {title}
+            </Text>
+            {badge && (
+              <View style={{ backgroundColor: color + '20', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                <Text style={{ color, fontSize: 10, fontWeight: '700' }}>{badge}</Text>
+              </View>
+            )}
+          </View>
+          {subtitle && (
+            <Text style={{ color: '#475569', fontSize: 12 }} numberOfLines={1}>{subtitle}</Text>
+          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 }}>
+            {connected ? (
+              <>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34d399' }} />
+                <Text style={{ color: '#34d399', fontSize: 11, fontWeight: '600' }}>
+                  {canBrowse ? 'Tap to browse' : 'Connected — upload only'}
+                </Text>
+              </>
+            ) : (
+              <>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#334155' }} />
+                <Text style={{ color: '#475569', fontSize: 11 }}>Not connected — tap to connect</Text>
+              </>
+            )}
+          </View>
+        </View>
+        <Ionicons
+          name={connected && canBrowse ? 'chevron-forward' : connected ? 'cloud-upload-outline' : 'link-outline'}
+          size={18}
+          color={connected ? color : '#334155'}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Upload-only sheet (for others' folders) ──────────────────────────────────
+
+function UploadOnlySheet({
+  folderId,
+  folderName,
+  teamId,
+  visible,
+  onClose,
+}: {
+  folderId: string;
+  folderName: string;
+  teamId: number;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const utils = trpc.useUtils();
+
+  const handleUpload = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const asset = result.assets[0];
+      setUploading(true);
+
+      const expoFile = new ExpoFile(asset.uri);
+      const buffer = await expoFile.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+
+      await utils.client.googleDrive.driveUploadFile.mutate({
+        folderId,
+        fileName: asset.name,
+        mimeType: asset.mimeType ?? 'application/octet-stream',
+        content: base64,
+        teamId,
+      });
+
+      Alert.alert('Uploaded', `"${asset.name}" was added to ${folderName}'s folder.`);
+      onClose();
+    } catch (err: any) {
+      Alert.alert('Upload failed', err?.message ?? 'Unknown error');
     } finally {
       setUploading(false);
     }
   };
 
-  const handlePickDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
-      if (result.canceled) return;
-      const asset = result.assets[0];
-      await uploadFile(asset.uri, asset.name, asset.mimeType ?? 'application/octet-stream');
-    } catch {
-      Alert.alert('Error', 'Could not open document picker.');
-    }
-  };
-
-  const handlePickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission needed', 'Please grant photo library access in Settings.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    const name = asset.fileName ?? `photo_${Date.now()}.jpg`;
-    await uploadFile(asset.uri, name, asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
-  };
-
-  const handleDelete = (fileId: number, name: string) => {
-    Alert.alert('Delete File', `Delete "${name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate({ id: fileId }) },
-    ]);
-  };
-
-  const files = (filesQuery.data as any[] ?? []);
-
-  if (filesQuery.isLoading && !filesQuery.data) return <LoadingScreen />;
-
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+        <View style={{
+          backgroundColor: '#0f172a', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          borderTopWidth: 1, borderColor: '#1e293b', padding: 24, paddingBottom: 40,
+        }}>
+          <View style={{ width: 40, height: 4, backgroundColor: '#1e293b', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+          <Text style={{ color: '#f1f5f9', fontSize: 18, fontWeight: '800', marginBottom: 6 }}>
+            Upload to {folderName}
+          </Text>
+          <Text style={{ color: '#475569', fontSize: 13, marginBottom: 24, lineHeight: 18 }}>
+            You can upload files to this folder, but cannot view its contents.
+          </Text>
 
-      {/* Header */}
-      <View className="px-5 pt-5 pb-4">
-        <View className="flex-row items-center gap-3 mb-4">
           <TouchableOpacity
-            onPress={() => router.back()}
-            className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-800 items-center justify-center"
+            onPress={handleUpload}
+            disabled={uploading}
+            style={{
+              backgroundColor: '#0ea5e9', borderRadius: 14, paddingVertical: 16,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+              shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 3 },
+            }}
           >
-            <Ionicons name="arrow-back" size={18} color="#64748b" />
-          </TouchableOpacity>
-          <View className="flex-1">
-            <Text className="text-2xl font-bold text-slate-900 dark:text-white">Files</Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
-              {files.length} {files.length === 1 ? 'file' : 'files'}
+            {uploading
+              ? <ActivityIndicator color="#fff" />
+              : <Ionicons name="cloud-upload-outline" size={20} color="#fff" />}
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>
+              {uploading ? 'Uploading…' : 'Pick & Upload File'}
             </Text>
-          </View>
-        </View>
+          </TouchableOpacity>
 
-        {/* Upload buttons */}
-        <View className="flex-row gap-2">
           <TouchableOpacity
-            onPress={handlePickImage}
-            disabled={uploading}
-            className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 flex-row items-center justify-center gap-2"
+            onPress={onClose}
+            style={{ marginTop: 12, paddingVertical: 14, alignItems: 'center' }}
           >
-            <Ionicons name="camera-outline" size={16} color="#64748b" />
-            <Text className="text-slate-600 dark:text-slate-300 text-sm font-medium">Photo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handlePickDocument}
-            disabled={uploading}
-            className={`flex-1 rounded-2xl py-3 flex-row items-center justify-center gap-2 ${
-              uploading ? 'bg-slate-300 dark:bg-slate-700' : 'bg-sky-500'
-            }`}
-            style={!uploading ? { shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 } } : undefined}
-          >
-            <Ionicons name="cloud-upload-outline" size={16} color={uploading ? '#94a3b8' : '#fff'} />
-            <Text className={`text-sm font-bold ${uploading ? 'text-slate-400 dark:text-slate-500' : 'text-white'}`}>
-              {uploading ? 'Uploading…' : 'Upload'}
-            </Text>
+            <Text style={{ color: '#475569', fontSize: 14, fontWeight: '600' }}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
+    </Modal>
+  );
+}
 
-      {/* File list */}
-      <FlatList
-        data={files}
-        keyExtractor={(item) => String(item.id)}
+// ─── Connect Drive Modal ───────────────────────────────────────────────────────
+
+function ConnectDriveModal({
+  visible,
+  connectType,
+  connectRole,
+  onClose,
+  onConnect,
+}: {
+  visible: boolean;
+  connectType: 'team' | 'office';
+  connectRole: string;
+  onClose: () => void;
+  onConnect: (url: string, name: string) => void;
+}) {
+  const [driveUrl, setDriveUrl] = useState('');
+  const [driveName, setDriveName] = useState('');
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+        <View style={{
+          backgroundColor: '#0f172a', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          borderTopWidth: 1, borderColor: '#1e293b', padding: 24, paddingBottom: 40,
+        }}>
+          <View style={{ width: 40, height: 4, backgroundColor: '#1e293b', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+          <Text style={{ color: '#f1f5f9', fontSize: 20, fontWeight: '800', marginBottom: 6 }}>
+            Connect Google Drive
+          </Text>
+          <Text style={{ color: '#475569', fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
+            {connectType === 'team'
+              ? 'Paste the URL of your team\'s shared Google Drive folder.'
+              : `Paste the Google Drive folder URL for ${connectRole || 'this member'}.`}
+          </Text>
+
+          <Text style={labelSt}>Drive URL *</Text>
+          <TextInput
+            value={driveUrl}
+            onChangeText={setDriveUrl}
+            placeholder="https://drive.google.com/drive/folders/..."
+            placeholderTextColor="#334155"
+            style={inputSt}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+
+          <Text style={labelSt}>Folder Name (optional)</Text>
+          <TextInput
+            value={driveName}
+            onChangeText={setDriveName}
+            placeholder={connectType === 'team' ? 'Team Drive' : `${connectRole} Drive`}
+            placeholderTextColor="#334155"
+            style={inputSt}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={{ flex: 1, borderWidth: 1, borderColor: '#1e293b', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#475569', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                if (!driveUrl.trim()) { Alert.alert('Required', 'Please enter a Google Drive URL.'); return; }
+                onConnect(driveUrl.trim(), driveName.trim());
+                setDriveUrl('');
+                setDriveName('');
+              }}
+              disabled={!driveUrl.trim()}
+              style={{ flex: 1, backgroundColor: driveUrl.trim() ? '#0ea5e9' : '#1e293b', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Connect</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+const ROLE_META: Record<string, { label: string; color: string; icon: IonIconName }> = {
+  project_manager:    { label: 'Project Manager',    color: '#fbbf24', icon: 'briefcase-outline' },
+  fullstack_engineer: { label: 'Full Stack Engineer', color: '#38bdf8', icon: 'code-slash-outline' },
+  backend_engineer:   { label: 'Backend Engineer',   color: '#34d399', icon: 'server-outline' },
+  lead_researcher:    { label: 'Lead Researcher',    color: '#a78bfa', icon: 'search-outline' },
+  systems_architect:  { label: 'Systems Architect',  color: '#f472b6', icon: 'git-network-outline' },
+  ai_engineer:        { label: 'AI Engineer',        color: '#fb923c', icon: 'hardware-chip-outline' },
+  member:             { label: 'Member',             color: '#64748b', icon: 'person-outline' },
+};
+
+function getRoleMeta(role?: string | null) {
+  return ROLE_META[role ?? 'member'] ?? ROLE_META.member;
+}
+
+export default function FilesScreen() {
+  const router = useRouter();
+  const { activeTeam } = useTeamStore();
+  const { user } = useAuthStore();
+
+  // Browsing state — null = home, populated = file browser open
+  const [browsingFolder, setBrowsingFolder] = useState<{
+    id: string;
+    name: string;
+    canDelete: boolean;
+    canUpload: boolean;
+  } | null>(null);
+
+  // Upload-only sheet
+  const [uploadOnlyFolder, setUploadOnlyFolder] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  // Connect modal
+  const [connectModal, setConnectModal] = useState<{
+    type: 'team' | 'office';
+    role: string;
+  } | null>(null);
+
+  const [connecting, setConnecting] = useState(false);
+  const utils = trpc.useUtils();
+
+  const membersQuery = trpc.teams.getMembers.useQuery(
+    { teamId: activeTeam?.id ?? 0 },
+    { enabled: !!activeTeam?.id },
+  );
+  const membersList: any[] = (membersQuery.data as any[]) ?? [];
+
+  const currentMember = membersList.find(
+    m => (m.member?.email ?? m.email) === user?.email,
+  );
+  const myMemberId: number | null =
+    currentMember?.member?.id ?? currentMember?.id ?? null;
+  const myOfficeRole: string | null = currentMember?.officeRole ?? null;
+  const isProjectManager = myOfficeRole === 'project_manager';
+
+  const driveQuery = trpc.googleDrive.getAllDrives.useQuery(
+    { teamId: activeTeam?.id ?? 0 },
+    { enabled: !!activeTeam?.id },
+  );
+  const connections: any[] = (driveQuery.data as any[]) ?? [];
+
+  const teamConn = connections.find(c => c.connectionType === 'team');
+  const memberConnections: Record<string, any> = {};
+  for (const conn of connections) {
+    if (conn.connectionType === 'office' && conn.officeRole) {
+      memberConnections[conn.officeRole] = conn;
+    }
+  }
+
+  const connectTeamMutation = trpc.googleDrive.connectTeam.useMutation({
+    onSuccess: () => {
+      utils.googleDrive.getAllDrives.invalidate();
+      setConnectModal(null);
+      setConnecting(false);
+    },
+    onError: (err: any) => { Alert.alert('Error', err.message); setConnecting(false); },
+  });
+
+  const connectOfficeMutation = trpc.googleDrive.connectOffice.useMutation({
+    onSuccess: () => {
+      utils.googleDrive.getAllDrives.invalidate();
+      setConnectModal(null);
+      setConnecting(false);
+    },
+    onError: (err: any) => { Alert.alert('Error', err.message); setConnecting(false); },
+  });
+
+  const handleConnect = (url: string, name: string) => {
+    if (!connectModal || !activeTeam?.id || !myMemberId) return;
+    setConnecting(true);
+    if (connectModal.type === 'team') {
+      connectTeamMutation.mutate({ teamId: activeTeam.id, driveUrl: url, driveName: name || 'Team Drive' });
+    } else {
+      connectOfficeMutation.mutate({ teamId: activeTeam.id, officeRole: connectModal.role, driveUrl: url, driveName: name || `${connectModal.role} Drive` });
+    }
+  };
+
+  // If browsing a folder, show the full-screen file browser
+  if (browsingFolder) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0a0f1e' }} edges={['top', 'bottom']}>
+        <FileBrowser
+          rootFolderId={browsingFolder.id}
+          rootName={browsingFolder.name}
+          teamId={activeTeam?.id ?? 0}
+          canDelete={browsingFolder.canDelete}
+          canUpload={browsingFolder.canUpload}
+          onClose={() => setBrowsingFolder(null)}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0a0f1e' }}>
+      <ScrollView
         refreshControl={
           <RefreshControl
-            refreshing={filesQuery.isFetching}
-            onRefresh={() => filesQuery.refetch()}
+            refreshing={driveQuery.isFetching || membersQuery.isFetching}
+            onRefresh={() => { driveQuery.refetch(); membersQuery.refetch(); }}
             tintColor="#0ea5e9"
           />
         }
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
-        ListEmptyComponent={
-          <EmptyState
-            title="No files yet"
-            description="Upload your first file above."
-            icon="folder-open-outline"
-            iconColor="#38bdf8"
-          />
-        }
-        renderItem={({ item }) => {
-          const { icon: fIcon, color: fColor } = fileIcon(item.mimeType);
-          return (
-            <View
-              className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-3 border border-slate-200 dark:border-slate-700 flex-row items-center"
-              style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 60 }}
+      >
+        {/* Header */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center' }}
             >
-              {/* File icon */}
-              <View
-                className="w-12 h-12 rounded-2xl items-center justify-center mr-3 flex-shrink-0"
-                style={{ backgroundColor: fColor + '1a' }}
-              >
-                <Ionicons name={fIcon} size={22} color={fColor} />
-              </View>
-
-              {/* Info */}
-              <View className="flex-1 min-w-0">
-                <Text className="text-slate-900 dark:text-white font-semibold text-sm" numberOfLines={1}>
-                  {item.name}
+              <Ionicons name="arrow-back" size={18} color="#64748b" />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#f1f5f9', fontSize: 24, fontWeight: '800' }}>Files</Text>
+              {activeTeam && (
+                <Text style={{ color: '#475569', fontSize: 12, marginTop: 1 }}>
+                  {activeTeam.name} · Google Drive
                 </Text>
-                <View className="flex-row gap-2 mt-1 items-center">
-                  {item.size != null && (
-                    <Text className="text-slate-400 dark:text-slate-500 text-xs">{formatBytes(item.size)}</Text>
-                  )}
-                  {item.size != null && item.createdAt && (
-                    <Text className="text-slate-300 dark:text-slate-600 text-xs">·</Text>
-                  )}
-                  {item.createdAt && (
-                    <Text className="text-slate-400 dark:text-slate-500 text-xs">
-                      {format(new Date(item.createdAt), 'MMM d')}
-                    </Text>
-                  )}
-                </View>
-                {item.tags?.length > 0 && (
-                  <View className="flex-row gap-1 mt-1.5 flex-wrap">
-                    {item.tags.slice(0, 3).map((tag: string) => (
-                      <View key={tag} className="bg-slate-100 dark:bg-slate-700 rounded-lg px-2 py-0.5">
-                        <Text className="text-slate-500 dark:text-slate-400 text-xs">{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              {/* Actions */}
-              <View className="flex-row gap-3 ml-2">
-                {item.url && (
-                  <TouchableOpacity
-                    onPress={() => Linking.openURL(item.url)}
-                    className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-900/30 items-center justify-center"
-                  >
-                    <Ionicons name="open-outline" size={16} color="#0ea5e9" />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => handleDelete(item.id, item.name)}
-                  className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 items-center justify-center"
-                >
-                  <Ionicons name="trash-outline" size={16} color="#f87171" />
-                </TouchableOpacity>
-              </View>
+              )}
             </View>
-          );
-        }}
-      />
+            {(isProjectManager || !teamConn) && (
+              <TouchableOpacity
+                onPress={() => setConnectModal({ type: 'team', role: '' })}
+                style={{
+                  backgroundColor: '#0ea5e9', borderRadius: 12,
+                  paddingHorizontal: 14, paddingVertical: 8,
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                }}
+              >
+                <Ionicons name="link-outline" size={15} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                  {teamConn ? 'Re-link' : 'Connect'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        <View style={{ paddingHorizontal: 20 }}>
+          {/* ── Team Shared Folder ── */}
+          <View style={{ marginBottom: 12, marginTop: 4 }}>
+            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+              Team Shared
+            </Text>
+            <Text style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
+              All members can view, upload & download
+            </Text>
+          </View>
+
+          <FolderCard
+            title="Team Shared Folder"
+            subtitle="Workspace for everyone"
+            driveUrl={teamConn?.driveUrl}
+            icon="folder-open-outline"
+            color="#38bdf8"
+            badge="ALL MEMBERS"
+            canBrowse
+            onPress={() => {
+              const folderId = teamConn?.driveUrl ? extractFolderId(teamConn.driveUrl) : null;
+              if (folderId) {
+                setBrowsingFolder({
+                  id: folderId,
+                  name: teamConn?.driveName ?? 'Team Shared Folder',
+                  canDelete: isProjectManager,
+                  canUpload: true,
+                });
+              }
+            }}
+            onConnect={() => setConnectModal({ type: 'team', role: '' })}
+          />
+
+          {/* ── Member Folders ── */}
+          <View style={{ marginBottom: 12, marginTop: 12 }}>
+            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+              Member Folders
+            </Text>
+            <Text style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
+              Your folder: full access · Others: upload only
+            </Text>
+          </View>
+
+          {membersQuery.isLoading ? (
+            <View style={{ alignItems: 'center', paddingVertical: 24 }}>
+              <ActivityIndicator color="#38bdf8" />
+            </View>
+          ) : (
+            membersList.map((m: any) => {
+              const member = m.member ?? m;
+              const role: string | null = m.officeRole ?? null;
+              const isMe = member.id === myMemberId;
+              const roleMeta = getRoleMeta(role);
+              const conn = role ? memberConnections[role] : null;
+              const folderId = conn?.driveUrl ? extractFolderId(conn.driveUrl) : null;
+
+              // Permission logic
+              const canBrowseThis = isMe || isProjectManager;
+              const canDeleteThis = isMe || isProjectManager;
+              const canUploadThis = true; // everyone can upload
+
+              return (
+                <FolderCard
+                  key={member.id}
+                  title={member.name ?? 'Member'}
+                  subtitle={`${roleMeta.label}`}
+                  driveUrl={conn?.driveUrl}
+                  icon={isMe ? 'person-circle-outline' : roleMeta.icon}
+                  color={isMe ? '#34d399' : roleMeta.color}
+                  badge={isMe ? 'YOU' : undefined}
+                  canBrowse={canBrowseThis}
+                  onPress={() => {
+                    if (folderId) {
+                      if (canBrowseThis) {
+                        setBrowsingFolder({
+                          id: folderId,
+                          name: member.name ?? 'Member Folder',
+                          canDelete: canDeleteThis,
+                          canUpload: canUploadThis,
+                        });
+                      } else {
+                        setUploadOnlyFolder({ id: folderId, name: member.name ?? 'Member' });
+                      }
+                    }
+                  }}
+                  onConnect={(isMe || isProjectManager)
+                    ? () => setConnectModal({ type: 'office', role: role ?? '' })
+                    : undefined}
+                />
+              );
+            })
+          )}
+
+          {/* Access info */}
+          <View style={{
+            marginTop: 8, backgroundColor: '#0f172a', borderRadius: 16,
+            padding: 16, borderWidth: 1, borderColor: '#1e293b',
+          }}>
+            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>
+              Access Rules
+            </Text>
+            {[
+              { icon: 'folder-open-outline' as IonIconName, color: '#38bdf8', label: 'Team Folder', desc: 'View, upload & download for all members' },
+              { icon: 'person-circle-outline' as IonIconName, color: '#34d399', label: 'Your Folder', desc: 'Full access: browse, upload, download, delete' },
+              { icon: 'people-outline' as IonIconName, color: '#64748b', label: "Others' Folders", desc: 'Upload only — cannot view contents' },
+              { icon: 'briefcase-outline' as IonIconName, color: '#fbbf24', label: 'Project Manager', desc: 'Full access to all folders' },
+            ].map(rule => (
+              <View key={rule.label} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                <View style={{
+                  width: 28, height: 28, borderRadius: 8, backgroundColor: rule.color + '18',
+                  alignItems: 'center', justifyContent: 'center', marginTop: 1,
+                }}>
+                  <Ionicons name={rule.icon} size={14} color={rule.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '600' }}>{rule.label}</Text>
+                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 1, lineHeight: 16 }}>{rule.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Upload-only sheet for others' folders */}
+      {uploadOnlyFolder && (
+        <UploadOnlySheet
+          folderId={uploadOnlyFolder.id}
+          folderName={uploadOnlyFolder.name}
+          teamId={activeTeam?.id ?? 0}
+          visible
+          onClose={() => setUploadOnlyFolder(null)}
+        />
+      )}
+
+      {/* Connect Drive modal */}
+      {connectModal && (
+        <ConnectDriveModal
+          visible
+          connectType={connectModal.type}
+          connectRole={connectModal.role}
+          onClose={() => setConnectModal(null)}
+          onConnect={handleConnect}
+        />
+      )}
     </SafeAreaView>
   );
 }
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
+const labelSt = {
+  color: '#475569',
+  fontSize: 11,
+  fontWeight: '700' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: 0.8,
+  marginBottom: 8,
+};
+
+const inputSt = {
+  backgroundColor: '#0a0f1e',
+  borderWidth: 1,
+  borderColor: '#1e293b',
+  borderRadius: 14,
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  color: '#f1f5f9',
+  fontSize: 14,
+  marginBottom: 16,
+};
