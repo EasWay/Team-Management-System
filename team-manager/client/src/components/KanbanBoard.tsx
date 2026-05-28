@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { useSocket, useSocketEvent } from "@/contexts/SocketContext";
 import { MoreHorizontal, Users } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 
 
@@ -48,6 +49,8 @@ export function KanbanBoard({
   const pendingOperationsRef = useRef<Map<number, AbortController>>(new Map());
   const lastUpdateTimestampRef = useRef<Map<number, number>>(new Map());
 
+  const { user } = useAuth();
+
   const { data: tasksData, isLoading } = trpc.tasks.list.useQuery({
     teamId,
     assignedTo: assigneeFilter,
@@ -73,6 +76,11 @@ export function KanbanBoard({
       pictureFileName?: string | null;
     };
   }> | undefined;
+
+  // Current user's team member ID (used for access control)
+  const currentMemberId = members?.find(
+    (m) => m.member?.email === user?.email
+  )?.memberId;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -237,6 +245,10 @@ export function KanbanBoard({
 
   const handleDragStart = (event: DragStartEvent) => {
     const task = filteredTasks?.find((t) => t.id === event.active.id);
+    // Block drag start if the current user is not the assignee
+    if (task && task.assignedTo && task.assignedTo !== currentMemberId) {
+      return;
+    }
     setActiveTask(task || null);
   };
 
@@ -247,6 +259,13 @@ export function KanbanBoard({
     if (!over) return;
 
     const taskId = active.id as number;
+
+    // Block status changes for tasks not assigned to the current user
+    const draggedTask = filteredTasks?.find((t) => t.id === taskId);
+    if (draggedTask && draggedTask.assignedTo && draggedTask.assignedTo !== currentMemberId) {
+      toast.error("You can only move tasks assigned to you");
+      return;
+    }
     const overId = over.id;
 
     let newStatus: Task["status"] | null = null;
@@ -320,7 +339,7 @@ export function KanbanBoard({
   const getAssigneeName = (assignedTo: number | null) => {
     if (!assignedTo) return undefined;
     const member = members?.find((m) => m.memberId === assignedTo);
-    return member?.member?.name || member?.member?.email || `User ${assignedTo}`;
+    return member?.member?.name || "Unknown Member";
   };
 
   const getAssigneePicture = (assignedTo: number | null) => {
@@ -396,6 +415,7 @@ export function KanbanBoard({
                     {columnTasks.map((task) => {
                       const isConflicting = conflictingTasks.has(task.id);
                       const isOptimistic = optimisticUpdates.has(task.id);
+                      const isReadOnly = !!task.assignedTo && task.assignedTo !== currentMemberId;
 
                       return (
                         <div key={task.id} className="relative group">
@@ -407,6 +427,11 @@ export function KanbanBoard({
                           {isOptimistic && (
                             <div className="absolute -top-2 -right-2 z-10 px-2 py-0.5 bg-primary/70 text-white text-[10px] rounded">
                               Saving
+                            </div>
+                          )}
+                          {isReadOnly && (
+                            <div className="absolute top-2 right-2 z-10 px-1.5 py-0.5 bg-foreground/10 text-foreground/50 text-[9px] rounded font-medium pointer-events-none">
+                              view only
                             </div>
                           )}
                           <TaskCard

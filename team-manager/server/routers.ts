@@ -1,7 +1,7 @@
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { authService } from "./_core/auth";
-import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead } from "./db";
+import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, getMemberRoleInTeam, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, reopenTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead } from "./db";
 import { parsePRDText } from "./_core/prdParser";
 import { processIdeation } from "./_core/ideationEngine";
 import { evaluateProject, quickEvaluate } from "./_core/projectEvaluator";
@@ -590,13 +590,15 @@ export const appRouter = router({
         assignedTo: z.number().optional(),
         createdBy: z.number().optional(),
         priority: z.string().optional(),
-        /** Pass the current member's ID to see only their tasks (assigned+created). PM sees all. */
-        viewerMemberId: z.number().optional(),
       }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         try {
+          if (!ctx.user?.id) throw new Error('User not authenticated');
           const { teamId, ...filters } = input;
-          return await getTasksByTeam(teamId, filters);
+          const role = await getMemberRoleInTeam(teamId, ctx.user.id);
+          // Non-admin/team_lead members only see tasks assigned to or created by them
+          const viewerMemberId = (role === 'admin' || role === 'team_lead') ? undefined : ctx.user.id;
+          return await getTasksByTeam(teamId, { ...filters, viewerMemberId });
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get tasks');
         }
@@ -685,6 +687,20 @@ export const appRouter = router({
           return await getTaskHistory(input.id);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get task history');
+        }
+      }),
+
+    reopen: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        reason: z.string().min(1, 'A reason is required to reopen a task'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) throw new Error('User not authenticated');
+          return await reopenTask(input.id, input.reason, ctx.user.id);
+        } catch (error) {
+          handleDatabaseError(error);
         }
       }),
   }),

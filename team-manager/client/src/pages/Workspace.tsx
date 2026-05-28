@@ -832,17 +832,19 @@ export default function Workspace() {
             <OfficeChat officeRole={selectedRole} teamId={selectedTeamId} />
 
             {/* Team Google Drive */}
-            <GoogleDriveConnect 
-              teamId={selectedTeamId} 
+            <GoogleDriveConnect
+              teamId={selectedTeamId}
               connectionType="team"
+              isOwner={userRole === 'admin' || userRole === 'team_lead'}
             />
 
             {/* Office Google Drive */}
             {selectedRole && (
-              <GoogleDriveConnect 
-                teamId={selectedTeamId} 
+              <GoogleDriveConnect
+                teamId={selectedTeamId}
                 officeRole={selectedRole}
                 connectionType="office"
+                isOwner={selectedRole === userOfficeRole || userRole === 'admin' || userRole === 'team_lead'}
               />
             )}
 
@@ -991,9 +993,6 @@ export default function Workspace() {
                   {accessError}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                💡 Hint: The office code is the office number (e.g., Office #202 = code "202")
-              </p>
             </div>
             
             <div className="flex gap-2">

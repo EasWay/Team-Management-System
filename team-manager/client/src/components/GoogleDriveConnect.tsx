@@ -15,28 +15,26 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { 
-  Cloud, 
-  Link as LinkIcon, 
-  ExternalLink, 
-  Loader2, 
+import {
+  Cloud,
+  Link as LinkIcon,
+  ExternalLink,
+  Loader2,
   CheckCircle2,
   XCircle,
   Folder,
-  FileText,
-  Image as ImageIcon,
-  Video,
-  File,
-  Trash2,
+  Upload,
 } from "lucide-react";
 
 interface GoogleDriveConnectProps {
   teamId: number;
   officeRole?: string;
   connectionType: 'team' | 'office';
+  /** True when the current user owns this drive (can connect/disconnect/delete) */
+  isOwner?: boolean;
 }
 
-export function GoogleDriveConnect({ teamId, officeRole, connectionType }: GoogleDriveConnectProps) {
+export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner = true }: GoogleDriveConnectProps) {
   const [driveUrl, setDriveUrl] = useState("");
   const [driveName, setDriveName] = useState("");
   const [showConnectDialog, setShowConnectDialog] = useState(false);
@@ -101,7 +99,7 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType }: Googl
 
   const handleDisconnect = () => {
     if (!connection?.id) return;
-    
+
     if (confirm("Are you sure you want to disconnect this Google Drive?")) {
       disconnectMutation.mutate({ connectionId: connection.id });
     }
@@ -123,7 +121,7 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType }: Googl
           <div className="flex items-center gap-2">
             <Cloud className="h-5 w-5 text-blue-600" />
             <CardTitle className="text-base">
-              {connectionType === 'team' ? '☁️ Team Google Drive' : '☁️ My Office Drive'}
+              {connectionType === 'team' ? '☁️ Team Google Drive' : isOwner ? '☁️ My Office Drive' : '☁️ Office Drive'}
             </CardTitle>
           </div>
           {isConnected && (
@@ -134,9 +132,9 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType }: Googl
           )}
         </div>
         <CardDescription>
-          {connectionType === 'team' 
-            ? 'Shared drive for the entire team' 
-            : 'Your personal office drive'}
+          {connectionType === 'team'
+            ? 'Shared drive for the entire team'
+            : isOwner ? 'Your personal office drive' : 'Add files to this office drive'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -155,9 +153,9 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType }: Googl
                   </p>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -168,28 +166,33 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType }: Googl
                   <ExternalLink className="h-3 w-3 mr-2" />
                   Open Drive
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDisconnect}
-                  disabled={isLoading}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <>
-                      <XCircle className="h-3 w-3 mr-2" />
-                      Disconnect
-                    </>
-                  )}
-                </Button>
+                {/* Only the owner can disconnect */}
+                {isOwner && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDisconnect}
+                    disabled={isLoading}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3 mr-2" />
+                        Disconnect
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
 
             {/* Quick Info */}
             <div className="text-xs text-muted-foreground bg-blue-50 p-3 rounded-lg">
-              💡 <strong>Tip:</strong> Files in this drive are accessible to {connectionType === 'team' ? 'all team members' : 'you in this office'}
+              {isOwner
+                ? `💡 Files in this drive are accessible to ${connectionType === 'team' ? 'all team members' : 'you in this office'}`
+                : '💡 You can add files to this drive. Only the owner can remove or modify files.'}
             </div>
           </>
         ) : (
@@ -197,82 +200,87 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType }: Googl
             {/* Not Connected State */}
             <div className="flex flex-col items-center justify-center h-32 text-center bg-white/50 rounded-lg border-2 border-dashed">
               <Cloud className="h-12 w-12 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground mb-3">No drive connected</p>
-              
-              <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    <LinkIcon className="h-3 w-3 mr-2" />
-                    Connect Google Drive
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {connectionType === 'team' ? '☁️ Connect Team Google Drive' : '☁️ Connect Office Google Drive'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {connectionType === 'team' 
-                        ? 'Connect your team\'s shared Google Drive for easy file access'
-                        : 'Connect your personal Google Drive for this office'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="driveUrl">Google Drive URL *</Label>
-                      <Input
-                        id="driveUrl"
-                        type="url"
-                        placeholder="https://drive.google.com/drive/folders/..."
-                        value={driveUrl}
-                        onChange={(e) => setDriveUrl(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        📋 Copy the URL from your Google Drive folder
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="driveName">Drive Name (Optional)</Label>
-                      <Input
-                        id="driveName"
-                        placeholder={connectionType === 'team' ? 'Team Shared Drive' : 'My Office Drive'}
-                        value={driveName}
-                        onChange={(e) => setDriveName(e.target.value)}
-                      />
-                    </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                {isOwner ? 'No drive connected' : 'No drive connected by the owner yet'}
+              </p>
 
-                    <div className="bg-blue-50 p-3 rounded-lg text-xs space-y-2">
-                      <p className="font-semibold text-blue-900">📖 How to get your Google Drive URL:</p>
-                      <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                        <li>Open Google Drive in your browser</li>
-                        <li>Navigate to the folder you want to connect</li>
-                        <li>Copy the URL from your browser's address bar</li>
-                        <li>Paste it above</li>
-                      </ol>
-                    </div>
-                    
-                    <Button
-                      onClick={handleConnect}
-                      disabled={isLoading || !driveUrl}
-                      className="w-full"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <LinkIcon className="h-4 w-4 mr-2" />
-                          Connect Drive
-                        </>
-                      )}
+              {/* Only owners can connect a drive */}
+              {isOwner && (
+                <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <LinkIcon className="h-3 w-3 mr-2" />
+                      Connect Google Drive
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {connectionType === 'team' ? '☁️ Connect Team Google Drive' : '☁️ Connect Office Google Drive'}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {connectionType === 'team'
+                          ? 'Connect your team\'s shared Google Drive for easy file access'
+                          : 'Connect your personal Google Drive for this office'}
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="driveUrl">Google Drive URL *</Label>
+                        <Input
+                          id="driveUrl"
+                          type="url"
+                          placeholder="https://drive.google.com/drive/folders/..."
+                          value={driveUrl}
+                          onChange={(e) => setDriveUrl(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          📋 Copy the URL from your Google Drive folder
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="driveName">Drive Name (Optional)</Label>
+                        <Input
+                          id="driveName"
+                          placeholder={connectionType === 'team' ? 'Team Shared Drive' : 'My Office Drive'}
+                          value={driveName}
+                          onChange={(e) => setDriveName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="bg-blue-50 p-3 rounded-lg text-xs space-y-2">
+                        <p className="font-semibold text-blue-900">📖 How to get your Google Drive URL:</p>
+                        <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                          <li>Open Google Drive in your browser</li>
+                          <li>Navigate to the folder you want to connect</li>
+                          <li>Copy the URL from your browser's address bar</li>
+                          <li>Paste it above</li>
+                        </ol>
+                      </div>
+
+                      <Button
+                        onClick={handleConnect}
+                        disabled={isLoading || !driveUrl}
+                        className="w-full"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Connecting...
+                          </>
+                        ) : (
+                          <>
+                            <LinkIcon className="h-4 w-4 mr-2" />
+                            Connect Drive
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </>
         )}

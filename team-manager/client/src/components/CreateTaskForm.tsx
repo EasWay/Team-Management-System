@@ -220,7 +220,7 @@ export function CreateTaskForm({
                 <SelectContent>
                   {members?.map((member) => (
                     <SelectItem key={member.memberId} value={String(member.memberId)}>
-                      {member.member?.name || member.member?.email || `User ${member.memberId}`}
+                      {member.member?.name || "Unknown Member"}
                     </SelectItem>
                   ))}
                 </SelectContent>

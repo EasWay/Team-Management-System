@@ -25,7 +25,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CalendarIcon, Github, Trash2 } from "lucide-react";
+import { CalendarIcon, Github, Trash2, RotateCcw } from "lucide-react";
 import { TaskHistoryTimeline } from "./TaskHistoryTimeline";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Task } from "./TaskCard";
@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 
 
@@ -64,15 +65,28 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showReopenDialog, setShowReopenDialog] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
   const [editedTask, setEditedTask] = useState(task);
 
+  const { user } = useAuth();
   const updateMutation = trpc.tasks.update.useMutation();
   const deleteMutation = trpc.tasks.delete.useMutation();
+  const reopenMutation = trpc.tasks.reopen.useMutation();
   const { data: members } = trpc.teams.getMembers.useQuery(
     { teamId: task.teamId as number },
     { enabled: !!task.teamId }
   );
   const utils = trpc.useUtils();
+
+  // Determine the current user's memberId from the members list
+  const currentMemberId = members?.find(
+    (m: any) => m.member?.email === user?.email
+  )?.memberId;
+
+  const isAssignee = !!currentMemberId && currentMemberId === task.assignedTo;
+  const isCreator = !!currentMemberId && currentMemberId === (task as any).createdBy;
+  const canReopen = isCreator && task.status === "done";
 
   const handleSave = async () => {
     try {
@@ -107,6 +121,25 @@ export function TaskDetailModal({
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete task";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!reopenReason.trim()) {
+      toast.error("Please provide a reason for reopening this task");
+      return;
+    }
+    try {
+      await reopenMutation.mutateAsync({ id: task.id, reason: reopenReason });
+      toast.success("Task reopened successfully");
+      setShowReopenDialog(false);
+      setReopenReason("");
+      utils.tasks.list.invalidate();
+      onTaskUpdated?.();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to reopen task";
       toast.error(errorMessage);
     }
   };
@@ -244,12 +277,12 @@ export function TaskDetailModal({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {members?.map((member) => (
+                      {members?.map((member: any) => (
                         <SelectItem
                           key={member.memberId}
                           value={String(member.memberId)}
                         >
-                          {member.member?.name || member.member?.email || `User ${member.memberId}`}
+                          {member.member?.name || "Unknown Member"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -257,8 +290,8 @@ export function TaskDetailModal({
                 ) : (
                   <p className="text-sm text-foreground/80">
                     {task.assignedTo
-                      ? members?.find((m) => m.memberId === task.assignedTo)?.member
-                        ?.name || `User ${task.assignedTo}`
+                      ? members?.find((m: any) => m.memberId === task.assignedTo)?.member
+                        ?.name || "Unknown Member"
                       : "Unassigned"}
                   </p>
                 )}
@@ -354,15 +387,29 @@ export function TaskDetailModal({
                   </>
                 ) : (
                   <>
-                    <Button onClick={() => setIsEditing(true)} className="flex-1">
-                      Edit Task
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {isAssignee && (
+                      <Button onClick={() => setIsEditing(true)} className="flex-1">
+                        Edit Task
+                      </Button>
+                    )}
+                    {canReopen && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowReopenDialog(true)}
+                        className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Reopen Task
+                      </Button>
+                    )}
+                    {isAssignee && (
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowDeleteDialog(true)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -372,6 +419,44 @@ export function TaskDetailModal({
               <TaskHistoryTimeline taskId={task.id} />
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reopen Task Dialog */}
+      <Dialog open={showReopenDialog} onOpenChange={setShowReopenDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reopen Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Please provide a reason for reopening this task. The assignee will see this note.
+            </p>
+            <Textarea
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+              placeholder="Describe what needs to be changed or why you are reopening this task..."
+              rows={4}
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleReopen}
+                disabled={reopenMutation.isPending || !reopenReason.trim()}
+                className="flex-1"
+              >
+                {reopenMutation.isPending ? "Reopening..." : "Reopen Task"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReopenDialog(false);
+                  setReopenReason("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

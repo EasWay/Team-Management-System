@@ -14,10 +14,11 @@ export const TEAM_PERMISSIONS: Record<string, string[]> = {
   admin: ['create_team', 'delete_team', 'update_team', 'invite_member', 'remove_member', 'change_role', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document'],
   team_lead: ['update_team', 'invite_member', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document'],
   developer: ['create_task', 'update_task'],
+  member: ['create_task', 'update_task'],
   viewer: [],
 };
 
-export type TeamRole = 'admin' | 'team_lead' | 'developer' | 'viewer';
+export type TeamRole = 'admin' | 'team_lead' | 'developer' | 'member' | 'viewer';
 
 export function hasPermission(role: TeamRole, permission: string): boolean {
   const permissions = TEAM_PERMISSIONS[role];
@@ -1175,6 +1176,31 @@ export async function checkTeamPermission(
   return hasPermission(membership.role as TeamRole, permission);
 }
 
+/**
+ * Get a user's role in a team (null if not a member)
+ */
+export async function getMemberRoleInTeam(
+  teamId: number,
+  userId: number
+): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [membership] = await db
+    .select({ role: teamMembersCollaborative.role })
+    .from(teamMembersCollaborative)
+    .where(
+      and(
+        eq(teamMembersCollaborative.teamId, teamId),
+        eq(teamMembersCollaborative.memberId, userId),
+        eq(teamMembersCollaborative.status, 'active')
+      )
+    )
+    .limit(1);
+
+  return membership?.role ?? null;
+}
+
 // Task Management Operations
 
 /**
@@ -1404,6 +1430,13 @@ export async function updateTask(
       throw new ValidationError('Insufficient permissions to update task');
     }
 
+    // If a status change is requested, only the assignee is allowed
+    if (updates.status !== undefined && updates.status !== existingTask.status) {
+      if (existingTask.assignedTo && existingTask.assignedTo !== updatedBy) {
+        throw new ValidationError('Only the task assignee can change the task status');
+      }
+    }
+
     // Validate assignee if being updated
     if (updates.assignedTo !== undefined && updates.assignedTo !== null) {
       const [assignee] = await db
@@ -1573,6 +1606,11 @@ export async function moveTask(
       throw new ValidationError('Insufficient permissions to move task');
     }
 
+    // Only the task assignee can move (change status of) a task
+    if (existingTask.assignedTo && existingTask.assignedTo !== movedBy) {
+      throw new ValidationError('Only the task assignee can change the task status');
+    }
+
     // Update the task status
     const [updated] = await db
       .update(tasks)
@@ -1600,6 +1638,64 @@ export async function moveTask(
 
     // Broadcast task moved event to team members (real-time sync)
     broadcastTaskMoved(existingTask.teamId, taskId, newStatus, 0);
+
+    return updated;
+  });
+}
+
+/**
+ * Reopen a completed task (only by task creator, requires a reason)
+ */
+export async function reopenTask(
+  taskId: number,
+  reason: string,
+  reopenedBy: number
+): Promise<Task> {
+  return await withTransaction(async (db) => {
+    const [existingTask] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+
+    if (!existingTask) {
+      throw new NotFoundError(`Task with ID ${taskId} does not exist`);
+    }
+
+    if (!existingTask.teamId) {
+      throw new ValidationError('Task has no associated team');
+    }
+
+    if (existingTask.status !== 'done') {
+      throw new ValidationError('Only completed tasks can be reopened');
+    }
+
+    if (existingTask.createdBy !== reopenedBy) {
+      throw new ValidationError('Only the task creator can reopen a completed task');
+    }
+
+    const [updated] = await db
+      .update(tasks)
+      .set({ status: 'todo', updatedAt: new Date() })
+      .where(eq(tasks.id, taskId))
+      .returning();
+
+    await db.insert(activities).values({
+      teamId: existingTask.teamId,
+      userId: reopenedBy,
+      type: 'task_reopened',
+      entityId: taskId,
+      entityType: 'task',
+      description: `Reopened task: ${existingTask.title}`,
+      metadata: {
+        taskTitle: existingTask.title,
+        previousStatus: 'done',
+        newStatus: 'todo',
+        reason,
+      },
+    });
+
+    broadcastTaskUpdated(existingTask.teamId, updated);
 
     return updated;
   });
