@@ -147,6 +147,20 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
     outputRange: [0, 0.8, 1],
   });
 
+  const statusColor =
+    toast.status === 'success'
+      ? '#10b981'
+      : toast.status === 'error'
+      ? '#ef4444'
+      : '#38bdf8';
+
+  const iconName =
+    toast.status === 'success'
+      ? 'checkmark-circle'
+      : toast.status === 'error'
+      ? 'alert-circle'
+      : 'information-circle';
+
   return (
     <Animated.View
       style={[
@@ -158,9 +172,10 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
       ]}
     >
       {/* Top Main Card */}
-      <View style={styles.cardMain}>
+      <View style={[styles.cardMain, { borderColor: statusColor + '30' }]}>
+        <Ionicons name={iconName} size={15} color={statusColor} style={{ marginRight: 8, marginTop: 1 }} />
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>{toast.title}</Text>
+          <Text style={[styles.cardTitle, { color: statusColor }]}>{toast.title}</Text>
           {toast.message && <Text style={styles.cardSubtitle}>{toast.message}</Text>}
         </View>
         {toast.action ? (
@@ -176,7 +191,7 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={handleClose} style={styles.cardCloseBtn}>
-            <Ionicons name="close" size={16} color="#888" />
+            <Ionicons name="close" size={14} color="#666" />
           </TouchableOpacity>
         )}
       </View>
@@ -420,9 +435,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#121212',
     borderWidth: 1,
     borderColor: '#262626',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -435,25 +450,25 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 10,
   },
   cardTitle: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
-    lineHeight: 18,
+    lineHeight: 15,
   },
   cardSubtitle: {
     color: '#a3a3a3',
-    fontSize: 12,
-    marginTop: 3,
-    lineHeight: 16,
+    fontSize: 10.5,
+    marginTop: 2,
+    lineHeight: 13,
   },
   cardActionBtn: {
     backgroundColor: '#ffffff',
-    borderRadius: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -465,10 +480,10 @@ const styles = StyleSheet.create({
   cardActionText: {
     color: '#121212',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 10,
   },
   cardCloseBtn: {
-    padding: 4,
+    padding: 3,
   },
 
   // Minimal Text-only style
