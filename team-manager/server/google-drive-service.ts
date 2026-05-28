@@ -124,8 +124,8 @@ export async function uploadDriveFile(data: {
 }
 
 /** Permanently delete a file from Google Drive. */
-export async function deleteDriveFile(fileId: string): Promise<void> {
-  const drive = getDriveClient();
+export async function deleteDriveFile(fileId: string, userAccessToken?: string): Promise<void> {
+  const drive = userAccessToken ? getDriveClientWithToken(userAccessToken) : getDriveClient();
   await drive.files.delete({ fileId, supportsAllDrives: true });
 }
 

@@ -4063,7 +4063,9 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user?.id) throw new Error('Not authenticated');
         const { deleteDriveFile } = await import('./google-drive-service');
-        await deleteDriveFile(input.fileId);
+        const { getValidOAuthToken } = await import('./oauth-token-service');
+        const googleToken = await getValidOAuthToken(ctx.user.id, 'google');
+        await deleteDriveFile(input.fileId, googleToken?.accessToken);
         return { success: true };
       }),
 
