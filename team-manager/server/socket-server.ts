@@ -80,6 +80,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
 
   // Connection event handler
   io.on('connection', (socket: AuthenticatedSocket) => {
+    const _io = io!;
     console.log(`[Socket.io] User connected: ${socket.name} (ID: ${socket.userId})`);
 
     // Auto-join personal room for direct messaging
@@ -148,7 +149,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     socket.on('ideationMessage', (data: {teamId: number, name: string, message: string, timestamp: string, userId: number}) => {
       const roomName = `doc:ideation-${data.teamId}`;
       // Broadcast to all users in the ideation room (including sender)
-      io.to(roomName).emit('ideationMessage', data);
+      _io.to(roomName).emit('ideationMessage', data);
       console.log(`[Socket.io] Broadcast ideation message to ${roomName}`);
     });
 
@@ -156,7 +157,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     socket.on('ideationClearChat', (data: {teamId: number}) => {
       const roomName = `doc:ideation-${data.teamId}`;
       // Broadcast to all users in the ideation room
-      io.to(roomName).emit('ideationChatCleared');
+      _io.to(roomName).emit('ideationChatCleared');
       console.log(`[Socket.io] Broadcast chat cleared to ${roomName}`);
     });
 
@@ -173,9 +174,9 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       });
       
       // Send current visitors list to the new joiner
-      io.in(roomName).allSockets().then((sockets) => {
+      _io.in(roomName).allSockets().then((sockets) => {
         const visitors = Array.from(sockets).map((socketId) => {
-          const s = io.sockets.sockets.get(socketId) as any;
+          const s = _io.sockets.sockets.get(socketId) as any;
           return { userId: s?.userId, userName: s?.name };
         }).filter(v => v.userId);
         
@@ -198,7 +199,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     // Handle office chat messages
     socket.on('officeMessage', (data: {teamId: number, officeRole: string, userId: number, userName: string, message: string, timestamp: string}) => {
       const roomName = `office:${data.teamId}:${data.officeRole}`;
-      io.to(roomName).emit('officeMessage', data);
+      _io.to(roomName).emit('officeMessage', data);
       console.log(`[Socket.io] Broadcast office message to ${roomName}`);
     });
 
@@ -231,8 +232,8 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
           data.fileName
         );
         // Deliver to both parties
-        io.to(`member:${data.toMemberId}`).emit('chatMessage', msg);
-        io.to(`member:${socket.userId}`).emit('chatMessage', msg);
+        _io.to(`member:${data.toMemberId}`).emit('chatMessage', msg);
+        _io.to(`member:${socket.userId}`).emit('chatMessage', msg);
 
         // In-app notification to recipient
         const db = await getDb();
@@ -261,12 +262,12 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     // Typing indicators
     socket.on('chat:typing', (data: { toMemberId: number }) => {
       if (!socket.userId) return;
-      io.to(`member:${data.toMemberId}`).emit('chat:typing', { fromMemberId: socket.userId });
+      _io.to(`member:${data.toMemberId}`).emit('chat:typing', { fromMemberId: socket.userId });
     });
 
     socket.on('chat:typing_stop', (data: { toMemberId: number }) => {
       if (!socket.userId) return;
-      io.to(`member:${data.toMemberId}`).emit('chat:typing_stop', { fromMemberId: socket.userId });
+      _io.to(`member:${data.toMemberId}`).emit('chat:typing_stop', { fromMemberId: socket.userId });
     });
 
     // Read receipts
@@ -275,7 +276,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       try {
         await markMessagesAsRead(data.fromMemberId, socket.userId, data.teamId);
         // Tell the original sender their messages were read
-        io.to(`member:${data.fromMemberId}`).emit('chat:read', { byMemberId: socket.userId });
+        _io.to(`member:${data.fromMemberId}`).emit('chat:read', { byMemberId: socket.userId });
       } catch (err) {
         console.error('[Socket.io] chat:read error:', err);
       }
