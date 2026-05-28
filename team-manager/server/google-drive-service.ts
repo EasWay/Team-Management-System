@@ -55,6 +55,17 @@ export async function listDriveFiles(folderId: string): Promise<DriveFile[]> {
   return (resp.data.files ?? []) as DriveFile[];
 }
 
+function getServiceAccountEmail(): string | null {
+  try {
+    const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (!raw) return null;
+    const creds = JSON.parse(raw);
+    return creds.client_email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Upload a base64-encoded file to a Google Drive folder. */
 export async function uploadDriveFile(data: {
   folderId: string;
@@ -74,11 +85,17 @@ export async function uploadDriveFile(data: {
     });
     return resp.data as DriveFile;
   } catch (err: any) {
-    if (err?.message?.includes("storageQuota") || err?.message?.includes("storage quota")) {
-      throw new Error(
-        "Upload failed: The connected Google Drive folder must be in a Shared Drive (not a personal Drive). " +
-        "Please reconnect using a Google Workspace Shared Drive folder."
-      );
+    const isPermissionOrQuotaError =
+      err?.message?.includes("storageQuota") ||
+      err?.message?.includes("storage quota") ||
+      err?.code === 403;
+
+    if (isPermissionOrQuotaError) {
+      const serviceEmail = getServiceAccountEmail();
+      const shareInstruction = serviceEmail
+        ? `Please share your Google Drive folder with: ${serviceEmail} (give it "Editor" access), then try again.`
+        : "Please share your Google Drive folder with the app's service account (Editor access), then try again.";
+      throw new Error(`Upload failed: The app does not have permission to upload to this folder. ${shareInstruction}`);
     }
     throw err;
   }

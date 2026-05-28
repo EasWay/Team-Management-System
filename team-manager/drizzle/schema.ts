@@ -1095,7 +1095,7 @@ export const notifications = pgTable("notifications", {
   actionLabel: text("action_label"),
   
   // Status
-  isRead: boolean("is_read").default(false),
+  isRead: boolean("read").default(false),
   readAt: timestamp("read_at"),
   
   // Delivery status
