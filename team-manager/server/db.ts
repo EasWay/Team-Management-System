@@ -2,10 +2,10 @@ import { eq, and, or, isNull, desc, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
-import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage } from "../drizzle/schema";
+import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage, notifications } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
-import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted } from './socket-server';
+import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted, broadcastToMember } from './socket-server';
 import { encrypt, decrypt, generateToken } from './crypto';
 import { GitHubService, parseGitHubUrl } from './github-service';
 
@@ -72,6 +72,45 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function sendNotification(params: {
+  userId: number;
+  teamId: number;
+  type: string;
+  title: string;
+  message: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  taskId?: number;
+  projectId?: number;
+  actionUrl?: string;
+  actionLabel?: string;
+}) {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const [notif] = await db
+      .insert(notifications)
+      .values({
+        userId: params.userId,
+        teamId: params.teamId,
+        type: params.type as any,
+        title: params.title,
+        message: params.message,
+        priority: (params.priority || 'medium') as any,
+        taskId: params.taskId ?? null,
+        projectId: params.projectId ?? null,
+        actionUrl: params.actionUrl ?? null,
+        actionLabel: params.actionLabel ?? null,
+        isRead: false,
+        sentInApp: true,
+      })
+      .returning();
+    broadcastToMember(params.userId, 'notification', notif);
+    return notif;
+  } catch (err) {
+    console.error('[Notification] Failed to send notification:', err);
+  }
 }
 
 // Transaction wrapper for error handling and rollback
@@ -1289,6 +1328,21 @@ export async function createTask(
     // Broadcast task created event to team members (real-time sync)
     broadcastTaskCreated(task.teamId, created);
 
+    // Notify assignee of new task assignment
+    if (created.assignedTo && created.assignedTo !== creatorId) {
+      await sendNotification({
+        userId: created.assignedTo,
+        teamId: task.teamId,
+        type: 'task_assignment',
+        title: 'New Task Assigned',
+        message: `You have been assigned: "${created.title}"`,
+        priority: (created.priority || 'medium') as any,
+        taskId: created.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+
     return created;
   });
 }
@@ -1499,6 +1553,35 @@ export async function updateTask(
     // Broadcast task updated event to team members (real-time sync)
     broadcastTaskUpdated(existingTask.teamId, updated);
 
+    // Notify assignee when task is updated by someone else
+    if (existingTask.assignedTo && existingTask.assignedTo !== updatedBy) {
+      await sendNotification({
+        userId: existingTask.assignedTo,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Updated',
+        message: `A task assigned to you was updated: "${existingTask.title}"`,
+        priority: 'low',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+    // Notify creator when assignee updates status
+    if (updates.status && existingTask.createdBy && existingTask.createdBy !== updatedBy) {
+      await sendNotification({
+        userId: existingTask.createdBy,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Status Changed',
+        message: `Task "${existingTask.title}" status changed to ${updates.status}`,
+        priority: 'low',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+
     return updated;
   });
 }
@@ -1639,6 +1722,21 @@ export async function moveTask(
     // Broadcast task moved event to team members (real-time sync)
     broadcastTaskMoved(existingTask.teamId, taskId, newStatus, 0);
 
+    // Notify creator when someone else moves the task
+    if (existingTask.createdBy && existingTask.createdBy !== movedBy) {
+      await sendNotification({
+        userId: existingTask.createdBy,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Moved',
+        message: `Task "${existingTask.title}" was moved to ${newStatus}`,
+        priority: 'low',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
+
     return updated;
   });
 }
@@ -1696,6 +1794,21 @@ export async function reopenTask(
     });
 
     broadcastTaskUpdated(existingTask.teamId, updated);
+
+    // Notify assignee that task was reopened
+    if (existingTask.assignedTo) {
+      await sendNotification({
+        userId: existingTask.assignedTo,
+        teamId: existingTask.teamId,
+        type: 'task_assignment',
+        title: 'Task Reopened',
+        message: `Task "${existingTask.title}" has been reopened. Reason: ${reason}`,
+        priority: 'medium',
+        taskId: existingTask.id,
+        actionUrl: `/tasks`,
+        actionLabel: 'View Task',
+      });
+    }
 
     return updated;
   });

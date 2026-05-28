@@ -287,6 +287,14 @@ export function broadcastActivityCreated(teamId: number, activity: any) {
 }
 
 /**
+ * Broadcast an event to a specific member's personal room
+ */
+export function broadcastToMember(userId: number, event: string, data: unknown) {
+  if (!io) return;
+  io.to(`member:${userId}`).emit(event, data);
+}
+
+/**
  * Cleanup function to close Redis connections
  */
 export async function closeSocketServer() {
