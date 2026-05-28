@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { registerPushToken, setupNotificationResponseListener } from '@/lib/notifications';
 import { getSocket } from '@/lib/socket';
+import { CustomAlertProvider } from '@/components/CustomAlert';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +55,7 @@ export default function RootLayout() {
               {/* OAuth deep-link callback — must be registered so expo-router doesn't 404 */}
               <Stack.Screen name="oauth-callback" />
             </Stack>
+            <CustomAlertProvider />
           </SafeAreaProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

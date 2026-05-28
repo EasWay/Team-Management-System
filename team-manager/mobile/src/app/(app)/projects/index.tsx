@@ -7,11 +7,11 @@ import {
   TextInput,
   ScrollView,
   RefreshControl,
-  Alert,
   ActivityIndicator,
   FlatList,
   Dimensions,
 } from 'react-native';
+import { Alert } from '@/components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';

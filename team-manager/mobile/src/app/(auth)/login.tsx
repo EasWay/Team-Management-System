@@ -13,6 +13,8 @@ import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/lib/constants';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { Alert } from '@/components/CustomAlert';
+
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
@@ -55,7 +57,6 @@ export default function LoginScreen() {
         router.replace('/(app)');
       }
     } catch (err: unknown) {
-      const { Alert } = require('react-native');
       const msg = err instanceof Error ? err.message : 'OAuth failed';
       Alert.alert('Sign In Failed', msg);
     } finally {

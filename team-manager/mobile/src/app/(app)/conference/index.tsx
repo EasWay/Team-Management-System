@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  Alert,
   RefreshControl,
   Linking,
 } from 'react-native';
+import { Alert } from '@/components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';

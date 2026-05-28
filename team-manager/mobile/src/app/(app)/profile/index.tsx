@@ -5,9 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/components/CustomAlert';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
