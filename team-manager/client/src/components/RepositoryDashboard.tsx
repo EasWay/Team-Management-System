@@ -12,12 +12,13 @@ interface RepositoryDashboardProps {
 }
 
 export function RepositoryDashboard({ repositoryId }: RepositoryDashboardProps) {
-  const { data: repoData, isLoading, error } = trpc.repositories.getData.useQuery({ id: repositoryId });
+  const { data: repoDataRaw, isLoading, error } = trpc.repositories.getData.useQuery({ id: repositoryId });
+  const repoData = repoDataRaw as { commits: any[]; pullRequests: any[]; issues: any[]; branches: { name: string; protected?: boolean }[] } | undefined;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
       </div>
     );
   }

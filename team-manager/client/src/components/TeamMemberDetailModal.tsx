@@ -60,12 +60,6 @@ export function TeamMemberDetailModal({ member, isOpen, onClose, onUpdate }: Tea
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
-                    {member.email && (
-                      <div className="flex items-center gap-3 text-muted-foreground">
-                        <Mail className="h-4 w-4 text-primary/60" />
-                        <span className="text-xs font-medium tracking-wide">{member.email}</span>
-                      </div>
-                    )}
                     {member.phone && (
                       <div className="flex items-center gap-3 text-muted-foreground">
                         <Phone className="h-4 w-4 text-primary/60" />

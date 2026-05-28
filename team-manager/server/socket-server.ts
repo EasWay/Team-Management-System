@@ -4,6 +4,9 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { jwtVerify } from 'jose';
 import { ENV } from './_core/env';
+import { sendChatMessage, markMessagesAsRead, sendNotification, getDb } from './db';
+import { users } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 // Socket.io server instance
 let io: Server | null = null;
@@ -77,6 +80,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
 
   // Connection event handler
   io.on('connection', (socket: AuthenticatedSocket) => {
+    const _io = io!;
     console.log(`[Socket.io] User connected: ${socket.name} (ID: ${socket.userId})`);
 
     // Auto-join personal room for direct messaging
@@ -90,12 +94,13 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       socket.join(roomName);
       console.log(`[Socket.io] User ${socket.name} joined team room: ${roomName}`);
 
-      // Notify other team members
+      // Notify other team members (join + presence)
       socket.to(roomName).emit('userJoined', {
         userId: socket.userId,
         username: socket.name,
         teamId,
       });
+      socket.to(roomName).emit('presence:online', { userId: socket.userId });
     });
 
     // Handle team room leaving
@@ -144,7 +149,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     socket.on('ideationMessage', (data: {teamId: number, name: string, message: string, timestamp: string, userId: number}) => {
       const roomName = `doc:ideation-${data.teamId}`;
       // Broadcast to all users in the ideation room (including sender)
-      io.to(roomName).emit('ideationMessage', data);
+      _io.to(roomName).emit('ideationMessage', data);
       console.log(`[Socket.io] Broadcast ideation message to ${roomName}`);
     });
 
@@ -152,7 +157,7 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     socket.on('ideationClearChat', (data: {teamId: number}) => {
       const roomName = `doc:ideation-${data.teamId}`;
       // Broadcast to all users in the ideation room
-      io.to(roomName).emit('ideationChatCleared');
+      _io.to(roomName).emit('ideationChatCleared');
       console.log(`[Socket.io] Broadcast chat cleared to ${roomName}`);
     });
 
@@ -169,9 +174,9 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
       });
       
       // Send current visitors list to the new joiner
-      io.in(roomName).allSockets().then((sockets) => {
+      _io.in(roomName).allSockets().then((sockets) => {
         const visitors = Array.from(sockets).map((socketId) => {
-          const s = io.sockets.sockets.get(socketId) as any;
+          const s = _io.sockets.sockets.get(socketId) as any;
           return { userId: s?.userId, userName: s?.name };
         }).filter(v => v.userId);
         
@@ -194,14 +199,97 @@ export function initializeSocketServer(httpServer: HTTPServer): Server {
     // Handle office chat messages
     socket.on('officeMessage', (data: {teamId: number, officeRole: string, userId: number, userName: string, message: string, timestamp: string}) => {
       const roomName = `office:${data.teamId}:${data.officeRole}`;
-      // Broadcast to all users in the office
-      io.to(roomName).emit('officeMessage', data);
+      _io.to(roomName).emit('officeMessage', data);
       console.log(`[Socket.io] Broadcast office message to ${roomName}`);
+    });
+
+    // ── PRESENCE ─────────────────────────────────────────────────────────────
+    // Broadcast online when joining a team room (already handled in joinTeam,
+    // but also emit a dedicated presence event)
+    socket.on('presence:ping', (teamId: number) => {
+      const roomName = `team:${teamId}`;
+      socket.to(roomName).emit('presence:online', { userId: socket.userId });
+    });
+
+    // ── 1:1 CHAT ─────────────────────────────────────────────────────────────
+    socket.on('chat:send', async (data: {
+      toMemberId: number;
+      content: string;
+      messageType?: 'text' | 'image' | 'file';
+      fileUrl?: string;
+      fileName?: string;
+      teamId: number;
+    }) => {
+      if (!socket.userId) return;
+      try {
+        const msg = await sendChatMessage(
+          socket.userId,
+          data.toMemberId,
+          data.teamId,
+          data.content,
+          data.messageType ?? 'text',
+          data.fileUrl,
+          data.fileName
+        );
+        // Deliver to both parties
+        _io.to(`member:${data.toMemberId}`).emit('chatMessage', msg);
+        _io.to(`member:${socket.userId}`).emit('chatMessage', msg);
+
+        // In-app notification to recipient
+        const db = await getDb();
+        if (db) {
+          const [sender] = await db
+            .select({ name: users.name })
+            .from(users)
+            .where(eq(users.id, socket.userId))
+            .limit(1);
+          await sendNotification({
+            userId: data.toMemberId,
+            teamId: data.teamId,
+            type: 'team_messages',
+            title: `New message from ${sender?.name ?? 'Teammate'}`,
+            message: data.content.length > 80 ? data.content.slice(0, 80) + '…' : data.content,
+            priority: 'medium',
+            actionUrl: '/messages',
+            actionLabel: 'View Message',
+          });
+        }
+      } catch (err) {
+        console.error('[Socket.io] chat:send error:', err);
+      }
+    });
+
+    // Typing indicators
+    socket.on('chat:typing', (data: { toMemberId: number }) => {
+      if (!socket.userId) return;
+      _io.to(`member:${data.toMemberId}`).emit('chat:typing', { fromMemberId: socket.userId });
+    });
+
+    socket.on('chat:typing_stop', (data: { toMemberId: number }) => {
+      if (!socket.userId) return;
+      _io.to(`member:${data.toMemberId}`).emit('chat:typing_stop', { fromMemberId: socket.userId });
+    });
+
+    // Read receipts
+    socket.on('chat:read', async (data: { fromMemberId: number; teamId: number }) => {
+      if (!socket.userId) return;
+      try {
+        await markMessagesAsRead(data.fromMemberId, socket.userId, data.teamId);
+        // Tell the original sender their messages were read
+        _io.to(`member:${data.fromMemberId}`).emit('chat:read', { byMemberId: socket.userId });
+      } catch (err) {
+        console.error('[Socket.io] chat:read error:', err);
+      }
     });
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {
       console.log(`[Socket.io] User disconnected: ${socket.name} (Reason: ${reason})`);
+      // Broadcast offline to all joined team rooms
+      const teamRooms = Array.from(socket.rooms).filter((r: string) => r.startsWith('team:'));
+      teamRooms.forEach((room: string) => {
+        socket.to(room).emit('presence:offline', { userId: socket.userId });
+      });
     });
 
     // Error handling
@@ -284,6 +372,14 @@ export function broadcastActivityCreated(teamId: number, activity: any) {
   const roomName = `team:${teamId}`;
   io.to(roomName).emit('activityCreated', activity);
   console.log(`[Socket.io] Broadcast activityCreated to ${roomName}`);
+}
+
+/**
+ * Broadcast an event to a specific member's personal room
+ */
+export function broadcastToMember(userId: number, event: string, data: unknown) {
+  if (!io) return;
+  io.to(`member:${userId}`).emit(event, data);
 }
 
 /**

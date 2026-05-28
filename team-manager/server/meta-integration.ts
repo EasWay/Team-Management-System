@@ -3,7 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { sql } from './db.js';
+import { getDb } from './db';
 
 const META_APP_ID = process.env.META_APP_ID || '1754806639211913';
 const META_APP_SECRET = process.env.META_APP_SECRET || '1e4a6cee9fd6e666553e25d2f0682bf0';
@@ -19,9 +19,9 @@ export async function metaRoutes(fastify: FastifyInstance) {
         team_id: z.string(),
       }),
     },
-  }, async (request, reply) => {
+  }, async (request: any, reply: any) => {
     const { team_id } = request.query as { team_id: string };
-    
+
     // Generate state parameter for CSRF protection
     const state = Buffer.from(JSON.stringify({ team_id })).toString('base64');
     
@@ -45,7 +45,7 @@ export async function metaRoutes(fastify: FastifyInstance) {
         error_description: z.string().optional(),
       }),
     },
-  }, async (request, reply) => {
+  }, async (request: any, reply: any) => {
     const { code, state, error, error_description } = request.query as any;
     
     if (error) {
@@ -90,11 +90,11 @@ export async function metaRoutes(fastify: FastifyInstance) {
       const pagesData = await pagesResponse.json() as any;
       
       const pages = pagesData.data || [];
-      
+      const firstPage = pages[0] || null;
+
       // Get Instagram business account for first page
       let instagramAccount = null;
       if (pages.length > 0) {
-        const firstPage = pages[0];
         const igUrl = new URL(`https://graph.facebook.com/v18.0/${firstPage.id}`);
         igUrl.searchParams.set('fields', 'instagram_business_account');
         igUrl.searchParams.set('access_token', accessToken);
@@ -120,37 +120,40 @@ export async function metaRoutes(fastify: FastifyInstance) {
       }
       
       // Store in database
-      await sql`
-        INSERT INTO meta_accounts (
-          team_id, 
-          page_id, 
-          page_name, 
-          page_access_token,
-          instagram_id,
-          instagram_username,
-          token_expires_at,
-          created_at,
-          updated_at
-        ) VALUES (
-          ${parseInt(teamId)},
-          ${pages[0]?.id || null},
-          ${pages[0]?.name || null},
-          ${firstPage?.access_token || null},
-          ${instagramAccount?.id || null},
-          ${instagramAccount?.username || null},
-          ${new Date(Date.now() + 60 * 60 * 1000).toISOString()}, -- 1 hour expiry (Meta short-lived tokens)
-          NOW(),
-          NOW()
-        )
-        ON CONFLICT (team_id) DO UPDATE SET
-          page_id = EXCLUDED.page_id,
-          page_name = EXCLUDED.page_name,
-          page_access_token = EXCLUDED.page_access_token,
-          instagram_id = EXCLUDED.instagram_id,
-          instagram_username = EXCLUDED.instagram_username,
-          token_expires_at = EXCLUDED.token_expires_at,
-          updated_at = NOW()
-      `;
+      const db = await getDb();
+      if (db) {
+        await (db as any).execute(`
+          INSERT INTO meta_accounts (
+            team_id,
+            page_id,
+            page_name,
+            page_access_token,
+            instagram_id,
+            instagram_username,
+            token_expires_at,
+            created_at,
+            updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, NOW(), NOW()
+          )
+          ON CONFLICT (team_id) DO UPDATE SET
+            page_id = EXCLUDED.page_id,
+            page_name = EXCLUDED.page_name,
+            page_access_token = EXCLUDED.page_access_token,
+            instagram_id = EXCLUDED.instagram_id,
+            instagram_username = EXCLUDED.instagram_username,
+            token_expires_at = EXCLUDED.token_expires_at,
+            updated_at = NOW()
+        `, [
+          parseInt(teamId),
+          pages[0]?.id || null,
+          pages[0]?.name || null,
+          firstPage?.access_token || null,
+          instagramAccount?.id || null,
+          instagramAccount?.username || null,
+          new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        ]);
+      }
       
       return reply.redirect('/settings?meta_connected=true');
     } catch (err: any) {
@@ -166,14 +169,14 @@ export async function metaRoutes(fastify: FastifyInstance) {
         team_id: z.string(),
       }),
     },
-  }, async (request, reply) => {
+  }, async (request: any, reply: any) => {
     const { team_id } = request.params as { team_id: string };
-    
-    const result = await sql`
-      SELECT id, team_id, page_id, page_name, instagram_id, instagram_username, token_expires_at, created_at
-      FROM meta_accounts
-      WHERE team_id = ${parseInt(team_id)}
-    `;
+
+    const db = await getDb();
+    const result: any[] = db ? await (db as any).execute(
+      `SELECT id, team_id, page_id, page_name, instagram_id, instagram_username, token_expires_at, created_at FROM meta_accounts WHERE team_id = $1`,
+      [parseInt(team_id)]
+    ).then((r: any) => r.rows || []) : [];
     
     if (result.length === 0) {
       return { connected: false };
@@ -203,13 +206,13 @@ export async function metaRoutes(fastify: FastifyInstance) {
         team_id: z.string(),
       }),
     },
-  }, async (request, reply) => {
+  }, async (request: any, reply: any) => {
     const { team_id } = request.body as { team_id: string };
-    
-    await sql`
-      DELETE FROM meta_accounts
-      WHERE team_id = ${parseInt(team_id)}
-    `;
+
+    const db = await getDb();
+    if (db) {
+      await (db as any).execute(`DELETE FROM meta_accounts WHERE team_id = $1`, [parseInt(team_id)]);
+    }
     
     return { success: true };
   });

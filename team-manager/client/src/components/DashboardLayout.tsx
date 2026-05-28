@@ -30,7 +30,8 @@ const workspaceMenuItems = [
   { label: "Team Members", path: "/team" },
   { label: "Projects", path: "/projects" },
   { label: "Repositories", path: "/repositories" },
-  { label: "Messages", path: "/messages" }
+  { label: "Messages", path: "/messages" },
+  { label: "⚙️ Admin", path: "/admin", adminOnly: true },
 ];
 
 
@@ -51,7 +52,10 @@ export default function DashboardLayout({
   const currentTeam = teams?.find(t => t.id === selectedTeamId);
   const currentTeamName = currentTeam?.name || 'NO ACTIVE TEAM';
 
-  const menuItems = selectedTeamId ? workspaceMenuItems : globalMenuItems;
+  const allMenuItems = selectedTeamId ? workspaceMenuItems : globalMenuItems;
+  const menuItems = allMenuItems.filter(
+    (item) => !(item as any).adminOnly || (user as any)?.role === 'admin'
+  );
 
   if (loading) {
     return <DashboardLayoutSkeleton />
@@ -187,11 +191,10 @@ export default function DashboardLayout({
 
           <div className="flex items-center gap-3 px-4 pt-2">
             <div className="size-8 rounded-full bg-foreground/10 flex items-center justify-center font-bold text-xs uppercase overflow-hidden">
-              {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+              {user.name?.charAt(0) || "U"}
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-foreground">{user.name}</span>
-              <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{user.email}</span>
+              <span className="text-xs font-bold text-foreground">{user.name || "Member"}</span>
             </div>
           </div>
         </div>

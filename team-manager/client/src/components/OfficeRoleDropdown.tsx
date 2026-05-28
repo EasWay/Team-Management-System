@@ -110,7 +110,7 @@ export function OfficeRoleDropdown({
     updateOfficeRoleMutation.mutate({
       teamId,
       userId,
-      officeRole: newRole,
+      officeRole: newRole as "project_manager" | "lead_researcher" | "systems_architect" | "backend_engineer" | "fullstack_engineer" | "ai_engineer" | "qa_tester" | "designer" | null,
     });
   };
 

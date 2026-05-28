@@ -13,8 +13,8 @@ export function RepositoryList({ teamId }: RepositoryListProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-slate-400 mx-auto mb-4 animate-spin" />
-          <p className="text-slate-500">Loading repositories...</p>
+          <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+          <p className="text-muted-foreground">Loading repositories...</p>
         </div>
       </div>
     );
@@ -31,8 +31,8 @@ export function RepositoryList({ teamId }: RepositoryListProps) {
   if (!repositories || repositories.length === 0) {
     return (
       <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center justify-center">
-        <GitBranch className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-        <p className="text-slate-400 mb-4">No repositories connected yet.</p>
+        <GitBranch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground mb-4">No repositories connected yet.</p>
       </div>
     );
   }

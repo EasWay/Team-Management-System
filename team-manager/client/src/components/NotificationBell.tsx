@@ -92,7 +92,7 @@ export function NotificationBell() {
       case 'message':
         return <MessageSquare className="h-4 w-4 text-purple-500" />;
       default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -137,7 +137,7 @@ export function NotificationBell() {
               <DropdownMenuItem
                 key={notification.id}
                 className={`flex items-start gap-3 p-3 cursor-pointer ${
-                  !notification.read ? 'bg-blue-50' : ''
+                  !notification.read ? 'bg-primary/5' : ''
                 }`}
                 onClick={() => {
                   if (!notification.read) {
@@ -164,7 +164,7 @@ export function NotificationBell() {
                   </p>
                 </div>
                 {!notification.read && (
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2" />
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2" />
                 )}
               </DropdownMenuItem>
             ))}

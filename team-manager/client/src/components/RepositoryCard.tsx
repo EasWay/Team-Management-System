@@ -5,9 +5,9 @@ import { GitFork, ExternalLink, RefreshCw } from "lucide-react";
 interface Repository {
   id: number;
   name: string;
-  fullName: string;
+  fullName?: string;
   url: string;
-  lastSyncAt: Date | null;
+  lastSyncAt?: Date | null;
 }
 
 interface RepositoryCardProps {

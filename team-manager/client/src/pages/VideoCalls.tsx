@@ -74,7 +74,7 @@ export default function VideoCalls() {
   const [callForm, setCallForm] = useState({
     title: "",
     description: "",
-    callType: "quick_huddle" as const,
+    callType: "quick_huddle" as "quick_huddle" | "office_room",
     officeRole: "",
     integrationType: "webrtc" as const,
     meetingUrl: "",
@@ -344,7 +344,7 @@ export default function VideoCalls() {
                       </div>
                       <div
                         className={`size-3 rounded-full ${
-                          room.activeParticipants > 0 ? "bg-green-500" : "bg-gray-500"
+                          (room.activeParticipants ?? 0) > 0 ? "bg-green-500" : "bg-gray-500"
                         }`}
                       />
                     </div>

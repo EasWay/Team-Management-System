@@ -1,7 +1,7 @@
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { authService } from "./_core/auth";
-import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead } from "./db";
+import { createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, getMemberRoleInTeam, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, reopenTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead, listAllUsers, getUserTeamMemberships, setUserSystemRole, removeUserFromSystem, addUserToSystem, sendNotification, getDb, handoffTask, handoffProject, getTasksByRole, getProjectsByRole, getTasksByStage, getProjectsByStage, getMyWorkQueue, acceptHandoff } from "./db";
 import { parsePRDText } from "./_core/prdParser";
 import { processIdeation } from "./_core/ideationEngine";
 import { evaluateProject, quickEvaluate } from "./_core/projectEvaluator";
@@ -14,6 +14,8 @@ import { upsertNotificationPreferences, getNotificationPreferences, createNotifi
 import { createClientPortalAccess, clientLogin, verifyClientToken, getClientPortalAccess, updateClientPortalAccess, getClientProjects, getClientProjectDetails, createClientFeedback, getClientFeedback, getTeamFeedback, respondToFeedback, logClientActivity, getClientActivityLog, setProjectVisibility, getProjectVisibility, getClientDashboard, changeClientPassword, getClientStatistics } from "./client-portal-service";
 import { grantResourcePermission, revokeResourcePermission, checkResourcePermission, getUserResourcePermissions, setOfficeAccessControl, getOfficeAccessControl, checkOfficePermission, logSecurityAudit, getSecurityAuditTrail, exportAuditLogs, enable2FA, verify2FAToken, generateBackupCodes, addIPToWhitelist, checkIPWhitelist, getIPWhitelist, createUserSession, getUserSessions, revokeSession, revokeAllSessions, createPermissionRole, assignRoleToUser, getUserRoles, checkRolePermission } from "./security-service";
 import { z } from "zod";
+import { users, teamMembersCollaborative } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // Helper function to safely extract audit context
 function getAuditContext(ctx: any) {
@@ -590,13 +592,15 @@ export const appRouter = router({
         assignedTo: z.number().optional(),
         createdBy: z.number().optional(),
         priority: z.string().optional(),
-        /** Pass the current member's ID to see only their tasks (assigned+created). PM sees all. */
-        viewerMemberId: z.number().optional(),
       }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         try {
+          if (!ctx.user?.id) throw new Error('User not authenticated');
           const { teamId, ...filters } = input;
-          return await getTasksByTeam(teamId, filters);
+          const role = await getMemberRoleInTeam(teamId, ctx.user.id);
+          // Non-admin/team_lead members only see tasks assigned to or created by them
+          const viewerMemberId = (role === 'admin' || role === 'team_lead') ? undefined : ctx.user.id;
+          return await getTasksByTeam(teamId, { ...filters, viewerMemberId });
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get tasks');
         }
@@ -685,6 +689,20 @@ export const appRouter = router({
           return await getTaskHistory(input.id);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get task history');
+        }
+      }),
+
+    reopen: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        reason: z.string().min(1, 'A reason is required to reopen a task'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!ctx.user?.id) throw new Error('User not authenticated');
+          return await reopenTask(input.id, input.reason, ctx.user.id);
+        } catch (error) {
+          handleDatabaseError(error);
         }
       }),
   }),
@@ -2777,7 +2795,7 @@ export const appRouter = router({
           }
 
           // Run AI evaluation
-          const evaluation = await evaluateProject(project);
+          const evaluation = await evaluateProject(project as { id: number; name: string; ideationData?: any; deliverables?: any; handoffHistory?: any[] });
 
           // Save evaluation
           await saveProjectEvaluation(input.projectId, evaluation, ctx.user?.id!);
@@ -4148,6 +4166,91 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await markMessagesAsRead(input.fromMemberId, input.toMemberId, input.teamId);
         return { ok: true };
+      }),
+  }),
+
+  admin: router({
+    listUsers: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const [caller] = await db.select({ role: users.role }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        if (caller?.role !== 'admin') throw new Error('Admin access required');
+
+        const allUsers = await listAllUsers();
+        const usersWithMemberships = await Promise.all(
+          allUsers.map(async (u) => ({
+            ...u,
+            memberships: await getUserTeamMemberships(u.id),
+          }))
+        );
+        return usersWithMemberships;
+      }),
+
+    setSystemRole: protectedProcedure
+      .input(z.object({ userId: z.number(), role: z.enum(['admin', 'user']) }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const [caller] = await db.select({ role: users.role }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        if (caller?.role !== 'admin') throw new Error('Admin access required');
+
+        await setUserSystemRole(input.userId, input.role);
+
+        // Notify affected user
+        const [targetUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+        if (targetUser) {
+          const [teamRow] = await db.select({ teamId: teamMembersCollaborative.teamId }).from(teamMembersCollaborative).where(eq(teamMembersCollaborative.memberId, input.userId)).limit(1);
+          if (teamRow) {
+            await sendNotification({
+              userId: input.userId,
+              teamId: teamRow.teamId,
+              type: 'team_messages',
+              title: input.role === 'admin' ? 'You are now an Admin' : 'Role Updated',
+              message: input.role === 'admin' ? 'You have been granted admin access to the system.' : 'Your system role has been updated.',
+              priority: 'high',
+              actionUrl: '/',
+              actionLabel: 'Go to Dashboard',
+            });
+          }
+        }
+
+        return { success: true };
+      }),
+
+    removeUser: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        if (input.userId === ctx.user.id) throw new Error('Cannot remove yourself');
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const [caller] = await db.select({ role: users.role }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        if (caller?.role !== 'admin') throw new Error('Admin access required');
+
+        await removeUserFromSystem(input.userId);
+        return { success: true };
+      }),
+
+    addUser: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        teamId: z.number(),
+        role: z.string().default('developer'),
+        officeRole: z.string().default('fullstack_engineer'),
+        position: z.string().default('Team Member'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new Error('Not authenticated');
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const [caller] = await db.select({ role: users.role }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        if (caller?.role !== 'admin') throw new Error('Admin access required');
+
+        return await addUserToSystem(input);
       }),
   }),
 });
