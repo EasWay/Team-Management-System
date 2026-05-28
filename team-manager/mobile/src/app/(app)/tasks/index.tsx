@@ -123,17 +123,17 @@ function TaskCard({
   onMove,
   onProgress,
   onViewDetail,
-  currentMemberId,
+  canEdit,
 }: {
   task: any;
   onMove: (taskId: number, to: Status) => void;
   onProgress: (taskId: number, pct: number) => void;
   onViewDetail: (task: any) => void;
-  currentMemberId?: number;
+  canEdit: boolean;
 }) {
   const pct     = task.completionPercentage ?? 0;
   const priority = PRIORITY_META[task.priority as Priority] ?? PRIORITY_META.medium;
-  const moves    = MOVE_TARGETS[task.status as Status] ?? [];
+  const moves    = canEdit ? (MOVE_TARGETS[task.status as Status] ?? []) : [];
   const tags: string[] = Array.isArray(task.tags) ? task.tags : [];
   const isOverdue = task.dueDate && task.status !== 'done' && isAfter(new Date(), new Date(task.dueDate));
   const statusColor = STATUSES.find(s => s.key === task.status)?.color ?? '#94a3b8';
@@ -144,88 +144,66 @@ function TaskCard({
       activeOpacity={0.88}
       style={{
         backgroundColor: '#0f172a',
-        borderRadius: 20,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: '#1e293b',
-        marginBottom: 12,
+        marginBottom: 8,
         overflow: 'hidden',
       }}
     >
       {/* Status stripe at top */}
-      <View style={{ height: 3, backgroundColor: statusColor, opacity: 0.7 }} />
+      <View style={{ height: 2, backgroundColor: statusColor, opacity: 0.7 }} />
 
-      <View style={{ padding: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+      <View style={{ padding: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
           {/* Progress ring */}
-          <ProgressRing pct={pct} size={46} color={statusColor} />
+          <ProgressRing pct={pct} size={38} color={statusColor} />
 
           {/* Content */}
           <View style={{ flex: 1 }}>
             {/* Title row */}
             <Text
-              style={{ color: '#f1f5f9', fontSize: 15, fontWeight: '700', lineHeight: 20, marginBottom: 6 }}
+              style={{ color: '#f1f5f9', fontSize: 13, fontWeight: '700', lineHeight: 18, marginBottom: 4 }}
               numberOfLines={2}
             >
               {task.title}
             </Text>
 
             {/* Priority + Due date */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <View style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: priority.bg, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3,
+                flexDirection: 'row', alignItems: 'center', gap: 3,
+                backgroundColor: priority.bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
               }}>
-                <Ionicons name={priority.icon} size={10} color={priority.color} />
-                <Text style={{ color: priority.color, fontSize: 10, fontWeight: '700' }}>{priority.label}</Text>
+                <Ionicons name={priority.icon} size={9} color={priority.color} />
+                <Text style={{ color: priority.color, fontSize: 9, fontWeight: '700' }}>{priority.label}</Text>
               </View>
 
               {task.dueDate && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Ionicons name="time-outline" size={11} color={isOverdue ? '#f87171' : '#475569'} />
-                  <Text style={{ color: isOverdue ? '#f87171' : '#475569', fontSize: 10, fontWeight: '500' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="time-outline" size={10} color={isOverdue ? '#f87171' : '#475569'} />
+                  <Text style={{ color: isOverdue ? '#f87171' : '#475569', fontSize: 9, fontWeight: '500' }}>
                     {format(new Date(task.dueDate), 'MMM d')}
                   </Text>
                 </View>
               )}
             </View>
 
-            {/* Tags */}
-            {tags.length > 0 && (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
-                {tags.slice(0, 4).map((tag) => (
-                  <View
-                    key={tag}
-                    style={{ backgroundColor: '#1e293b', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2.5 }}
-                  >
-                    <Text style={{ color: '#64748b', fontSize: 9, fontWeight: '600' }}>#{tag}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Assignee / Creator row */}
+            {/* Assignee row */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {task.assignee && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <MemberAvatar name={task.assignee.name} size={22} color="#38bdf8" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <MemberAvatar name={task.assignee.name} size={18} color="#38bdf8" />
                     <Text style={{ color: '#475569', fontSize: 10 }} numberOfLines={1}>
                       {task.assignee.name?.split(' ')[0]}
-                    </Text>
-                  </View>
-                )}
-                {task.creator && task.creator.id !== task.assignee?.id && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Ionicons name="person-outline" size={10} color="#334155" />
-                    <Text style={{ color: '#334155', fontSize: 10 }} numberOfLines={1}>
-                      {task.creator.name?.split(' ')[0]}
                     </Text>
                   </View>
                 )}
               </View>
 
               {task.createdAt && (
-                <Text style={{ color: '#334155', fontSize: 10 }}>
+                <Text style={{ color: '#334155', fontSize: 9 }}>
                   {format(new Date(task.createdAt), 'MMM d')}
                 </Text>
               )}
@@ -233,20 +211,20 @@ function TaskCard({
           </View>
         </View>
 
-        {/* Move buttons */}
+        {/* Move buttons — only shown when user can edit */}
         {moves.length > 0 && (
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
             {moves.map((m) => (
               <TouchableOpacity
                 key={m.to}
                 onPress={() => onMove(task.id, m.to)}
                 style={{
-                  flex: 1, paddingVertical: 7, borderRadius: 10,
+                  flex: 1, paddingVertical: 6, borderRadius: 8,
                   backgroundColor: m.color + '18', borderWidth: 1, borderColor: m.color + '40',
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ color: m.color, fontSize: 11, fontWeight: '700' }}>→ {m.label}</Text>
+                <Text style={{ color: m.color, fontSize: 10, fontWeight: '700' }}>→ {m.label}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -264,11 +242,11 @@ function TaskCard({
                     ]);
               }}
               style={{
-                width: 34, paddingVertical: 7, borderRadius: 10,
+                width: 30, paddingVertical: 6, borderRadius: 8,
                 backgroundColor: '#1e293b', alignItems: 'center',
               }}
             >
-              <Ionicons name="stats-chart-outline" size={14} color="#475569" />
+              <Ionicons name="stats-chart-outline" size={12} color="#475569" />
             </TouchableOpacity>
           </View>
         )}
@@ -428,12 +406,16 @@ export default function TasksScreen() {
   const membersList: any[] = (membersQuery.data as any[] ?? []);
 
   // Build query params based on scope
+  // "All" = everyone sees all tasks (view-only); "Mine" = filtered to current member with edit rights
   const queryParams = useMemo(() => {
     const base = { teamId: activeTeam?.id ?? 0 };
-    if (isProjectManager || !scopeMine) return base;
-    if (!currentMember?.id) return base;
-    return { ...base, viewerMemberId: currentMember.id };
+    if (isProjectManager) return base; // PM always sees all tasks
+    if (scopeMine && currentMember?.id) return { ...base, viewerMemberId: currentMember.id };
+    return base; // "All" scope — no filter
   }, [activeTeam?.id, isProjectManager, scopeMine, currentMember?.id]);
+
+  // Only allow editing when in "Mine" scope (or if PM)
+  const canEditTasks = isProjectManager || scopeMine;
 
   const tasksQuery = trpc.tasks.list.useQuery(queryParams, { enabled: !!activeTeam?.id });
 
@@ -637,7 +619,7 @@ export default function TasksScreen() {
               onMove={(id, to) => moveMutation.mutate({ id, status: to })}
               onProgress={(id, pct) => progressMutation.mutate({ id, completionPercentage: pct })}
               onViewDetail={(t) => { setSelectedTask(t); setShowDetail(true); }}
-              currentMemberId={currentMember?.id}
+              canEdit={canEditTasks}
             />
           )}
         />

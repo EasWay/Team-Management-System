@@ -956,9 +956,6 @@ export default function FilesScreen() {
             <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               Team Shared
             </Text>
-            <Text style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
-              All members can view, upload & download
-            </Text>
           </View>
 
           <FolderCard
@@ -987,9 +984,6 @@ export default function FilesScreen() {
           <View style={{ marginBottom: 12, marginTop: 12 }}>
             <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               Member Folders
-            </Text>
-            <Text style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
-              Your folder: full access · Others: upload only
             </Text>
           </View>
 
@@ -1043,34 +1037,6 @@ export default function FilesScreen() {
             })
           )}
 
-          {/* Access info */}
-          <View style={{
-            marginTop: 8, backgroundColor: '#0f172a', borderRadius: 16,
-            padding: 16, borderWidth: 1, borderColor: '#1e293b',
-          }}>
-            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>
-              Access Rules
-            </Text>
-            {[
-              { icon: 'folder-open-outline' as IonIconName, color: '#38bdf8', label: 'Team Folder', desc: 'View, upload & download for all members' },
-              { icon: 'person-circle-outline' as IonIconName, color: '#34d399', label: 'Your Folder', desc: 'Full access: browse, upload, download, delete' },
-              { icon: 'people-outline' as IonIconName, color: '#64748b', label: "Others' Folders", desc: 'Upload only — cannot view contents' },
-              { icon: 'briefcase-outline' as IonIconName, color: '#fbbf24', label: 'Project Manager', desc: 'Full access to all folders' },
-            ].map(rule => (
-              <View key={rule.label} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                <View style={{
-                  width: 28, height: 28, borderRadius: 8, backgroundColor: rule.color + '18',
-                  alignItems: 'center', justifyContent: 'center', marginTop: 1,
-                }}>
-                  <Ionicons name={rule.icon} size={14} color={rule.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '600' }}>{rule.label}</Text>
-                  <Text style={{ color: '#475569', fontSize: 11, marginTop: 1, lineHeight: 16 }}>{rule.desc}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
         </View>
       </ScrollView>
 
