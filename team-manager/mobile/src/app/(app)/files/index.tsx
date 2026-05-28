@@ -264,7 +264,7 @@ function FileBrowser({
 
       // Read file as base64 using the new expo-file-system File API
       const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       await utils.client.googleDrive.driveUploadFile.mutate({
@@ -635,7 +635,7 @@ function UploadOnlySheet({
       setUploading(true);
 
       const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       await utils.client.googleDrive.driveUploadFile.mutate({
