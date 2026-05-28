@@ -25,6 +25,7 @@ import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import Admin from "./pages/Admin";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -53,6 +54,7 @@ function Router() {
       <Route path={"/calendar"} component={Calendar} />
       <Route path={"/video-calls"} component={VideoCalls} />
       <Route path={"/notifications"} component={Notifications} />
+      <Route path={"/admin"} component={Admin} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

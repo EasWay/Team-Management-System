@@ -4495,3 +4495,122 @@ export async function markMessagesAsRead(
       )
     );
 }
+
+// ============= ADMIN FUNCTIONS =============
+
+export async function listAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  const result = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      loginMethod: users.loginMethod,
+      createdAt: users.createdAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(users)
+    .orderBy(users.createdAt);
+
+  return result;
+}
+
+export async function getUserTeamMemberships(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  return db
+    .select({
+      teamId: teamMembersCollaborative.teamId,
+      teamName: teams.name,
+      role: teamMembersCollaborative.role,
+      officeRole: teamMembersCollaborative.officeRole,
+      status: teamMembersCollaborative.status,
+    })
+    .from(teamMembersCollaborative)
+    .innerJoin(teams, eq(teams.id, teamMembersCollaborative.teamId))
+    .where(eq(teamMembersCollaborative.memberId, userId));
+}
+
+export async function setUserSystemRole(userId: number, role: 'admin' | 'user') {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+
+  // Also update all team memberships to admin/developer
+  if (role === 'admin') {
+    await db
+      .update(teamMembersCollaborative)
+      .set({ role: 'admin' })
+      .where(eq(teamMembersCollaborative.memberId, userId));
+  }
+}
+
+export async function removeUserFromSystem(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  // Remove from team memberships first (cascade should handle, but be explicit)
+  await db.delete(teamMembersCollaborative).where(eq(teamMembersCollaborative.memberId, userId));
+  await db.delete(teamMembers).where(eq(teamMembers.id, userId));
+  await db.delete(users).where(eq(users.id, userId));
+}
+
+export async function addUserToSystem(params: {
+  name: string;
+  email: string;
+  teamId: number;
+  role: string;
+  officeRole: string;
+  position: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable');
+
+  // Check email not already taken
+  const existing = await db.select().from(users).where(eq(users.email, params.email)).limit(1);
+  if (existing.length > 0) throw new Error('A user with this email already exists');
+
+  // Create user
+  const [newUser] = await db.insert(users).values({
+    email: params.email,
+    name: params.name,
+    loginMethod: 'github',
+    role: 'user',
+  }).returning();
+
+  // Create team member profile
+  await db.insert(teamMembers).values({
+    id: newUser.id,
+    name: params.name,
+    email: params.email,
+    position: params.position,
+  }).onConflictDoNothing({ target: teamMembers.id });
+
+  // Add to team
+  await db.insert(teamMembersCollaborative).values({
+    teamId: params.teamId,
+    memberId: newUser.id,
+    role: params.role,
+    officeRole: params.officeRole,
+    status: 'active',
+  });
+
+  // Send welcome notification
+  await sendNotification({
+    userId: newUser.id,
+    teamId: params.teamId,
+    type: 'team_messages',
+    title: 'Welcome to the team!',
+    message: `You have been added to the team as ${params.officeRole.replace(/_/g, ' ')}.`,
+    priority: 'medium',
+    actionUrl: '/',
+    actionLabel: 'Go to Dashboard',
+  });
+
+  return newUser;
+}
