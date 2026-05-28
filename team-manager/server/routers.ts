@@ -4092,6 +4092,22 @@ export const appRouter = router({
         const { updateDriveFile } = await import('./google-drive-service');
         return await updateDriveFile(input.fileId, { name: input.name });
       }),
+
+    /** Check whether the current user has connected their Google account */
+    googleConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user?.id) return { connected: false };
+      const { getOAuthToken } = await import('./oauth-token-service');
+      const token = await getOAuthToken(ctx.user.id, 'google');
+      return { connected: !!token };
+    }),
+
+    /** Disconnect Google account (removes stored OAuth token) */
+    disconnectGoogle: protectedProcedure.mutation(async ({ ctx }) => {
+      if (!ctx.user?.id) throw new Error('Not authenticated');
+      const { deleteOAuthToken } = await import('./oauth-token-service');
+      await deleteOAuthToken(ctx.user.id, 'google');
+      return { success: true };
+    }),
   }),
 
   // ─── Direct Messaging (WhatsApp-style) ────────────────────────────────────────

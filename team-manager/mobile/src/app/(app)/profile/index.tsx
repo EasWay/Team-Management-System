@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  Clipboard,
+  ActivityIndicator,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -64,12 +66,58 @@ function SettingRow({
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, accessToken } = useAuthStore();
   const { activeTeam } = useTeamStore();
   const { isDark, toggle: toggleTheme } = useThemeStore();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
 
   const teamId = useTeamStore().activeTeam?.id;
+
+  const googleStatusQuery = trpc.googleDrive.googleConnectionStatus.useQuery();
+  const disconnectGoogleMutation = trpc.googleDrive.disconnectGoogle.useMutation({
+    onSuccess: () => googleStatusQuery.refetch(),
+  });
+
+  const isGoogleConnected = googleStatusQuery.data?.connected ?? false;
+
+  const handleConnectGoogle = async () => {
+    if (!accessToken) return;
+    setConnectingGoogle(true);
+    try {
+      const mobileRedirectUri = Linking.createURL('/oauth-callback');
+      const connectUrl = `${API_BASE_URL}/api/oauth/google/connect?token=${encodeURIComponent(accessToken)}&mobile=true&mobile_redirect=${encodeURIComponent(mobileRedirectUri)}`;
+      const result = await WebBrowser.openAuthSessionAsync(connectUrl, mobileRedirectUri);
+      if (result.type === 'success') {
+        const parsed = Linking.parse(result.url);
+        if (parsed.queryParams?.connected === 'google') {
+          await googleStatusQuery.refetch();
+          Alert.alert('Connected', 'Google account connected successfully. You can now upload files to Google Drive.');
+        } else if (parsed.queryParams?.error) {
+          Alert.alert('Error', 'Failed to connect Google account. Please try again.');
+        }
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setConnectingGoogle(false);
+    }
+  };
+
+  const handleDisconnectGoogle = () => {
+    Alert.alert(
+      'Disconnect Google',
+      'This will remove your Google account connection. You will no longer be able to upload files to Google Drive.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: () => disconnectGoogleMutation.mutate(),
+        },
+      ]
+    );
+  };
 
   const prefsQuery = trpc.notificationPreferences.get.useQuery(
     { teamId: teamId ?? 0 },
@@ -244,24 +292,44 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Connection info */}
+        {/* Connections */}
         <View className="mx-5 mb-6">
-          <SectionHeader title="Connection" />
-          <View className="bg-white dark:bg-slate-800 rounded-2xl px-5 py-4 border border-slate-200 dark:border-slate-700">
-            <View className="flex-row items-center gap-2 mb-1.5">
-              <Ionicons name="server-outline" size={13} color="#64748b" />
-              <Text className="text-slate-400 dark:text-slate-500 text-xs font-medium">Server URL</Text>
+          <SectionHeader title="Connections" />
+          <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <View className="flex-row items-center px-5 py-4 gap-3">
+              <View className="w-9 h-9 rounded-xl items-center justify-center"
+                style={{ backgroundColor: isGoogleConnected ? '#16a34a1a' : '#64748b1a' }}
+              >
+                <Ionicons
+                  name="logo-google"
+                  size={18}
+                  color={isGoogleConnected ? '#16a34a' : '#64748b'}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">Google Drive</Text>
+                <Text className="text-xs mt-0.5" style={{ color: isGoogleConnected ? '#16a34a' : '#94a3b8' }}>
+                  {isGoogleConnected ? 'Connected' : 'Not connected'}
+                </Text>
+              </View>
+              {googleStatusQuery.isLoading || connectingGoogle || disconnectGoogleMutation.isPending ? (
+                <ActivityIndicator size="small" color="#94a3b8" />
+              ) : isGoogleConnected ? (
+                <TouchableOpacity
+                  onPress={handleDisconnectGoogle}
+                  className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-3 py-1.5"
+                >
+                  <Text className="text-red-500 text-xs font-semibold">Disconnect</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleConnectGoogle}
+                  className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-xl px-3 py-1.5"
+                >
+                  <Text className="text-sky-600 dark:text-sky-400 text-xs font-semibold">Connect</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                Clipboard.setString(API_BASE_URL);
-                Alert.alert('Copied', 'Server URL copied to clipboard.');
-              }}
-              className="flex-row items-center gap-2"
-            >
-              <Text className="text-slate-600 dark:text-slate-300 text-sm flex-1" numberOfLines={1}>{API_BASE_URL}</Text>
-              <Ionicons name="copy-outline" size={14} color="#64748b" />
-            </TouchableOpacity>
           </View>
         </View>
 

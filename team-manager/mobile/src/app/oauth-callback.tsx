@@ -13,6 +13,7 @@ export default function OAuthCallbackScreen() {
   const params = useLocalSearchParams<{
     accessToken?: string | string[];
     refreshToken?: string | string[];
+    connected?: string | string[];
     error?: string | string[];
   }>();
   const router = useRouter();
@@ -33,6 +34,14 @@ export default function OAuthCallbackScreen() {
     const error = Array.isArray(params.error) ? params.error[0] : params.error;
 
     async function finish() {
+      const connected = Array.isArray(params.connected) ? params.connected[0] : params.connected;
+
+      // Google Drive connect flow — just navigate back to profile
+      if (connected === 'google') {
+        router.replace('/(app)/profile');
+        return;
+      }
+
       if (error || !accessToken) {
         router.replace('/(auth)/login');
         return;

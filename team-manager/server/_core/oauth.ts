@@ -3,10 +3,10 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { authService } from "./auth";
 import { sdk } from "./sdk";
-import { handleGitHubCallback, handleGoogleCallback, handleLogout } from "../oauth-callbacks";
+import { handleGitHubCallback, handleGoogleCallback, handleLogout, addPendingGoogleConnect } from "../oauth-callbacks";
 import { storeOAuthToken } from "../oauth-token-service";
 import { getProvider, generateAuthorizationUrl } from "../oauth-providers";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -105,6 +105,39 @@ export function registerOAuthRoutes(app: Express) {
 
   // GitHub OAuth mobile callback — redirects to deep link with tokens
   app.get("/api/oauth/github/mobile/callback", handleGitHubMobileCallback);
+
+  // Google OAuth — connect existing account to Google Drive (profile screen)
+  app.get("/api/oauth/google/connect", async (req, res) => {
+    const tokenParam = typeof req.query.token === 'string' ? req.query.token : null;
+    const isMobile = req.query.mobile === 'true';
+    const rawRedirect = typeof req.query.mobile_redirect === 'string'
+      ? req.query.mobile_redirect : 'team-management://oauth-callback';
+    const mobileRedirect = rawRedirect.startsWith('team-management://') || rawRedirect.startsWith('exp://')
+      ? rawRedirect : 'team-management://oauth-callback';
+
+    if (!tokenParam) {
+      if (isMobile) return res.redirect(302, `${mobileRedirect}?error=not_authenticated`);
+      return res.status(401).json({ error: 'Token required' });
+    }
+
+    try {
+      const payload = await authService.verifyToken(tokenParam);
+      if (!payload) throw new Error('Invalid token');
+
+      const provider = getProvider('google');
+      if (!provider) throw new Error('Google OAuth not configured');
+
+      const stateKey = crypto.randomBytes(16).toString('hex');
+      addPendingGoogleConnect(stateKey, Number(payload.userId), isMobile ? mobileRedirect : undefined);
+
+      const url = generateAuthorizationUrl(provider, stateKey);
+      res.redirect(302, url);
+    } catch (err) {
+      const msg = err instanceof Error ? encodeURIComponent(err.message) : 'unknown';
+      if (isMobile) return res.redirect(302, `${mobileRedirect}?error=${msg}`);
+      return res.status(401).json({ error: 'Authentication failed' });
+    }
+  });
 
   // Google OAuth callback
   app.get("/api/oauth/google/callback", handleGoogleCallback);
