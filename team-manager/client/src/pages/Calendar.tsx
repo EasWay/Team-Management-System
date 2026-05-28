@@ -401,7 +401,7 @@ export default function Calendar() {
                               ? "bg-green-500"
                               : milestone.status === "in_progress"
                               ? "bg-blue-500"
-                              : "bg-gray-500"
+                              : "bg-muted-foreground"
                           }`}
                         />
                         {index < milestones.length - 1 && (
@@ -440,7 +440,7 @@ export default function Calendar() {
                                 ? "bg-green-500/10 text-green-500"
                                 : milestone.status === "in_progress"
                                 ? "bg-blue-500/10 text-blue-500"
-                                : "bg-gray-500/10 text-gray-500"
+                                : "bg-muted text-muted-foreground"
                             }`}
                           >
                             {milestone.status}
@@ -558,7 +558,7 @@ export default function Calendar() {
                               ? "bg-red-500"
                               : availability.status === "away"
                               ? "bg-yellow-500"
-                              : "bg-gray-500"
+                              : "bg-muted-foreground"
                           }`}
                         />
                         <div>

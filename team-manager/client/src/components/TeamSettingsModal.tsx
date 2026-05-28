@@ -72,7 +72,7 @@ export function TeamSettingsModal({ team, isOpen, onClose }: TeamSettingsModalPr
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-slate-900 dark:text-slate-100">Team Settings - {team.name}</DialogTitle>
+          <DialogTitle className="text-foreground">Team Settings - {team.name}</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

@@ -21,7 +21,7 @@ const roleColors = {
   admin: "bg-purple-100 text-purple-800",
   team_lead: "bg-blue-100 text-blue-800",
   developer: "bg-green-100 text-green-800",
-  viewer: "bg-gray-100 text-gray-800",
+  viewer: "bg-muted text-muted-foreground",
 };
 
 type TeamRole = "admin" | "team_lead" | "developer" | "viewer";
@@ -52,8 +52,8 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-slate-500 mx-auto mb-4 animate-spin" />
-          <p className="text-slate-600 dark:text-slate-400">Loading team members...</p>
+          <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+          <p className="text-muted-foreground">Loading team members...</p>
         </div>
       </div>
     );
@@ -73,8 +73,8 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
     return (
       <Card>
         <CardContent className="pt-12 text-center">
-          <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400 mb-4">No team members yet. Invite users to join this team.</p>
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">No team members yet. Invite users to join this team.</p>
         </CardContent>
       </Card>
     );
@@ -95,7 +95,7 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
-                  <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                     {member.member?.pictureFileName ? (
                       <img
                         src={`/api/uploads/${member.member.pictureFileName}`}
@@ -103,12 +103,12 @@ export function TeamMemberList({ teamId }: TeamMemberListProps) {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <Users className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                      <Users className="h-5 w-5 text-muted-foreground" />
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{userName}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 capitalize">{roleLabel}</p>
+                    <p className="font-medium text-foreground">{userName}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{roleLabel}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

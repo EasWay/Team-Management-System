@@ -22,7 +22,7 @@ export function IssueList({ issues }: IssueListProps) {
     return (
       <Card>
         <CardContent className="pt-12 text-center">
-          <p className="text-gray-600">No issues found</p>
+          <p className="text-muted-foreground">No issues found</p>
         </CardContent>
       </Card>
     );
@@ -36,8 +36,8 @@ export function IssueList({ issues }: IssueListProps) {
       <CardContent>
         <div className="space-y-4">
           {issues.map((issue) => (
-            <div key={issue.number} className="flex items-start gap-3 p-3 border rounded hover:bg-gray-50">
-              <AlertCircle className="h-5 w-5 text-gray-400 mt-1" />
+            <div key={issue.number} className="flex items-start gap-3 p-3 border rounded hover:bg-muted/50">
+              <AlertCircle className="h-5 w-5 text-muted-foreground mt-1" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-sm font-medium">#{issue.number} {issue.title}</p>
@@ -54,7 +54,7 @@ export function IssueList({ issues }: IssueListProps) {
                     ))}
                   </div>
                 )}
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Opened by {issue.author} on {new Date(issue.createdAt).toLocaleDateString()}
                 </p>
               </div>
@@ -62,7 +62,7 @@ export function IssueList({ issues }: IssueListProps) {
                 href={issue.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gray-600"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <ExternalLink className="h-4 w-4" />
               </a>

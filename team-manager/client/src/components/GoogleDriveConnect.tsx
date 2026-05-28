@@ -141,7 +141,7 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
         {isConnected ? (
           <>
             {/* Connected Drive Info */}
-            <div className="p-4 bg-white rounded-lg border space-y-3">
+            <div className="p-4 bg-card rounded-lg border space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -198,7 +198,7 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
         ) : (
           <>
             {/* Not Connected State */}
-            <div className="flex flex-col items-center justify-center h-32 text-center bg-white/50 rounded-lg border-2 border-dashed">
+            <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/50 rounded-lg border-2 border-dashed">
               <Cloud className="h-12 w-12 text-muted-foreground/30 mb-2" />
               <p className="text-sm text-muted-foreground mb-3">
                 {isOwner ? 'No drive connected' : 'No drive connected by the owner yet'}

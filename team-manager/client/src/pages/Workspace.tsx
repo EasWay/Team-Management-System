@@ -582,7 +582,7 @@ export default function Workspace() {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {workspaceItems.map((item: any) => (
-                            <Card key={item.id} className="hover:shadow-lg transition-all border-2 hover:border-primary cursor-pointer bg-white">
+                            <Card key={item.id} className="hover:shadow-lg transition-all border-2 hover:border-primary cursor-pointer bg-card">
                               <CardHeader className="pb-3">
                                 <div className="flex items-start gap-3">
                                   <FolderOpen className={`h-8 w-8 ${roleConfig.color} flex-shrink-0`} />
@@ -786,7 +786,7 @@ export default function Workspace() {
                           {myTasks.slice(0, 5).map((task: any) => (
                             <div 
                               key={task.id} 
-                              className="p-3 bg-white rounded-lg border hover:border-primary transition-colors cursor-pointer"
+                              className="p-3 bg-card rounded-lg border hover:border-primary transition-colors cursor-pointer"
                               onClick={() => window.location.href = '/tasks'}
                             >
                               <div className="flex items-start justify-between gap-2">
@@ -806,7 +806,7 @@ export default function Workspace() {
 
                     {/* Empty State */}
                     {(!workspaceItems || workspaceItems.length === 0) && (!myTasks || myTasks.length === 0) && (
-                      <div className="flex flex-col items-center justify-center h-48 text-center bg-white/50 rounded-lg border-2 border-dashed">
+                      <div className="flex flex-col items-center justify-center h-48 text-center bg-muted/50 rounded-lg border-2 border-dashed">
                         <Monitor className="h-16 w-16 text-muted-foreground/30 mb-3" />
                         <p className="text-muted-foreground font-medium">Your desk is clear</p>
                         <p className="text-sm text-muted-foreground/70 mt-1">No active work right now</p>
@@ -861,7 +861,7 @@ export default function Workspace() {
                 {workspaceSummary && workspaceSummary.pendingHandoffs.length > 0 ? (
                   <div className="space-y-2">
                     {workspaceSummary.pendingHandoffs.slice(0, 5).map((item: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-white rounded-lg border hover:border-primary transition-colors cursor-pointer">
+                      <div key={idx} className="p-3 bg-card rounded-lg border hover:border-primary transition-colors cursor-pointer">
                         <div className="flex items-start gap-2">
                           <FolderOpen className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
@@ -873,7 +873,7 @@ export default function Workspace() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-32 text-center bg-white/50 rounded-lg border-2 border-dashed">
+                  <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/50 rounded-lg border-2 border-dashed">
                     <Inbox className="h-12 w-12 text-muted-foreground/30 mb-2" />
                     <p className="text-sm text-muted-foreground">Inbox is empty</p>
                   </div>
@@ -882,16 +882,16 @@ export default function Workspace() {
             </Card>
 
             {/* Filing Cabinet */}
-            <Card className="border-2 border-gray-200 bg-gradient-to-br from-gray-50/50 to-slate-50/30">
+            <Card className="border-2 border-border bg-gradient-to-br from-muted/50 to-muted/30">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Archive className="h-5 w-5 text-gray-600" />
+                  <Archive className="h-5 w-5 text-muted-foreground" />
                   <CardTitle>🗄️ Filing Cabinet</CardTitle>
                 </div>
                 <CardDescription>Archived and completed work</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center justify-center h-32 text-center bg-white/50 rounded-lg border-2 border-dashed">
+                <div className="flex flex-col items-center justify-center h-32 text-center bg-muted/50 rounded-lg border-2 border-dashed">
                   <Archive className="h-12 w-12 text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">No archived folders</p>
                 </div>

@@ -29,7 +29,7 @@ interface KanbanBoardProps {
 }
 
 const columns = [
-  { id: "todo", title: "To Do", status: "todo" as const, color: "bg-slate-500", shadow: "shadow-[0_0_8px_rgba(148,163,184,0.4)]" },
+  { id: "todo", title: "To Do", status: "todo" as const, color: "bg-muted-foreground", shadow: "shadow-[0_0_8px_rgba(148,163,184,0.4)]" },
   { id: "in_progress", title: "In Progress", status: "in_progress" as const, color: "bg-primary", shadow: "shadow-[0_0_8px_rgba(99,102,241,0.8)]" },
   { id: "review", title: "Review", status: "review" as const, color: "bg-purple-400", shadow: "shadow-[0_0_8px_rgba(192,132,252,0.4)]" },
   { id: "done", title: "Done", status: "done" as const, color: "bg-emerald-500", shadow: "shadow-[0_0_8px_rgba(16,185,129,0.4)]" },

@@ -50,7 +50,7 @@ const priorityIcons = {
 
 const priorityColors = {
   low: "text-blue-500",
-  normal: "text-gray-500",
+  normal: "text-muted-foreground",
   high: "text-orange-500",
   urgent: "text-red-500",
 };
@@ -303,7 +303,7 @@ export default function Notifications() {
               <div className="space-y-2">
                 {notifications.map((notification: any) => {
                   const PriorityIcon = priorityIcons[notification.priority as keyof typeof priorityIcons] || Bell;
-                  const priorityColor = priorityColors[notification.priority as keyof typeof priorityColors] || "text-gray-500";
+                  const priorityColor = priorityColors[notification.priority as keyof typeof priorityColors] || "text-muted-foreground";
 
                   return (
                     <div

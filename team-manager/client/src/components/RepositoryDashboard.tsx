@@ -17,7 +17,7 @@ export function RepositoryDashboard({ repositoryId }: RepositoryDashboardProps) 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
       </div>
     );
   }

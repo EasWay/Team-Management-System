@@ -79,17 +79,17 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
 
   if (loading) {
     return (
-      <div className="p-4 border rounded-lg bg-gray-50">
-        <p className="text-gray-500">Loading...</p>
+      <div className="p-4 border border-border rounded-lg bg-muted">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (!account?.connected) {
     return (
-      <div className="p-4 border rounded-lg bg-gray-50">
+      <div className="p-4 border border-border rounded-lg bg-muted">
         <h3 className="text-lg font-semibold mb-3">Connect Social Accounts</h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-muted-foreground mb-4">
           Connect your Facebook Page and Instagram Business account to post updates directly from the team.
         </p>
         <button
@@ -104,7 +104,7 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
   }
 
   return (
-    <div className="p-4 border rounded-lg bg-gray-50">
+    <div className="p-4 border border-border rounded-lg bg-muted">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">Connected Accounts</h3>
         {account.tokenExpired && (
@@ -120,7 +120,7 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
             <span className="text-2xl">📘</span>
             <div>
               <p className="font-medium">Facebook Page</p>
-              <p className="text-sm text-gray-600">{account.page.name}</p>
+              <p className="text-sm text-muted-foreground">{account.page.name}</p>
             </div>
           </div>
         )}
@@ -130,7 +130,7 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
             <span className="text-2xl">📸</span>
             <div>
               <p className="font-medium">Instagram</p>
-              <p className="text-sm text-gray-600">@{account.instagram.username}</p>
+              <p className="text-sm text-muted-foreground">@{account.instagram.username}</p>
             </div>
           </div>
         )}
@@ -139,7 +139,7 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
       <div className="mt-4 flex gap-2">
         <button
           onClick={connectMeta}
-          className="px-3 py-1 text-sm border rounded hover:bg-gray-100"
+          className="px-3 py-1 text-sm border border-border rounded hover:bg-accent"
         >
           Reconnect
         </button>

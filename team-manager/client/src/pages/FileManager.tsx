@@ -64,7 +64,7 @@ const FILE_TYPE_COLORS: Record<string, string> = {
   code: "text-green-500",
   document: "text-yellow-500",
   archive: "text-orange-500",
-  other: "text-gray-500",
+  other: "text-muted-foreground",
 };
 
 export default function FileManager() {
@@ -229,7 +229,7 @@ export default function FileManager() {
   // Get file icon
   const getFileIcon = (fileType: string) => {
     const Icon = FILE_TYPE_ICONS[fileType] || File;
-    const colorClass = FILE_TYPE_COLORS[fileType] || "text-gray-500";
+    const colorClass = FILE_TYPE_COLORS[fileType] || "text-muted-foreground";
     return <Icon className={`size-5 ${colorClass}`} />;
   };
 
