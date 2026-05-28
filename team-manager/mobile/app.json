@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Team Manager",
-    "slug": "team-manager-mobile",
+    "slug": "team-management-system",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
