@@ -207,6 +207,29 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       .limit(1)
       .then(rows => rows[0]);
 
+    if (!user && userInfo.email) {
+      // Check for a pre-created account with matching email (e.g. seeded members)
+      user = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userInfo.email))
+        .limit(1)
+        .then(rows => rows[0]);
+
+      if (user) {
+        console.log('[OAuth] Linking GitHub ID to existing account by email:', user.id);
+        await db
+          .update(users)
+          .set({
+            openId: githubId,
+            name: userInfo.name || userInfo.login,
+            lastSignedIn: new Date(),
+          })
+          .where(eq(users.id, user.id));
+        user = { ...user, openId: githubId, name: userInfo.name || userInfo.login };
+      }
+    }
+
     if (!user) {
       console.log('[OAuth] Creating new user...');
       const [newUser] = await db
@@ -221,7 +244,7 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
 
       user = newUser;
       console.log('[OAuth] New user created:', user.id);
-    } else {
+    } else if (user.openId === githubId) {
       console.log('[OAuth] Updating existing user:', user.id);
       await db
         .update(users)
