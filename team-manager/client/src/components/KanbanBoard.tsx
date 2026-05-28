@@ -303,12 +303,12 @@ export function KanbanBoard({
       const optimisticTask: Task = { ...task, status: newStatus, position: newPosition };
       setOptimisticUpdates((prev) => new Map(prev).set(taskId, optimisticTask));
 
-      utils.tasks.list.setData({ teamId }, (old) => {
+      utils.tasks.list.setData({ teamId }, ((old: unknown) => {
         if (!old) return old;
         return (old as Task[]).map((t) =>
           t.id === taskId ? optimisticTask : t
         );
-      });
+      }) as any);
 
       await moveMutation.mutateAsync({
         id: taskId,

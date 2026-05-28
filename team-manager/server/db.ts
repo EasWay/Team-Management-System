@@ -716,6 +716,7 @@ export async function getCollaborativeTeamMembers(
       memberId: teamMembersCollaborative.memberId,
       role: teamMembersCollaborative.role,
       status: teamMembersCollaborative.status,
+      officeRole: teamMembersCollaborative.officeRole,
       joinedAt: teamMembersCollaborative.joinedAt,
       member: teamMembers,
     })
@@ -1403,7 +1404,7 @@ export async function getTasksByTeam(
     .orderBy(desc(tasks.createdAt));
 
   // Enrich with creator names in a second query for simplicity
-  const allCreatorIds = [...new Set(rows.map(r => r.task.createdBy).filter(Boolean))] as number[];
+  const allCreatorIds = Array.from(new Set(rows.map(r => r.task.createdBy).filter(Boolean))) as number[];
   let creatorMap: Record<number, string | null> = {};
   if (allCreatorIds.length > 0) {
     const creators = await db
@@ -3107,7 +3108,7 @@ export async function configureTeamApproval(
  * ============================================================================
  */
 
-export type WorkflowStage = 'ideation' | 'design' | 'business' | 'development' | 'testing' | 'review' | 'completed';
+export type WorkflowStage = 'ideation' | 'design' | 'business' | 'development' | 'testing' | 'review' | 'completed' | 'research' | 'architecture' | 'backend' | 'fullstack' | 'ai';
 export type WorkflowRole = 'designer' | 'business_strategist' | 'backend_dev' | 'frontend_dev' | 'qa_tester' | 'reviewer';
 
 export interface HandoffRecord {
@@ -3535,7 +3536,7 @@ export async function getMyWorkQueue(
   return {
     tasks: userTasks,
     projects: userProjects,
-    role: membership.role,
+    role: membership.role ?? undefined,
   };
 }
 
@@ -3615,20 +3616,7 @@ export async function acceptHandoff(
  * ============================================================================
  */
 
-export type WorkflowStage = 'ideation' | 'research' | 'architecture' | 'design' | 'backend' | 'fullstack' | 'ai' | 'testing' | 'review' | 'completed';
 export type AssignedRole = 'project_manager' | 'lead_researcher' | 'systems_architect' | 'backend_engineer' | 'fullstack_engineer' | 'ai_engineer' | 'qa_tester' | 'designer';
-
-export interface HandoffRecord {
-  from: string;
-  to: string;
-  fromUserId?: number;
-  toUserId?: number;
-  deliverables: any[];
-  timestamp: string;
-  comments?: string;
-  approved?: boolean;
-  approvalId?: number;
-}
 
 export interface Deliverable {
   type: 'figma' | 'github' | 'pdf' | 'link' | 'document' | 'image';
@@ -3831,7 +3819,7 @@ export async function handoffToNextStage(
         {
           entityType,
           entityId,
-          teamId: entity.teamId,
+          teamId: entity.teamId!,
           fromStage,
           toStage: handoffData.toStage,
           deliverables: entity.deliverables,
@@ -3885,10 +3873,10 @@ export async function handoffToNextStage(
       .set({
         workflowStage: handoffData.toStage,
         assignedRole: handoffData.toRole,
-        assignedTo: handoffData.toUserId || entity.assignedTo,
+        assignedTo: (handoffData.toUserId || (entity as any).assignedTo) as any,
         handoffHistory,
         updatedAt: new Date(),
-      })
+      } as any)
       .where(eq(table.id, entityId))
       .returning();
 
@@ -4411,10 +4399,10 @@ export async function getChatConversations(
     .from(chatMessages)
     .where(and(eq(chatMessages.toMemberId, memberId), eq(chatMessages.teamId, teamId)));
 
-  const partnerIds = [...new Set([
+  const partnerIds = Array.from(new Set([
     ...sent.map(r => r.partnerId),
     ...received.map(r => r.partnerId),
-  ])];
+  ]));
 
   if (partnerIds.length === 0) return [];
 

@@ -494,7 +494,7 @@ export default function FileManager() {
                           {file.originalName}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatDate(file.createdAt)} • {formatFileSize(file.fileSize)}
+                          {formatDate(file.createdAt ?? new Date())} • {formatFileSize(file.fileSize)}
                         </div>
                       </div>
                     </div>

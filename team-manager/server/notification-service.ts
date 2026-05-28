@@ -558,7 +558,7 @@ export async function generateDailyDigest(userId: number, teamId: number) {
       .where(
         and(
           eq(tasks.teamId, teamId),
-          eq(tasks.assigneeId, userId),
+          eq(tasks.assignedTo, userId),
           gte(tasks.dueDate, todayStart),
           lt(tasks.dueDate, today),
           sql`${tasks.status} != 'completed'`
@@ -571,7 +571,7 @@ export async function generateDailyDigest(userId: number, teamId: number) {
       .where(
         and(
           eq(tasks.teamId, teamId),
-          eq(tasks.assigneeId, userId),
+          eq(tasks.assignedTo, userId),
           lt(tasks.dueDate, todayStart),
           sql`${tasks.status} != 'completed'`
         )
@@ -621,7 +621,7 @@ export async function queueDailyDigest(userId: number, teamId: number, scheduled
     const [digest] = await db.insert(dailyDigestQueue).values({
       userId,
       teamId,
-      digestDate: new Date(),
+      digestDate: new Date().toISOString().split('T')[0],
       scheduledTime,
       tasksDueToday: digestData.tasksDueToday as any,
       tasksOverdue: digestData.tasksOverdue as any,

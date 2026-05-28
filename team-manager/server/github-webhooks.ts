@@ -40,6 +40,7 @@ async function handlePushEvent(payload: any, repositoryId: number, teamId: numbe
       teamId,
       userId: 1, // System user for webhook events
       type: 'commit_pushed',
+      description: `${pusher} pushed ${commits.length} commit(s) to ${branch}`,
       entityId: repositoryId,
       entityType: 'repository',
       metadata: JSON.stringify({
@@ -88,6 +89,7 @@ async function handlePullRequestEvent(payload: any, repositoryId: number, teamId
       teamId,
       userId: 1, // System user for webhook events
       type: activityType,
+      description: `Pull request #${pr.number} ${action}: ${pr.title}`,
       entityId: repositoryId,
       entityType: 'repository',
       metadata: JSON.stringify({
@@ -136,6 +138,7 @@ async function handleIssuesEvent(payload: any, repositoryId: number, teamId: num
       teamId,
       userId: 1, // System user for webhook events
       type: activityType,
+      description: `Issue #${issue.number} ${action}: ${issue.title}`,
       entityId: repositoryId,
       entityType: 'repository',
       metadata: JSON.stringify({
@@ -197,10 +200,11 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
 
     // Verify webhook signature
     const payloadString = JSON.stringify(payload);
+    const webhookSecret = (repository as any).webhookSecret || '';
     const isValid = verifyWebhookSignature(
       payloadString,
       signature,
-      repository.webhookSecret
+      webhookSecret
     );
 
     if (!isValid) {
@@ -211,22 +215,22 @@ export async function handleGitHubWebhook(req: Request, res: Response) {
     // Process event based on type
     switch (event) {
       case 'push':
-        await handlePushEvent(payload, repository.id, repository.teamId);
+        await handlePushEvent(payload, repository.id, repository.teamId!);
         break;
       case 'pull_request':
-        await handlePullRequestEvent(payload, repository.id, repository.teamId);
+        await handlePullRequestEvent(payload, repository.id, repository.teamId!);
         break;
       case 'issues':
-        await handleIssuesEvent(payload, repository.id, repository.teamId);
+        await handleIssuesEvent(payload, repository.id, repository.teamId!);
         break;
       default:
         console.log(`[Webhook] Unhandled event type: ${event}`);
     }
 
-    // Update repository lastSyncAt
+    // Update repository updatedAt
     await db
       .update(repositories)
-      .set({ lastSyncAt: new Date() })
+      .set({ updatedAt: new Date() })
       .where(eq(repositories.id, repository.id));
 
     res.status(200).json({ success: true });

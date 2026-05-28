@@ -37,6 +37,8 @@ export async function grantResourcePermission(data: {
   reason?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Check if permission already exists
     const [existing] = await db.select()
       .from(resourcePermissions)
@@ -104,6 +106,8 @@ export async function grantResourcePermission(data: {
  */
 export async function revokeResourcePermission(permissionId: number, revokedBy: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [permission] = await db.select()
       .from(resourcePermissions)
       .where(eq(resourcePermissions.id, permissionId));
@@ -143,6 +147,8 @@ export async function checkResourcePermission(
   requiredPermission: string
 ): Promise<boolean> {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [permission] = await db.select()
       .from(resourcePermissions)
       .where(
@@ -185,6 +191,8 @@ export async function checkResourcePermission(
  */
 export async function getUserResourcePermissions(userId: number, resourceType?: string) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [eq(resourcePermissions.userId, userId)];
 
     if (resourceType) {
@@ -228,6 +236,8 @@ export async function setOfficeAccessControl(data: {
   grantedBy: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Check if access control already exists
     const [existing] = await db.select()
       .from(officeAccessControl)
@@ -284,6 +294,8 @@ export async function setOfficeAccessControl(data: {
  */
 export async function getOfficeAccessControl(userId: number, officeRole: string, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [access] = await db.select()
       .from(officeAccessControl)
       .where(
@@ -311,6 +323,8 @@ export async function checkOfficePermission(
   permission: string
 ): Promise<boolean> {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const access = await getOfficeAccessControl(userId, officeRole, teamId);
 
     if (!access) {
@@ -362,6 +376,8 @@ export async function logSecurityAudit(data: {
   metadata?: any;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     await db.insert(securityAuditTrail).values({
       ...data,
       ipAddress: data.ipAddress || 'unknown',
@@ -388,6 +404,8 @@ export async function getSecurityAuditTrail(filters?: {
   limit?: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [];
 
     if (filters?.teamId) {
@@ -449,6 +467,8 @@ export async function exportAuditLogs(filters?: {
   format?: string;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const logs = await getSecurityAuditTrail({
       ...filters,
       limit: undefined, // Get all logs
@@ -483,6 +503,8 @@ export async function exportAuditLogs(filters?: {
  */
 export async function enable2FA(userId: number, method: string) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     // Check if 2FA already exists
     const [existing] = await db.select()
       .from(twoFactorAuth)
@@ -543,6 +565,8 @@ export async function enable2FA(userId: number, method: string) {
  */
 export async function verify2FAToken(userId: number, token: string): Promise<boolean> {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [tfa] = await db.select()
       .from(twoFactorAuth)
       .where(eq(twoFactorAuth.userId, userId));
@@ -584,6 +608,8 @@ export async function verify2FAToken(userId: number, token: string): Promise<boo
  */
 export async function generateBackupCodes(userId: number): Promise<string[]> {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const codes = Array.from({ length: 10 }, () => 
       crypto.randomBytes(4).toString('hex').toUpperCase()
     );
@@ -622,6 +648,8 @@ export async function addIPToWhitelist(data: {
   expiresAt?: Date;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [ip] = await db.insert(ipWhitelist).values(data).returning();
 
     await logSecurityAudit({
@@ -645,6 +673,8 @@ export async function addIPToWhitelist(data: {
  */
 export async function checkIPWhitelist(teamId: number, ipAddress: string, userId?: number): Promise<boolean> {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [
       eq(ipWhitelist.teamId, teamId),
       eq(ipWhitelist.isActive, true),
@@ -691,6 +721,8 @@ export async function checkIPWhitelist(teamId: number, ipAddress: string, userId
  */
 export async function getIPWhitelist(teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const ips = await db.select()
       .from(ipWhitelist)
       .where(eq(ipWhitelist.teamId, teamId))
@@ -722,6 +754,8 @@ export async function createUserSession(data: {
   expiresAt: Date;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const sessionToken = crypto.randomBytes(32).toString('hex');
     const refreshToken = crypto.randomBytes(32).toString('hex');
 
@@ -752,6 +786,8 @@ export async function createUserSession(data: {
  */
 export async function getUserSessions(userId: number, activeOnly: boolean = false) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [eq(userSessions.userId, userId)];
 
     if (activeOnly) {
@@ -775,6 +811,8 @@ export async function getUserSessions(userId: number, activeOnly: boolean = fals
  */
 export async function revokeSession(sessionId: number, userId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     await db.update(userSessions)
       .set({ isActive: false })
       .where(
@@ -803,6 +841,8 @@ export async function revokeSession(sessionId: number, userId: number) {
  */
 export async function revokeAllSessions(userId: number, exceptSessionId?: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const conditions = [
       eq(userSessions.userId, userId),
       eq(userSessions.isActive, true),
@@ -847,6 +887,8 @@ export async function createPermissionRole(data: {
   createdBy: number;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [role] = await db.insert(permissionRoles).values({
       ...data,
       permissions: data.permissions as any,
@@ -879,6 +921,8 @@ export async function assignRoleToUser(data: {
   expiresAt?: Date;
 }) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const [assignment] = await db.insert(userRoleAssignments).values(data).returning();
 
     await logSecurityAudit({
@@ -902,6 +946,8 @@ export async function assignRoleToUser(data: {
  */
 export async function getUserRoles(userId: number, teamId: number) {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const assignments = await db.select()
       .from(userRoleAssignments)
       .where(
@@ -938,6 +984,8 @@ export async function checkRolePermission(
   permission: string
 ): Promise<boolean> {
   try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
     const roles = await getUserRoles(userId, teamId);
 
     for (const role of roles) {

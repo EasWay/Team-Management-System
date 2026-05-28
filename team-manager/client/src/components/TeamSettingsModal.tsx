@@ -26,9 +26,9 @@ interface Team {
   id: number;
   name: string;
   description: string | null;
-  ownerId: number;
-  createdAt: Date;
-  updatedAt: Date;
+  ownerId?: number;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
 }
 
 interface TeamSettingsModalProps {
