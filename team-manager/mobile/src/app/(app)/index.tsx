@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useTeamStore } from '@/store/teamStore';
+import { useThemeStore } from '@/store/themeStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/Badge';
 import {
@@ -18,13 +19,13 @@ import {
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const QUICK_ACTIONS: { label: string; icon: IconName; route: string; color: string }[] = [
-  { label: 'Tasks',      icon: 'checkmark-circle', route: '/(app)/tasks',      color: '#38bdf8' },
-  { label: 'Projects',   icon: 'folder',           route: '/(app)/projects',   color: '#a78bfa' },
-  { label: 'Calendar',   icon: 'calendar',         route: '/(app)/calendar',   color: '#34d399' },
-  { label: 'Conference', icon: 'videocam',         route: '/(app)/conference', color: '#fb923c' },
+  { label: 'Tasks',      icon: 'checkmark-circle', route: '/(app)/tasks',      color: '#555555' },
+  { label: 'Projects',   icon: 'folder',           route: '/(app)/projects',   color: '#777777' },
+  { label: 'Calendar',   icon: 'calendar',         route: '/(app)/calendar',   color: '#555555' },
+  { label: 'Conference', icon: 'videocam',         route: '/(app)/conference', color: '#777777' },
 ];
 
-const AVATAR_COLORS = ['#0369a1', '#7c3aed', '#059669', '#b45309', '#be185d', '#0e7490'];
+const AVATAR_COLORS = ['#333333', '#555555', '#444444', '#666666', '#3A3A3A', '#4A4A4A'];
 
 const STAGE_COLORS: Record<string, 'primary' | 'warning' | 'success' | 'danger' | 'default'> = {
   ideation:    'primary',
@@ -82,7 +83,7 @@ function MetricCard({
   label: string; value: string; unit: string; trend: string; direction: 'up' | 'down'; icon: IconName;
 }) {
   const isUp = direction === 'up';
-  const trendColor = isUp ? '#22c55e' : '#f87171';
+  const trendColor = isUp ? '#888888' : '#f87171';
   const trendIcon: IconName = isUp ? 'trending-up-outline' : 'trending-down-outline';
   return (
     <View
@@ -108,12 +109,12 @@ function MetricCard({
 }
 
 function activityIcon(type: string): { icon: IconName; color: string } {
-  if (type.includes('task'))                        return { icon: 'checkmark-circle-outline', color: '#38bdf8' };
-  if (type.includes('project'))                     return { icon: 'folder-outline',           color: '#a78bfa' };
-  if (type.includes('member') || type.includes('invite')) return { icon: 'person-add-outline', color: '#34d399' };
-  if (type.includes('comment'))                     return { icon: 'chatbubble-outline',        color: '#fb923c' };
-  if (type.includes('repo'))                        return { icon: 'logo-github',               color: '#94a3b8' };
-  return                                                   { icon: 'radio-button-on-outline',   color: '#64748b' };
+  if (type.includes('task'))                        return { icon: 'checkmark-circle-outline', color: '#888888' };
+  if (type.includes('project'))                     return { icon: 'folder-outline',           color: '#888888' };
+  if (type.includes('member') || type.includes('invite')) return { icon: 'person-add-outline', color: '#888888' };
+  if (type.includes('comment'))                     return { icon: 'chatbubble-outline',        color: '#888888' };
+  if (type.includes('repo'))                        return { icon: 'logo-github',               color: '#888888' };
+  return                                                   { icon: 'radio-button-on-outline',   color: '#888888' };
 }
 
 function statusVariant(status: string): 'primary' | 'success' | 'warning' | 'danger' | 'default' {
@@ -137,6 +138,7 @@ export default function MyOfficeScreen() {
   const { user } = useAuthStore();
   const { activeTeam } = useTeamStore();
   const router = useRouter();
+  const isDark = useThemeStore(state => state.isDark);
 
   const teamId = activeTeam?.id ?? 0;
 
@@ -171,11 +173,11 @@ export default function MyOfficeScreen() {
   const recentProjects = projects.slice(0, 5);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#38bdf8" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor={isDark ? '#FFFFFF' : '#0A0A0A'} />
         }
       >
         {/* ── Header ── */}
@@ -187,9 +189,9 @@ export default function MyOfficeScreen() {
           {activeTeam && (
             <TouchableOpacity
               onPress={() => router.push('/(app)/teams' as any)}
-              className="bg-sky-50 dark:bg-sky-900/50 border border-sky-200 dark:border-sky-700 rounded-xl px-3 py-1.5 ml-3"
+              className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-1.5 ml-3"
             >
-              <Text className="text-sky-600 dark:text-sky-300 text-xs font-semibold">{activeTeam.name}</Text>
+              <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">{activeTeam.name}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -199,10 +201,10 @@ export default function MyOfficeScreen() {
           <StatRowSkeleton />
         ) : (
           <View className="flex-row gap-2.5 px-5 mt-4">
-            <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#38bdf8" onPress={() => router.push('/(app)/tasks' as any)} />
-            <StatCard icon="folder"           label="Projects"   value={projects.length} color="#a78bfa" onPress={() => router.push('/(app)/projects' as any)} />
-            <StatCard icon="people"           label="Members"    value={members.length}  color="#34d399" onPress={() => router.push('/(app)/teams' as any)} />
-            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#94a3b8" onPress={() => router.push('/(app)/teams' as any)} />
+            <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#555555" onPress={() => router.push('/(app)/tasks' as any)} />
+            <StatCard icon="folder"           label="Projects"   value={projects.length} color="#777777" onPress={() => router.push('/(app)/projects' as any)} />
+            <StatCard icon="people"           label="Members"    value={members.length}  color="#555555" onPress={() => router.push('/(app)/teams' as any)} />
+            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#888888" onPress={() => router.push('/(app)/teams' as any)} />
           </View>
         )}
 
@@ -211,7 +213,7 @@ export default function MyOfficeScreen() {
           <View className="mt-6 px-5">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Performance</Text>
-              {dashboardQuery.isFetching && !!dashData && <ActivityIndicator size="small" color="#38bdf8" />}
+              {dashboardQuery.isFetching && !!dashData && <ActivityIndicator size="small" color="#888888" />}
             </View>
             {dashboardQuery.isLoading && !metrics ? (
               <MetricsRowSkeleton />
@@ -269,7 +271,7 @@ export default function MyOfficeScreen() {
             <View className="flex-row justify-between items-center px-5 mb-3">
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Team Members</Text>
               <TouchableOpacity onPress={() => router.push('/(app)/teams' as any)}>
-                <Text className="text-sky-500 text-sm font-medium">See all</Text>
+                <Text className="text-neutral-500 text-sm font-medium">See all</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -319,7 +321,7 @@ export default function MyOfficeScreen() {
           <View className="flex-row justify-between items-center mb-3">
             <Text className="text-slate-900 dark:text-white font-bold text-lg">My Tasks</Text>
             <TouchableOpacity onPress={() => router.push('/(app)/tasks' as any)}>
-              <Text className="text-sky-500 text-sm font-medium">See all</Text>
+              <Text className="text-neutral-500 text-sm font-medium">See all</Text>
             </TouchableOpacity>
           </View>
 
@@ -333,7 +335,7 @@ export default function MyOfficeScreen() {
               activeOpacity={0.8}
               className="bg-white dark:bg-slate-800 rounded-2xl p-6 items-center border border-slate-200 dark:border-slate-700"
             >
-              <Ionicons name="checkmark-done-circle" size={40} color="#22c55e" />
+              <Ionicons name="checkmark-done-circle" size={40} color="#888888" />
               <Text className="text-slate-700 dark:text-slate-300 font-semibold mt-3">All caught up!</Text>
               <Text className="text-slate-400 dark:text-slate-500 text-sm mt-1">No tasks assigned to you.</Text>
             </TouchableOpacity>
@@ -377,7 +379,7 @@ export default function MyOfficeScreen() {
           <View className="flex-row justify-between items-center mb-3">
             <Text className="text-slate-900 dark:text-white font-bold text-lg">Projects</Text>
             <TouchableOpacity onPress={() => router.push('/(app)/projects' as any)}>
-              <Text className="text-sky-500 text-sm font-medium">See all</Text>
+              <Text className="text-neutral-500 text-sm font-medium">See all</Text>
             </TouchableOpacity>
           </View>
 
@@ -389,7 +391,7 @@ export default function MyOfficeScreen() {
             >
               <Ionicons name="folder-open-outline" size={40} color="#94a3b8" />
               <Text className="text-slate-500 dark:text-slate-400 font-medium mt-3">No projects yet</Text>
-              <Text className="text-sky-500 text-sm mt-2 font-semibold">+ Create one</Text>
+              <Text className="text-neutral-500 text-sm mt-2 font-semibold">+ Create one</Text>
             </TouchableOpacity>
           ) : (
             recentProjects.map((project: any) => (
@@ -415,7 +417,7 @@ export default function MyOfficeScreen() {
                     {project.evaluationData?.overallScore != null && (
                       <View className="flex-row items-center gap-1 mt-0.5">
                         <Ionicons name="checkmark-circle" size={11} color="#34d399" />
-                        <Text className="text-emerald-500 dark:text-emerald-400 text-xs font-semibold">
+                        <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-semibold">
                           {project.evaluationData.overallScore}% QA
                         </Text>
                       </View>
@@ -474,7 +476,7 @@ export default function MyOfficeScreen() {
                   <View className="flex-row items-center gap-3 mt-auto">
                     {repo.language && (
                       <View className="flex-row items-center gap-1">
-                        <View className="w-2 h-2 rounded-full bg-sky-400" />
+                        <View className="w-2 h-2 rounded-full bg-neutral-400" />
                         <Text className="text-slate-400 dark:text-slate-500 text-xs">{repo.language}</Text>
                       </View>
                     )}
@@ -500,7 +502,7 @@ export default function MyOfficeScreen() {
                 <Text className="text-slate-900 dark:text-white font-bold text-lg">Live Activity</Text>
                 {dashboardQuery.isFetching && <ActivityIndicator size="small" color="#64748b" />}
               </View>
-              <View className="w-2 h-2 rounded-full bg-emerald-400" />
+              <View className="w-2 h-2 rounded-full bg-neutral-400" />
             </View>
 
             <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -559,9 +561,9 @@ export default function MyOfficeScreen() {
               <Text className="text-slate-500 dark:text-slate-400 font-medium mt-3">No active team</Text>
               <TouchableOpacity
                 onPress={() => router.push('/(app)/teams' as any)}
-                className="mt-3 bg-sky-50 dark:bg-sky-700/60 rounded-xl px-4 py-2"
+                className="mt-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl px-4 py-2"
               >
-                <Text className="text-sky-600 dark:text-sky-300 text-sm font-semibold">Select a team</Text>
+                <Text className="text-neutral-700 dark:text-neutral-300 text-sm font-semibold">Select a team</Text>
               </TouchableOpacity>
             </View>
           </View>

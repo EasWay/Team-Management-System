@@ -26,7 +26,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - 20 * 2 - 12) / 2;
 
 const COVER_PALETTES = [
-  { bg: '#0c2340', accent: '#38bdf8', icon: 'layers-outline'       as IconName },
+  { bg: '#0c2340', accent: '#888888', icon: 'layers-outline'       as IconName },
   { bg: '#1a0a2e', accent: '#a78bfa', icon: 'analytics-outline'    as IconName },
   { bg: '#0a2318', accent: '#34d399', icon: 'code-slash-outline'   as IconName },
   { bg: '#2a1200', accent: '#fb923c', icon: 'bulb-outline'         as IconName },
@@ -45,7 +45,7 @@ const STAGE_META: Record<string, { label: string; color: string; bg: string }> =
   ideation:    { label: 'Ideation',   color: '#a78bfa', bg: '#4c1d9520' },
   planning:    { label: 'Planning',   color: '#67e8f9', bg: '#0e748020' },
   development: { label: 'In Dev',     color: '#fb923c', bg: '#c2410c20' },
-  review:      { label: 'In Review',  color: '#38bdf8', bg: '#0369a120' },
+  review:      { label: 'In Review',  color: '#888888', bg: '#0369a120' },
   qa:          { label: 'QA',         color: '#fbbf24', bg: '#92400e20' },
   completed:   { label: 'Completed',  color: '#34d399', bg: '#06503020' },
   archived:    { label: 'Archived',   color: '#64748b', bg: '#1e293b40' },
@@ -318,7 +318,7 @@ export default function ProjectsScreen() {
             <RefreshControl
               refreshing={projectsQuery.isFetching}
               onRefresh={() => projectsQuery.refetch()}
-              tintColor="#0ea5e9"
+              tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
             />
           }
           ListEmptyComponent={
@@ -337,7 +337,7 @@ export default function ProjectsScreen() {
               {!search && (
                 <TouchableOpacity
                   onPress={() => setShowCreate(true)}
-                  className="bg-sky-500 rounded-2xl px-6 py-3"
+                  className="bg-black dark:bg-white rounded-2xl px-6 py-3"
                 >
                   <Text className="text-white font-bold">+ New Project</Text>
                 </TouchableOpacity>
@@ -361,9 +361,9 @@ export default function ProjectsScreen() {
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
           activeOpacity={0.85}
-          className="w-14 h-14 bg-sky-500 rounded-full items-center justify-center"
+          className="w-14 h-14 bg-black dark:bg-white rounded-full items-center justify-center"
           style={{
-            shadowColor: '#38bdf8',
+            shadowColor: '#888888',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.45,
             shadowRadius: 12,
@@ -430,7 +430,7 @@ export default function ProjectsScreen() {
 
             {projectDetailQuery.isLoading ? (
               <View className="items-center justify-center py-16">
-                <ActivityIndicator color="#38bdf8" size="large" />
+                <ActivityIndicator color="#888888" size="large" />
                 <Text className="text-slate-400 mt-3 text-sm">Loading project…</Text>
               </View>
             ) : (() => {
@@ -513,8 +513,8 @@ export default function ProjectsScreen() {
 
                     {/* Evaluation scores */}
                     {p.evaluationData && (
-                      <View className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-200 dark:border-emerald-700/40">
-                        <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">QA Evaluation</Text>
+                      <View className="bg-neutral-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-200 dark:border-emerald-700/40">
+                        <Text className="text-emerald-600 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-3">QA Evaluation</Text>
                         {[
                           { label: 'Design', value: p.evaluationData.designAlignment },
                           { label: 'Business', value: p.evaluationData.businessAlignment },
@@ -524,11 +524,11 @@ export default function ProjectsScreen() {
                           <View key={item.label} className="mb-2">
                             <View className="flex-row justify-between mb-1">
                               <Text className="text-slate-600 dark:text-slate-400 text-xs">{item.label}</Text>
-                              <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">{item.value}%</Text>
+                              <Text className="text-emerald-600 dark:text-neutral-400 text-xs font-bold">{item.value}%</Text>
                             </View>
                             <View className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <View
-                                className="h-full bg-emerald-500 rounded-full"
+                                className="h-full bg-neutral-700 dark:bg-neutral-200 rounded-full"
                                 style={{ width: `${item.value}%` }}
                               />
                             </View>
@@ -536,8 +536,8 @@ export default function ProjectsScreen() {
                         ))}
                         {p.evaluationData.readyForLaunch && (
                           <View className="flex-row items-center gap-1.5 mt-2">
-                            <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                            <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">Ready for Launch</Text>
+                            <Ionicons name="checkmark-circle" size={14} color="#888888" />
+                            <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">Ready for Launch</Text>
                           </View>
                         )}
                       </View>
@@ -549,16 +549,16 @@ export default function ProjectsScreen() {
                         <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Deliverables</Text>
                         {deliverablesList.map((d: any, i: number) => (
                           <View key={i} className="flex-row items-center gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 mb-2 border border-slate-200 dark:border-slate-700">
-                            <View className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 items-center justify-center">
+                            <View className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
                               <Ionicons
                                 name={d.type === 'github' ? 'logo-github' : d.type === 'figma' ? 'color-palette-outline' : 'link-outline'}
                                 size={14}
-                                color="#38bdf8"
+                                color="#888888"
                               />
                             </View>
                             <View className="flex-1">
                               <Text className="text-slate-900 dark:text-white text-sm font-medium">{d.description || d.type}</Text>
-                              {d.url && <Text className="text-sky-500 text-xs mt-0.5" numberOfLines={1}>{d.url}</Text>}
+                              {d.url && <Text className="text-neutral-600 dark:text-neutral-400 text-xs mt-0.5" numberOfLines={1}>{d.url}</Text>}
                             </View>
                           </View>
                         ))}

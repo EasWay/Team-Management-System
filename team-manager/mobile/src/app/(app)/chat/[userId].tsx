@@ -46,18 +46,15 @@ function dateLabel(dateStr: string): string {
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 32 }: { name?: string | null; size?: number }) {
-  const colors = ['#38bdf8', '#a78bfa', '#34d399', '#fb923c', '#f472b6', '#fbbf24'];
-  const idx = ((name?.charCodeAt(0) ?? 0) + (name?.charCodeAt(1) ?? 0)) % colors.length;
-  const color = colors[idx];
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
-      backgroundColor: color + '25', borderWidth: 1.5, borderColor: color + '50',
+      backgroundColor: '#E8E8E8', borderWidth: 1.5, borderColor: '#D0D0D0',
       alignItems: 'center', justifyContent: 'center',
     }}>
-      <Text style={{ color, fontSize: size * 0.38, fontWeight: '800' }}>{initials}</Text>
+      <Text style={{ color: '#555555', fontSize: size * 0.38, fontWeight: '800' }}>{initials}</Text>
     </View>
   );
 }
@@ -82,23 +79,23 @@ function MessageBubble({ msg, isMine, partnerName }: { msg: any; isMine: boolean
       {/* Bubble */}
       <View style={{
         maxWidth: '75%',
-        backgroundColor: isMine ? '#0369a1' : (isDark ? '#1e293b' : '#f1f5f9'),
+        backgroundColor: isMine ? (isDark ? '#2A2A2A' : '#0A0A0A') : (isDark ? '#1A1A1A' : '#F0F0F0'),
         borderRadius: 18,
         borderBottomRightRadius: isMine ? 4 : 18,
         borderBottomLeftRadius: isMine ? 18 : 4,
         paddingHorizontal: 14,
         paddingVertical: 10,
       }}>
-        <Text style={{ color: isMine ? '#e0f2fe' : (isDark ? '#e2e8f0' : '#0f172a'), fontSize: 14, lineHeight: 20 }}>
+        <Text style={{ color: isMine ? (isDark ? '#F2F2F2' : '#FFFFFF') : (isDark ? '#F2F2F2' : '#0A0A0A'), fontSize: 14, lineHeight: 20 }}>
           {msg.content}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
-          <Text style={{ color: isMine ? '#7dd3fc' : (isDark ? '#475569' : '#64748b'), fontSize: 10 }}>{timeStr}</Text>
+          <Text style={{ color: isDark ? '#555555' : '#AAAAAA', fontSize: 10 }}>{timeStr}</Text>
           {isMine && (
             <Ionicons
               name={isRead ? 'checkmark-done' : 'checkmark'}
               size={12}
-              color={isRead ? '#38bdf8' : '#7dd3fc'}
+              color={isDark ? '#888888' : '#AAAAAA'}
             />
           )}
         </View>
@@ -200,7 +197,7 @@ export default function ChatScreen() {
   const grouped = groupByDate(messages);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -209,11 +206,11 @@ export default function ChatScreen() {
         {/* Header */}
         <View style={{
           flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12,
-          borderBottomWidth: 1, borderBottomColor: isDark ? '#0f172a' : '#e2e8f0', backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
+          borderBottomWidth: 1, borderBottomColor: isDark ? '#0D0D0D' : '#E8E8E8', backgroundColor: isDark ? '#000000' : '#F5F5F5',
         }}>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0f172a' : '#e2e8f0', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
           >
             <Ionicons name="arrow-back" size={18} color={isDark ? '#64748b' : '#475569'} />
           </TouchableOpacity>
@@ -221,7 +218,7 @@ export default function ChatScreen() {
           <Avatar name={partnerName} size={38} />
 
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
+            <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
               {partnerName}
             </Text>
             <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 11, marginTop: 1 }}>Team member</Text>
@@ -233,7 +230,7 @@ export default function ChatScreen() {
         {/* Messages */}
         {messagesQuery.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#38bdf8" />
+            <ActivityIndicator color={isDark ? '#FFFFFF' : '#0A0A0A'} />
           </View>
         ) : messages.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
@@ -256,11 +253,11 @@ export default function ChatScreen() {
               <View>
                 {/* Date separator */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16, gap: 10 }}>
-                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0f172a' : '#e2e8f0' }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8' }} />
                   <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 11, fontWeight: '600' }}>
                     {dateLabel(group.date)}
                   </Text>
-                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0f172a' : '#e2e8f0' }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8' }} />
                 </View>
                 {/* Messages in this date group */}
                 {group.items.map((msg: any) => (
@@ -280,11 +277,11 @@ export default function ChatScreen() {
         <View style={{
           flexDirection: 'row', alignItems: 'flex-end', gap: 10,
           paddingHorizontal: 16, paddingVertical: 12,
-          borderTopWidth: 1, borderTopColor: isDark ? '#0f172a' : '#e2e8f0',
-          backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
+          borderTopWidth: 1, borderTopColor: isDark ? '#0D0D0D' : '#E8E8E8',
+          backgroundColor: isDark ? '#000000' : '#F5F5F5',
         }}>
           <View style={{
-            flex: 1, backgroundColor: isDark ? '#0f172a' : '#ffffff', borderRadius: 24, borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
+            flex: 1, backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderRadius: 24, borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
             paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 10 : 6,
             maxHeight: 120,
           }}>
@@ -293,7 +290,7 @@ export default function ChatScreen() {
               onChangeText={setMessage}
               placeholder={`Message ${partnerName.split(' ')[0]}…`}
               placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
-              style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 14, lineHeight: 20 }}
+              style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 14, lineHeight: 20 }}
               multiline
               maxLength={4000}
               returnKeyType="default"
@@ -305,11 +302,11 @@ export default function ChatScreen() {
             disabled={!message.trim() || sending}
             style={{
               width: 44, height: 44, borderRadius: 22,
-              backgroundColor: message.trim() ? '#0ea5e9' : (isDark ? '#0f172a' : '#ffffff'),
+              backgroundColor: message.trim() ? (isDark ? '#FFFFFF' : '#0A0A0A') : (isDark ? '#1A1A1A' : '#F0F0F0'),
               alignItems: 'center', justifyContent: 'center',
-              borderWidth: message.trim() ? 0 : 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
-              shadowColor: message.trim() ? '#0ea5e9' : 'transparent',
-              shadowRadius: 8, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 3 },
+              borderWidth: message.trim() ? 0 : 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
+              shadowColor: message.trim() ? '#000' : 'transparent',
+              shadowRadius: 8, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 3 },
             }}
           >
             {sending

@@ -54,9 +54,9 @@ export default function AppLayout() {
   }, [unreadQuery.data]);
 
   // Dynamic theme colors
-  const tabBg = isDark ? '#0f172a' : '#ffffff';
-  const tabBorder = isDark ? '#1e293b' : '#e2e8f0';
-  const tabInactive = isDark ? '#475569' : '#94a3b8';
+  const tabBg = isDark ? '#000000' : '#FFFFFF';
+  const tabBorder = isDark ? '#1A1A1A' : '#E8E8E8';
+  const tabInactive = isDark ? '#555555' : '#AAAAAA';
 
   return (
     <Tabs
@@ -70,7 +70,7 @@ export default function AppLayout() {
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#38bdf8',
+        tabBarActiveTintColor: isDark ? '#FFFFFF' : '#0A0A0A',
         tabBarInactiveTintColor: tabInactive,
         tabBarLabelStyle: {
           fontSize: 11,

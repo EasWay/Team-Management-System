@@ -23,7 +23,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const EVENT_TYPES: { key: string; label: string; icon: IconName; color: string }[] = [
-  { key: 'meeting',   label: 'Meeting',   icon: 'people-outline',    color: '#38bdf8' },
+  { key: 'meeting',   label: 'Meeting',   icon: 'people-outline',    color: '#888888' },
   { key: 'deadline',  label: 'Deadline',  icon: 'alarm-outline',     color: '#f87171' },
   { key: 'milestone', label: 'Milestone', icon: 'flag-outline',      color: '#fb923c' },
   { key: 'review',    label: 'Review',    icon: 'eye-outline',       color: '#a78bfa' },
@@ -84,11 +84,11 @@ export default function CalendarScreen() {
       acc[dateStr] = {
         marked: true,
         dotColor: evType.color,
-        ...(dateStr === selectedDate ? { selected: true, selectedColor: '#0ea5e9' } : {}),
+        ...(dateStr === selectedDate ? { selected: true, selectedColor: isDark ? '#FFFFFF' : '#0A0A0A' } : {}),
       };
       return acc;
     },
-    { [selectedDate]: { selected: true, selectedColor: '#0ea5e9' } }
+    { [selectedDate]: { selected: true, selectedColor: isDark ? '#FFFFFF' : '#0A0A0A' } }
   );
 
   const dayEvents = events.filter((e: any) => {
@@ -125,32 +125,32 @@ export default function CalendarScreen() {
   // Calendar theme based on color scheme
   const calTheme = isDark
     ? {
-        backgroundColor: '#1e293b',
-        calendarBackground: '#1e293b',
-        textSectionTitleColor: '#64748b',
-        selectedDayBackgroundColor: '#0ea5e9',
-        selectedDayTextColor: '#ffffff',
-        todayTextColor: '#38bdf8',
-        dayTextColor: '#e2e8f0',
-        textDisabledColor: '#334155',
-        arrowColor: '#38bdf8',
-        monthTextColor: '#f1f5f9',
-        indicatorColor: '#0ea5e9',
-        dotColor: '#0ea5e9',
+        backgroundColor: '#000000',
+        calendarBackground: '#000000',
+        textSectionTitleColor: '#888888',
+        selectedDayBackgroundColor: '#FFFFFF',
+        selectedDayTextColor: '#000000',
+        todayTextColor: '#FFFFFF',
+        dayTextColor: '#F2F2F2',
+        textDisabledColor: '#444444',
+        arrowColor: '#FFFFFF',
+        monthTextColor: '#F2F2F2',
+        indicatorColor: '#FFFFFF',
+        dotColor: '#FFFFFF',
       }
     : {
-        backgroundColor: '#f8fafc',
-        calendarBackground: '#f8fafc',
-        textSectionTitleColor: '#94a3b8',
-        selectedDayBackgroundColor: '#0ea5e9',
-        selectedDayTextColor: '#ffffff',
-        todayTextColor: '#0ea5e9',
-        dayTextColor: '#1e293b',
-        textDisabledColor: '#cbd5e1',
-        arrowColor: '#0ea5e9',
-        monthTextColor: '#0f172a',
-        indicatorColor: '#0ea5e9',
-        dotColor: '#0ea5e9',
+        backgroundColor: '#F5F5F5',
+        calendarBackground: '#F5F5F5',
+        textSectionTitleColor: '#AAAAAA',
+        selectedDayBackgroundColor: '#0A0A0A',
+        selectedDayTextColor: '#FFFFFF',
+        todayTextColor: '#0A0A0A',
+        dayTextColor: '#0A0A0A',
+        textDisabledColor: '#CCCCCC',
+        arrowColor: '#0A0A0A',
+        monthTextColor: '#0A0A0A',
+        indicatorColor: '#0A0A0A',
+        dotColor: '#0A0A0A',
       };
 
   return (
@@ -160,7 +160,7 @@ export default function CalendarScreen() {
           <RefreshControl
             refreshing={eventsQuery.isFetching}
             onRefresh={() => eventsQuery.refetch()}
-            tintColor="#0ea5e9"
+            tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -181,8 +181,8 @@ export default function CalendarScreen() {
           </View>
           <TouchableOpacity
             onPress={() => setShowCreate(true)}
-            className="bg-sky-500 rounded-2xl px-4 py-2.5 flex-row items-center gap-1.5"
-            style={{ shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 } }}
+            className="bg-black dark:bg-white rounded-2xl px-4 py-2.5 flex-row items-center gap-1.5"
+            style={{ shadowColor: '#888888', shadowRadius: 8, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 } }}
           >
             <Ionicons name="add" size={16} color="#fff" />
             <Text className="text-white font-bold text-sm">Event</Text>
@@ -217,7 +217,7 @@ export default function CalendarScreen() {
             >
               <Ionicons name="calendar-outline" size={32} color="#94a3b8" />
               <Text className="text-slate-400 dark:text-slate-500 font-medium mt-3">No events</Text>
-              <Text className="text-sky-500 text-sm mt-1.5">+ Add event</Text>
+              <Text className="text-neutral-600 dark:text-neutral-400 text-sm mt-1.5">+ Add event</Text>
             </TouchableOpacity>
           ) : (
             dayEvents.map((event: any) => {

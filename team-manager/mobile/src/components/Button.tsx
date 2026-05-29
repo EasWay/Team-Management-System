@@ -12,10 +12,10 @@ interface ButtonProps {
 }
 
 const variantClasses = {
-  primary: { btn: 'bg-sky-600 active:bg-sky-700', text: 'text-white' },
-  secondary: { btn: 'bg-slate-100 dark:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 border border-slate-200 dark:border-slate-600', text: 'text-slate-800 dark:text-slate-200' },
-  danger: { btn: 'bg-red-600 active:bg-red-700', text: 'text-white' },
-  ghost: { btn: 'bg-transparent active:bg-slate-100 dark:active:bg-slate-800', text: 'text-sky-500 dark:text-sky-400' },
+  primary:   { btn: 'bg-black dark:bg-white active:bg-neutral-800 dark:active:bg-neutral-200', text: 'text-white dark:text-black' },
+  secondary: { btn: 'bg-neutral-100 dark:bg-neutral-800 active:bg-neutral-200 dark:active:bg-neutral-700 border border-neutral-200 dark:border-neutral-700', text: 'text-neutral-800 dark:text-neutral-200' },
+  danger:    { btn: 'bg-red-600 active:bg-red-700', text: 'text-white' },
+  ghost:     { btn: 'bg-transparent active:bg-neutral-100 dark:active:bg-neutral-800', text: 'text-neutral-700 dark:text-neutral-300' },
 };
 
 export function Button({

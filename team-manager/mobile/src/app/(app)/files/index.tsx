@@ -81,10 +81,10 @@ function getFileMeta(mimeType: string, isFolder = false): FileMeta {
   if (mimeType.includes('video')) return { icon: 'videocam-outline', color: '#a78bfa', label: 'Video' };
   if (mimeType.includes('audio')) return { icon: 'musical-notes-outline', color: '#f472b6', label: 'Audio' };
   if (mimeType.includes('zip') || mimeType.includes('compressed') || mimeType.includes('archive'))
-    return { icon: 'archive-outline', color: '#94a3b8', label: 'Archive' };
+    return { icon: 'archive-outline', color: '#888888', label: 'Archive' };
   if (mimeType.includes('code') || mimeType.includes('javascript') || mimeType.includes('python') || mimeType.includes('html'))
-    return { icon: 'code-slash-outline', color: '#38bdf8', label: 'Code' };
-  return { icon: 'document-outline', color: '#64748b', label: 'File' };
+    return { icon: 'code-slash-outline', color: '#888888', label: 'Code' };
+  return { icon: 'document-outline', color: '#6B6B6B', label: 'File' };
 }
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
@@ -163,7 +163,7 @@ function FileRow({
         paddingHorizontal: 20,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? '#0f172a' : '#e2e8f0',
+        borderBottomColor: isDark ? '#0D0D0D' : '#E8E8E8',
         gap: 14,
       }}
     >
@@ -180,15 +180,15 @@ function FileRow({
 
       {/* Info */}
       <View style={{ flex: 1 }}>
-        <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
+        <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
           {file.name}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
           {!isFolder && file.size && (
-            <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 11 }}>{formatBytes(file.size)}</Text>
+            <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 11 }}>{formatBytes(file.size)}</Text>
           )}
           {file.modifiedTime && (
-            <Text style={{ color: isDark ? '#334155' : '#94a3b8', fontSize: 11 }}>{formatDate(file.modifiedTime)}</Text>
+            <Text style={{ color: isDark ? '#555555' : '#888888', fontSize: 11 }}>{formatDate(file.modifiedTime)}</Text>
           )}
         </View>
       </View>
@@ -207,7 +207,7 @@ function FileRow({
         <Ionicons
           name={isFolder ? 'chevron-forward' : 'open-outline'}
           size={16}
-          color={isDark ? '#334155' : '#94a3b8'}
+          color={isDark ? '#555555' : '#888888'}
         />
       </View>
     </TouchableOpacity>
@@ -333,25 +333,25 @@ function FileBrowser({
     (filesQuery.error as any)?.message?.includes('GOOGLE_SERVICE_ACCOUNT_JSON');
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
         paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: isDark ? '#0f172a' : '#e2e8f0',
+        borderBottomWidth: 1, borderBottomColor: isDark ? '#0D0D0D' : '#E8E8E8',
       }}>
         <TouchableOpacity
           onPress={navigateBack}
           style={{
             width: 36, height: 36, borderRadius: 18,
-            backgroundColor: isDark ? '#0f172a' : '#e2e8f0', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Ionicons name={stack.length === 1 ? 'close' : 'arrow-back'} size={18} color={isDark ? '#64748b' : '#475569'} />
+          <Ionicons name={stack.length === 1 ? 'close' : 'arrow-back'} size={18} color={isDark ? '#6B6B6B' : '#888888'} />
         </TouchableOpacity>
 
         <View style={{ flex: 1 }}>
-          <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 17, fontWeight: '700' }} numberOfLines={1}>
+          <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 17, fontWeight: '700' }} numberOfLines={1}>
             {currentFolder.name}
           </Text>
           {/* Breadcrumb */}
@@ -360,10 +360,10 @@ function FileBrowser({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 {stack.map((s, i) => (
                   <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    {i > 0 && <Ionicons name="chevron-forward" size={10} color={isDark ? '#334155' : '#cbd5e1'} />}
+                    {i > 0 && <Ionicons name="chevron-forward" size={10} color={isDark ? '#555555' : '#E0E0E0'} />}
                     <Text
                       style={{
-                        color: i === stack.length - 1 ? (isDark ? '#64748b' : '#475569') : (isDark ? '#334155' : '#94a3b8'),
+                        color: i === stack.length - 1 ? (isDark ? '#6B6B6B' : '#888888') : (isDark ? '#555555' : '#888888'),
                         fontSize: 11,
                         fontWeight: i === stack.length - 1 ? '600' : '400',
                       }}
@@ -385,11 +385,11 @@ function FileBrowser({
               onPress={() => setShowNewFolder(true)}
               style={{
                 width: 36, height: 36, borderRadius: 18,
-                backgroundColor: isDark ? '#0f172a' : '#e2e8f0', borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
+                backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
                 alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Ionicons name="folder-open-outline" size={17} color={isDark ? '#64748b' : '#475569'} />
+              <Ionicons name="folder-open-outline" size={17} color={isDark ? '#6B6B6B' : '#888888'} />
             </TouchableOpacity>
           )}
           {canUpload && (
@@ -398,9 +398,9 @@ function FileBrowser({
               disabled={uploading}
               style={{
                 paddingHorizontal: 14, height: 36, borderRadius: 18,
-                backgroundColor: '#0ea5e9',
+                backgroundColor: '#888888',
                 flexDirection: 'row', alignItems: 'center', gap: 6,
-                shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 3 },
+                shadowColor: '#888888', shadowRadius: 8, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 3 },
               }}
             >
               {uploading
@@ -418,8 +418,8 @@ function FileBrowser({
       {/* Content */}
       {filesQuery.isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#38bdf8" />
-          <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 13, marginTop: 12 }}>Loading files…</Text>
+          <ActivityIndicator size="large" color="#888888" />
+          <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 13, marginTop: 12 }}>Loading files…</Text>
         </View>
       ) : isServiceNotConfigured ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }}>
@@ -429,44 +429,44 @@ function FileBrowser({
           }}>
             <Ionicons name="key-outline" size={28} color="#fbbf24" />
           </View>
-          <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+          <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
             Google Drive not configured
           </Text>
-          <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
-            Add your <Text style={{ color: '#38bdf8', fontWeight: '600' }}>GOOGLE_SERVICE_ACCOUNT_JSON</Text> to the server environment variables to enable in-app file browsing.
+          <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+            Add your <Text style={{ color: '#888888', fontWeight: '600' }}>GOOGLE_SERVICE_ACCOUNT_JSON</Text> to the server environment variables to enable in-app file browsing.
           </Text>
         </View>
       ) : filesQuery.isError ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }}>
           <Ionicons name="warning-outline" size={40} color="#ef4444" />
-          <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 16, fontWeight: '600', marginTop: 12, marginBottom: 6, textAlign: 'center' }}>
+          <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 16, fontWeight: '600', marginTop: 12, marginBottom: 6, textAlign: 'center' }}>
             Couldn't load files
           </Text>
-          <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 12, textAlign: 'center' }}>
+          <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 12, textAlign: 'center' }}>
             {(filesQuery.error as any)?.message ?? 'Check that the service account has access to this folder.'}
           </Text>
           <TouchableOpacity
             onPress={() => filesQuery.refetch()}
             style={{
-              marginTop: 20, backgroundColor: isDark ? '#0f172a' : '#e2e8f0', borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
+              marginTop: 20, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
               borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10,
             }}
           >
-            <Text style={{ color: isDark ? '#94a3b8' : '#475569', fontSize: 13, fontWeight: '600' }}>Retry</Text>
+            <Text style={{ color: isDark ? '#888888' : '#888888', fontSize: 13, fontWeight: '600' }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : sorted.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
           <View style={{
-            width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#0f172a' : '#e2e8f0',
-            borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+            width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8',
+            borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
           }}>
-            <Ionicons name="folder-open-outline" size={28} color={isDark ? '#334155' : '#94a3b8'} />
+            <Ionicons name="folder-open-outline" size={28} color={isDark ? '#555555' : '#888888'} />
           </View>
-          <Text style={{ color: isDark ? '#64748b' : '#475569', fontSize: 16, fontWeight: '600', marginBottom: 6 }}>Empty folder</Text>
+          <Text style={{ color: isDark ? '#6B6B6B' : '#888888', fontSize: 16, fontWeight: '600', marginBottom: 6 }}>Empty folder</Text>
           {canUpload && (
-            <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 13, textAlign: 'center' }}>
-              Tap <Text style={{ color: '#38bdf8', fontWeight: '600' }}>Upload</Text> to add files here.
+            <Text style={{ color: isDark ? '#555555' : '#6B6B6B', fontSize: 13, textAlign: 'center' }}>
+              Tap <Text style={{ color: '#888888', fontWeight: '600' }}>Upload</Text> to add files here.
             </Text>
           )}
         </View>
@@ -478,7 +478,7 @@ function FileBrowser({
             <RefreshControl
               refreshing={filesQuery.isFetching && !filesQuery.isLoading}
               onRefresh={() => filesQuery.refetch()}
-              tintColor="#0ea5e9"
+              tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
             />
           }
           renderItem={({ item }) => (
@@ -498,36 +498,36 @@ function FileBrowser({
       <Modal visible={showNewFolder} animationType="slide" transparent onRequestClose={() => setShowNewFolder(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
           <View style={{
-            backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-            borderTopWidth: 1, borderColor: isDark ? '#1e293b' : '#e2e8f0', padding: 24, paddingBottom: 40,
+            backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            borderTopWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E8E8E8', padding: 24, paddingBottom: 40,
           }}>
-            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1e293b' : '#e2e8f0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
-            <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 18, fontWeight: '800', marginBottom: 16 }}>New Folder</Text>
+            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#2A2A2A' : '#E8E8E8', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+            <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 18, fontWeight: '800', marginBottom: 16 }}>New Folder</Text>
             <TextInput
               value={newFolderName}
               onChangeText={setNewFolderName}
               placeholder="Folder name"
-              placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
+              placeholderTextColor={isDark ? '#555555' : '#888888'}
               autoFocus
               style={{
-                backgroundColor: isDark ? '#0a0f1e' : '#f8fafc', borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
+                backgroundColor: isDark ? '#000000' : '#F5F5F5', borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
                 borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
-                color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 14, marginBottom: 16,
+                color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 14, marginBottom: 16,
               }}
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
                 onPress={() => { setShowNewFolder(false); setNewFolderName(''); }}
-                style={{ flex: 1, borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+                style={{ flex: 1, borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
               >
-                <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
+                <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCreateFolder}
                 disabled={creatingFolder || !newFolderName.trim()}
                 style={{
                   flex: 1,
-                  backgroundColor: newFolderName.trim() ? '#0ea5e9' : (isDark ? '#1e293b' : '#cbd5e1'),
+                  backgroundColor: newFolderName.trim() ? '#888888' : (isDark ? '#2A2A2A' : '#E0E0E0'),
                   borderRadius: 14, paddingVertical: 14, alignItems: 'center',
                 }}
               >
@@ -575,10 +575,10 @@ function FolderCard({
       onPress={connected && canBrowse ? onPress : connected ? onConnect : onConnect}
       activeOpacity={0.8}
       style={{
-        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        backgroundColor: isDark ? '#0D0D0D' : '#ffffff',
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: connected ? color + '30' : (isDark ? '#1e293b' : '#cbd5e1'),
+        borderColor: connected ? color + '30' : (isDark ? '#2A2A2A' : '#E0E0E0'),
         padding: 16,
         marginBottom: 12,
       }}
@@ -593,7 +593,7 @@ function FolderCard({
         </View>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 15, fontWeight: '700' }} numberOfLines={1}>
+            <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 15, fontWeight: '700' }} numberOfLines={1}>
               {title}
             </Text>
             {badge && (
@@ -603,7 +603,7 @@ function FolderCard({
             )}
           </View>
           {subtitle && (
-            <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 12 }} numberOfLines={1}>{subtitle}</Text>
+            <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 12 }} numberOfLines={1}>{subtitle}</Text>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 }}>
             {connected ? (
@@ -615,8 +615,8 @@ function FolderCard({
               </>
             ) : (
               <>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isDark ? '#334155' : '#cbd5e1' }} />
-                <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 11 }}>Not connected — tap to connect</Text>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isDark ? '#555555' : '#E0E0E0' }} />
+                <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 11 }}>Not connected — tap to connect</Text>
               </>
             )}
           </View>
@@ -624,7 +624,7 @@ function FolderCard({
         <Ionicons
           name={connected && canBrowse ? 'chevron-forward' : connected ? 'cloud-upload-outline' : 'link-outline'}
           size={18}
-          color={connected ? color : (isDark ? '#334155' : '#94a3b8')}
+          color={connected ? color : (isDark ? '#555555' : '#888888')}
         />
       </View>
     </TouchableOpacity>
@@ -694,14 +694,14 @@ function UploadOnlySheet({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
         <View style={{
-          backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          borderTopWidth: 1, borderColor: isDark ? '#1e293b' : '#e2e8f0', padding: 24, paddingBottom: 40,
+          backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          borderTopWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E8E8E8', padding: 24, paddingBottom: 40,
         }}>
-          <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1e293b' : '#e2e8f0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
-          <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 18, fontWeight: '800', marginBottom: 6 }}>
+          <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#2A2A2A' : '#E8E8E8', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+          <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 18, fontWeight: '800', marginBottom: 6 }}>
             Upload to {folderName}
           </Text>
-          <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 13, marginBottom: 24, lineHeight: 18 }}>
+          <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 13, marginBottom: 24, lineHeight: 18 }}>
             You can upload files to this folder, but cannot view its contents.
           </Text>
 
@@ -709,9 +709,9 @@ function UploadOnlySheet({
             onPress={handleUpload}
             disabled={uploading}
             style={{
-              backgroundColor: '#0ea5e9', borderRadius: 14, paddingVertical: 16,
+              backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A', borderRadius: 14, paddingVertical: 16,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-              shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 3 },
+              shadowColor: '#000', shadowRadius: 8, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 3 },
             }}
           >
             {uploading
@@ -726,7 +726,7 @@ function UploadOnlySheet({
             onPress={onClose}
             style={{ marginTop: 12, paddingVertical: 14, alignItems: 'center' }}
           >
-            <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 14, fontWeight: '600' }}>Cancel</Text>
+            <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 14, fontWeight: '600' }}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -757,45 +757,45 @@ function ConnectDriveModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
         <View style={{
-          backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          borderTopWidth: 1, borderColor: isDark ? '#1e293b' : '#e2e8f0', padding: 24, paddingBottom: 40,
+          backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          borderTopWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E8E8E8', padding: 24, paddingBottom: 40,
         }}>
-          <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1e293b' : '#e2e8f0', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
-          <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 20, fontWeight: '800', marginBottom: 6 }}>
+          <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#2A2A2A' : '#E8E8E8', borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+          <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 20, fontWeight: '800', marginBottom: 6 }}>
             Connect Google Drive
           </Text>
-          <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
+          <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
             {connectType === 'team'
               ? 'Paste the URL of your team\'s shared Google Drive folder.'
               : `Paste the Google Drive folder URL for ${connectRole || 'this member'}.`}
           </Text>
 
-          <Text style={[labelSt, { color: isDark ? '#475569' : '#64748b' }]}>Drive URL *</Text>
+          <Text style={[labelSt, { color: isDark ? '#888888' : '#6B6B6B' }]}>Drive URL *</Text>
           <TextInput
             value={driveUrl}
             onChangeText={setDriveUrl}
             placeholder="https://drive.google.com/drive/folders/..."
-            placeholderTextColor={isDark ? '#334155' : '#cbd5e1'}
-            style={[inputSt, { backgroundColor: isDark ? '#0a0f1e' : '#f8fafc', borderColor: isDark ? '#1e293b' : '#cbd5e1', color: isDark ? '#f1f5f9' : '#0f172a' }]}
+            placeholderTextColor={isDark ? '#555555' : '#E0E0E0'}
+            style={[inputSt, { backgroundColor: isDark ? '#000000' : '#F5F5F5', borderColor: isDark ? '#2A2A2A' : '#E0E0E0', color: isDark ? '#F2F2F2' : '#0D0D0D' }]}
             autoCapitalize="none"
             keyboardType="url"
           />
 
-          <Text style={[labelSt, { color: isDark ? '#475569' : '#64748b' }]}>Folder Name (optional)</Text>
+          <Text style={[labelSt, { color: isDark ? '#888888' : '#6B6B6B' }]}>Folder Name (optional)</Text>
           <TextInput
             value={driveName}
             onChangeText={setDriveName}
             placeholder={connectType === 'team' ? 'Team Drive' : `${connectRole} Drive`}
-            placeholderTextColor={isDark ? '#334155' : '#cbd5e1'}
-            style={[inputSt, { backgroundColor: isDark ? '#0a0f1e' : '#f8fafc', borderColor: isDark ? '#1e293b' : '#cbd5e1', color: isDark ? '#f1f5f9' : '#0f172a' }]}
+            placeholderTextColor={isDark ? '#555555' : '#E0E0E0'}
+            style={[inputSt, { backgroundColor: isDark ? '#000000' : '#F5F5F5', borderColor: isDark ? '#2A2A2A' : '#E0E0E0', color: isDark ? '#F2F2F2' : '#0D0D0D' }]}
           />
 
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
             <TouchableOpacity
               onPress={onClose}
-              style={{ flex: 1, borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+              style={{ flex: 1, borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
             >
-              <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
+              <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
@@ -805,7 +805,7 @@ function ConnectDriveModal({
                 setDriveName('');
               }}
               disabled={!driveUrl.trim()}
-              style={{ flex: 1, backgroundColor: driveUrl.trim() ? '#0ea5e9' : (isDark ? '#1e293b' : '#cbd5e1'), borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+              style={{ flex: 1, backgroundColor: driveUrl.trim() ? (isDark ? '#FFFFFF' : '#0A0A0A') : (isDark ? '#2A2A2A' : '#E0E0E0'), borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
             >
               <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Connect</Text>
             </TouchableOpacity>
@@ -820,12 +820,12 @@ function ConnectDriveModal({
 
 const ROLE_META: Record<string, { label: string; color: string; icon: IonIconName }> = {
   project_manager:    { label: 'Project Manager',    color: '#fbbf24', icon: 'briefcase-outline' },
-  fullstack_engineer: { label: 'Full Stack Engineer', color: '#38bdf8', icon: 'code-slash-outline' },
+  fullstack_engineer: { label: 'Full Stack Engineer', color: '#888888', icon: 'code-slash-outline' },
   backend_engineer:   { label: 'Backend Engineer',   color: '#34d399', icon: 'server-outline' },
   lead_researcher:    { label: 'Lead Researcher',    color: '#a78bfa', icon: 'search-outline' },
   systems_architect:  { label: 'Systems Architect',  color: '#f472b6', icon: 'git-network-outline' },
   ai_engineer:        { label: 'AI Engineer',        color: '#fb923c', icon: 'hardware-chip-outline' },
-  member:             { label: 'Member',             color: '#64748b', icon: 'person-outline' },
+  member:             { label: 'Member',             color: '#6B6B6B', icon: 'person-outline' },
 };
 
 function getRoleMeta(role?: string | null) {
@@ -920,7 +920,7 @@ export default function FilesScreen() {
   // If browsing a folder, show the full-screen file browser
   if (browsingFolder) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }} edges={['top', 'bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }} edges={['top', 'bottom']}>
         <FileBrowser
           rootFolderId={browsingFolder.id}
           rootName={browsingFolder.name}
@@ -934,13 +934,13 @@ export default function FilesScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }}>
       <ScrollView
         refreshControl={
           <RefreshControl
             refreshing={driveQuery.isFetching || membersQuery.isFetching}
             onRefresh={() => { driveQuery.refetch(); membersQuery.refetch(); }}
-            tintColor="#0ea5e9"
+            tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -951,14 +951,14 @@ export default function FilesScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0f172a' : '#e2e8f0', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Ionicons name="arrow-back" size={18} color={isDark ? '#64748b' : '#475569'} />
+              <Ionicons name="arrow-back" size={18} color={isDark ? '#6B6B6B' : '#888888'} />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 24, fontWeight: '800' }}>Files</Text>
+              <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 24, fontWeight: '800' }}>Files</Text>
               {activeTeam && (
-                <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 12, marginTop: 1 }}>
+                <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 12, marginTop: 1 }}>
                   {activeTeam.name} · Google Drive
                 </Text>
               )}
@@ -967,7 +967,7 @@ export default function FilesScreen() {
               <TouchableOpacity
                 onPress={() => setConnectModal({ type: 'team', role: '' })}
                 style={{
-                  backgroundColor: '#0ea5e9', borderRadius: 12,
+                  backgroundColor: '#888888', borderRadius: 12,
                   paddingHorizontal: 14, paddingVertical: 8,
                   flexDirection: 'row', alignItems: 'center', gap: 6,
                 }}
@@ -984,7 +984,7 @@ export default function FilesScreen() {
         <View style={{ paddingHorizontal: 20 }}>
           {/* ── Team Shared Folder ── */}
           <View style={{ marginBottom: 12, marginTop: 4 }}>
-            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <Text style={{ color: '#888888', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               Team Shared
             </Text>
           </View>
@@ -994,7 +994,7 @@ export default function FilesScreen() {
             subtitle="Workspace for everyone"
             driveUrl={teamConn?.driveUrl}
             icon="folder-open-outline"
-            color="#38bdf8"
+            color="#888888"
             badge="ALL MEMBERS"
             canBrowse
             onPress={() => {
@@ -1013,14 +1013,14 @@ export default function FilesScreen() {
 
           {/* ── Member Folders ── */}
           <View style={{ marginBottom: 12, marginTop: 12 }}>
-            <Text style={{ color: '#475569', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+            <Text style={{ color: '#888888', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               Member Folders
             </Text>
           </View>
 
           {membersQuery.isLoading ? (
             <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-              <ActivityIndicator color="#38bdf8" />
+              <ActivityIndicator color="#888888" />
             </View>
           ) : (
             membersList.map((m: any) => {
@@ -1099,7 +1099,7 @@ export default function FilesScreen() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const labelSt = {
-  color: '#475569',
+  color: '#888888',
   fontSize: 11,
   fontWeight: '700' as const,
   textTransform: 'uppercase' as const,
@@ -1108,13 +1108,13 @@ const labelSt = {
 };
 
 const inputSt = {
-  backgroundColor: '#0a0f1e',
+  backgroundColor: '#000000',
   borderWidth: 1,
-  borderColor: '#1e293b',
+  borderColor: '#2A2A2A',
   borderRadius: 14,
   paddingHorizontal: 16,
   paddingVertical: 12,
-  color: '#f1f5f9',
+  color: '#F2F2F2',
   fontSize: 14,
   marginBottom: 16,
 };

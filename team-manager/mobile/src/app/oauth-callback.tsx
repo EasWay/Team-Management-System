@@ -79,14 +79,14 @@ export default function OAuthCallbackScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
+        backgroundColor: isDark ? '#000000' : '#F5F5F5',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 16,
       }}
     >
-      <ActivityIndicator size="large" color="#38bdf8" />
-      <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 14, fontWeight: '500' }}>
+      <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#0A0A0A'} />
+      <Text style={{ color: isDark ? '#888888' : '#6B6B6B', fontSize: 14, fontWeight: '500' }}>
         Signing you in…
       </Text>
     </View>

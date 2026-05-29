@@ -4,6 +4,8 @@ import {
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
+  Dimensions,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -17,6 +19,9 @@ import { Alert } from '@/components/CustomAlert';
 import { useThemeStore } from '@/store/themeStore';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const heroImage = require('../../../assets/background-removed (1).png');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -66,38 +71,80 @@ export default function LoginScreen() {
     }
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
-      <View className="flex-1 px-6 justify-center">
-        {/* Header */}
-        <View className="mb-12 items-center">
-          <View className="w-20 h-20 rounded-3xl bg-sky-600 items-center justify-center mb-6"
-            style={{ shadowColor: '#0ea5e9', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 6 } }}
-          >
-            <Ionicons name="people" size={36} color="white" />
-          </View>
-          <Text className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Team Manager</Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-base text-center">
-            Sign in to collaborate with your team
-          </Text>
-        </View>
+  const fg = isDark ? '#FFFFFF' : '#0A0A0A';
+  const subtitleColor = isDark ? '#888888' : '#6B6B6B';
+  const bg = isDark ? '#000000' : '#FFFFFF';
 
-        {/* GitHub OAuth */}
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
+      <View style={{ flex: 1, paddingHorizontal: 28, justifyContent: 'center', alignItems: 'center' }}>
+
+        {/* Hero illustration */}
+        <Image
+          source={heroImage}
+          style={{
+            width: SCREEN_WIDTH * 0.82,
+            height: SCREEN_WIDTH * 0.74,
+            resizeMode: 'contain',
+            marginBottom: 36,
+          }}
+        />
+
+        {/* Title */}
+        <Text
+          style={{
+            fontSize: 38,
+            fontWeight: '800',
+            color: fg,
+            letterSpacing: -1,
+            alignSelf: 'flex-start',
+            marginBottom: 12,
+          }}
+        >
+          {'Welcome!'}
+          <Text style={{ color: fg, opacity: 0.35 }}>{'.'}</Text>
+        </Text>
+
+        {/* Subtitle */}
+        <Text
+          style={{
+            fontSize: 15,
+            color: subtitleColor,
+            lineHeight: 22,
+            alignSelf: 'flex-start',
+            marginBottom: 44,
+          }}
+        >
+          Sign in to collaborate, manage your projects, and build amazing things together.
+        </Text>
+
+        {/* Continue with GitHub — outlined pill button */}
         <TouchableOpacity
           onPress={handleGitHubOAuth}
           disabled={loading}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex-row items-center justify-center gap-3"
-          style={{ minHeight: 56 }}
+          style={{
+            width: '100%',
+            height: 56,
+            borderRadius: 28,
+            borderWidth: 1.5,
+            borderColor: fg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            opacity: loading ? 0.55 : 1,
+          }}
         >
           {loading ? (
-            <ActivityIndicator color={isDark ? '#94a3b8' : '#64748b'} />
+            <ActivityIndicator color={fg} />
           ) : (
-            <Ionicons name="logo-github" size={22} color={isDark ? 'white' : '#0f172a'} />
+            <Ionicons name="logo-github" size={22} color={fg} />
           )}
-          <Text className="text-slate-850 dark:text-white font-semibold text-base">
+          <Text style={{ fontSize: 16, fontWeight: '600', color: fg }}>
             {loading ? 'Signing in…' : 'Continue with GitHub'}
           </Text>
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );

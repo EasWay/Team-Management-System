@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native';
 
 const variantStyles: Record<string, { bg: string; text: string }> = {
-  default: { bg: 'bg-slate-700', text: 'text-slate-200' },
-  primary: { bg: 'bg-sky-600', text: 'text-white' },
-  success: { bg: 'bg-emerald-600', text: 'text-white' },
-  warning: { bg: 'bg-amber-500', text: 'text-white' },
-  danger: { bg: 'bg-red-600', text: 'text-white' },
-  info: { bg: 'bg-blue-600', text: 'text-white' },
+  default: { bg: 'bg-neutral-200 dark:bg-neutral-700', text: 'text-neutral-700 dark:text-neutral-300' },
+  primary: { bg: 'bg-black dark:bg-white',             text: 'text-white dark:text-black' },
+  success: { bg: 'bg-neutral-800 dark:bg-neutral-200', text: 'text-white dark:text-black' },
+  warning: { bg: 'bg-neutral-500 dark:bg-neutral-400', text: 'text-white dark:text-black' },
+  danger:  { bg: 'bg-red-600',                         text: 'text-white' },
+  info:    { bg: 'bg-neutral-400 dark:bg-neutral-600', text: 'text-white' },
 };
 
 interface BadgeProps {

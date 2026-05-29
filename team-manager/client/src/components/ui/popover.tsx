@@ -33,7 +33,7 @@ function PopoverContent({
           // Layout
           "z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-xl p-4 outline-hidden",
           // Dark mode glass
-          "dark:bg-[rgba(28,28,30,0.88)] dark:border dark:border-white/10 dark:text-slate-100 dark:shadow-[0_2px_24px_rgba(0,0,0,0.5)] dark:[backdrop-filter:blur(32px)_saturate(160%)]",
+          "dark:bg-[rgba(17,17,17,0.90)] dark:border dark:border-white/10 dark:text-foreground dark:shadow-[0_2px_24px_rgba(0,0,0,0.5)] dark:[backdrop-filter:blur(32px)_saturate(160%)]",
           // Light mode glass
           "bg-white/85 border border-white/75 text-foreground shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_6px_32px_rgba(0,0,0,0.10),0_1px_4px_rgba(0,0,0,0.06)] [backdrop-filter:blur(32px)_saturate(180%)]",
           className

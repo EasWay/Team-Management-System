@@ -80,17 +80,17 @@ export function NotificationBell() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'folder_received':
-        return <Inbox className="h-4 w-4 text-blue-500" />;
+        return <Inbox className="h-4 w-4 text-muted-foreground" />;
       case 'folder_delivered':
-        return <FolderOpen className="h-4 w-4 text-green-500" />;
+        return <FolderOpen className="h-4 w-4 text-muted-foreground" />;
       case 'approval_pending':
-        return <CheckCircle2 className="h-4 w-4 text-yellow-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-muted-foreground" />;
       case 'approval_approved':
-        return <Check className="h-4 w-4 text-green-500" />;
+        return <Check className="h-4 w-4 text-foreground" />;
       case 'approval_rejected':
-        return <X className="h-4 w-4 text-red-500" />;
+        return <X className="h-4 w-4 text-destructive" />;
       case 'message':
-        return <MessageSquare className="h-4 w-4 text-purple-500" />;
+        return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
       default:
         return <Bell className="h-4 w-4 text-muted-foreground" />;
     }

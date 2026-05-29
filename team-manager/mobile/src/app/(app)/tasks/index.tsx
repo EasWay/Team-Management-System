@@ -28,27 +28,27 @@ type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 const STATUSES: { key: Status; label: string; icon: IconName; color: string }[] = [
   { key: 'todo',        label: 'To Do',      icon: 'list-outline',             color: '#94a3b8' },
-  { key: 'in_progress', label: 'In Progress', icon: 'flash-outline',           color: '#38bdf8' },
+  { key: 'in_progress', label: 'In Progress', icon: 'flash-outline',           color: '#888888' },
   { key: 'review',      label: 'Review',     icon: 'eye-outline',              color: '#a78bfa' },
   { key: 'done',        label: 'Done',       icon: 'checkmark-circle-outline', color: '#34d399' },
 ];
 
 const PRIORITY_META: Record<Priority, { label: string; color: string; bg: string; icon: IconName }> = {
   low:    { label: 'Low',    color: '#64748b', bg: '#64748b18', icon: 'remove-outline' },
-  medium: { label: 'Med',    color: '#38bdf8', bg: '#38bdf818', icon: 'reorder-two-outline' },
+  medium: { label: 'Med',    color: '#888888', bg: '#88888818', icon: 'reorder-two-outline' },
   high:   { label: 'High',   color: '#fb923c', bg: '#fb923c18', icon: 'arrow-up-outline' },
   urgent: { label: 'Urgent', color: '#f87171', bg: '#f8717118', icon: 'warning-outline' },
 };
 
 const MOVE_TARGETS: Record<Status, { to: Status; label: string; color: string }[]> = {
-  todo:        [{ to: 'in_progress', label: 'Start',  color: '#38bdf8' }],
+  todo:        [{ to: 'in_progress', label: 'Start',  color: '#888888' }],
   in_progress: [{ to: 'review',      label: 'Review', color: '#a78bfa' }, { to: 'done', label: 'Done', color: '#34d399' }],
   review:      [{ to: 'in_progress', label: 'Revise', color: '#fb923c' }, { to: 'done', label: 'Approve', color: '#34d399' }],
   done:        [{ to: 'todo',        label: 'Reopen', color: '#94a3b8' }],
 };
 
 // ─── Circular Progress Ring ────────────────────────────────────────────────────
-function ProgressRing({ pct = 0, size = 46, color = '#38bdf8', track = '#1e293b' }: {
+function ProgressRing({ pct = 0, size = 46, color = '#888888', track = '#1e293b' }: {
   pct?: number; size?: number; color?: string; track?: string;
 }) {
   const isDark = useThemeStore(state => state.isDark);
@@ -107,7 +107,7 @@ function ProgressRing({ pct = 0, size = 46, color = '#38bdf8', track = '#1e293b'
 }
 
 // ─── Member Avatar ─────────────────────────────────────────────────────────────
-function MemberAvatar({ name, size = 24, color = '#38bdf8' }: { name?: string | null; size?: number; color?: string }) {
+function MemberAvatar({ name, size = 24, color = '#888888' }: { name?: string | null; size?: number; color?: string }) {
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <View style={{
@@ -198,7 +198,7 @@ function TaskCard({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {task.assignee && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <MemberAvatar name={task.assignee.name} size={18} color="#38bdf8" />
+                    <MemberAvatar name={task.assignee.name} size={18} color="#888888" />
                     <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 10 }} numberOfLines={1}>
                       {task.assignee.name?.split(' ')[0]}
                     </Text>
@@ -292,8 +292,8 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
           </View>
           {task.completionPercentage != null && (
             <View className="bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-1 flex-row items-center gap-1">
-              <Ionicons name="stats-chart-outline" size={11} color="#38bdf8" />
-              <Text className="text-sky-600 dark:text-sky-400 text-xs font-bold">{task.completionPercentage}% done</Text>
+              <Ionicons name="stats-chart-outline" size={11} color="#888888" />
+              <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-bold">{task.completionPercentage}% done</Text>
             </View>
           )}
         </View>
@@ -312,7 +312,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
               <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-2">Assigned To</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.assignee.name} size={28} color="#38bdf8" />
+                <MemberAvatar name={task.assignee.name} size={28} color="#888888" />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.assignee.name}</Text>
               </View>
             </View>
@@ -351,7 +351,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-row flex-wrap gap-2">
               {tags.map((tag) => (
                 <View key={tag} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5">
-                  <Text className="text-sky-600 dark:text-sky-400 text-xs font-semibold">#{tag}</Text>
+                  <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-semibold">#{tag}</Text>
                 </View>
               ))}
             </View>
@@ -528,9 +528,9 @@ export default function TasksScreen() {
           <TouchableOpacity
             onPress={() => setShowCreate(true)}
             style={{
-              backgroundColor: '#0ea5e9', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 9,
+              backgroundColor: '#888888', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 9,
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              shadowColor: '#0ea5e9', shadowRadius: 12, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 },
+              shadowColor: '#888888', shadowRadius: 12, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 },
             }}
           >
             <Ionicons name="add" size={16} color="#fff" />
@@ -547,7 +547,7 @@ export default function TasksScreen() {
                 onPress={() => setScopeMine(v)}
                 style={{
                   paddingHorizontal: 16, paddingVertical: 6, borderRadius: 10,
-                  backgroundColor: scopeMine === v ? '#38bdf8' : 'transparent',
+                  backgroundColor: scopeMine === v ? '#888888' : 'transparent',
                 }}
               >
                 <Text style={{ color: scopeMine === v ? '#fff' : (isDark ? '#475569' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{l}</Text>
@@ -612,7 +612,7 @@ export default function TasksScreen() {
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           refreshControl={
-            <RefreshControl refreshing={tasksQuery.isFetching} onRefresh={() => tasksQuery.refetch()} tintColor="#0ea5e9" />
+            <RefreshControl refreshing={tasksQuery.isFetching} onRefresh={() => tasksQuery.refetch()} tintColor={isDark ? '#FFFFFF' : '#0A0A0A'} />
           }
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
           ListEmptyComponent={
@@ -729,12 +729,12 @@ export default function TasksScreen() {
                   onPress={() => setAssigneeId(null)}
                   style={{
                     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12,
-                    backgroundColor: assigneeId === null ? '#38bdf820' : (isDark ? '#0f172a' : '#f1f5f9'),
-                    borderWidth: 1.5, borderColor: assigneeId === null ? '#38bdf8' : (isDark ? '#1e293b' : '#cbd5e1'),
+                    backgroundColor: assigneeId === null ? '#88888820' : (isDark ? '#0f172a' : '#f1f5f9'),
+                    borderWidth: 1.5, borderColor: assigneeId === null ? '#888888' : (isDark ? '#1e293b' : '#cbd5e1'),
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: assigneeId === null ? '#38bdf8' : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>Unassigned</Text>
+                  <Text style={{ color: assigneeId === null ? '#888888' : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>Unassigned</Text>
                 </TouchableOpacity>
                 {membersList.map((m: any) => {
                   const member = m.member ?? m;
@@ -745,13 +745,13 @@ export default function TasksScreen() {
                       onPress={() => setAssigneeId(member.id)}
                       style={{
                         paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12,
-                        backgroundColor: selected ? '#38bdf820' : (isDark ? '#0f172a' : '#f1f5f9'),
-                        borderWidth: 1.5, borderColor: selected ? '#38bdf8' : (isDark ? '#1e293b' : '#cbd5e1'),
+                        backgroundColor: selected ? '#88888820' : (isDark ? '#0f172a' : '#f1f5f9'),
+                        borderWidth: 1.5, borderColor: selected ? '#888888' : (isDark ? '#1e293b' : '#cbd5e1'),
                         flexDirection: 'row', alignItems: 'center', gap: 7,
                       }}
                     >
-                      <MemberAvatar name={member.name} size={22} color={selected ? '#38bdf8' : (isDark ? '#334155' : '#64748b')} />
-                      <Text style={{ color: selected ? '#38bdf8' : (isDark ? '#475569' : '#64748b'), fontSize: 12, fontWeight: '600' }}>
+                      <MemberAvatar name={member.name} size={22} color={selected ? '#888888' : (isDark ? '#334155' : '#64748b')} />
+                      <Text style={{ color: selected ? '#888888' : (isDark ? '#475569' : '#64748b'), fontSize: 12, fontWeight: '600' }}>
                         {member.name?.split(' ')[0] ?? 'Member'}
                       </Text>
                     </TouchableOpacity>
@@ -785,7 +785,7 @@ export default function TasksScreen() {
                   onPress={addTag}
                   style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' }}
                 >
-                  <Ionicons name="add" size={18} color="#38bdf8" />
+                  <Ionicons name="add" size={18} color="#888888" />
                 </TouchableOpacity>
               </View>
               {tags.length > 0 && (
@@ -796,7 +796,7 @@ export default function TasksScreen() {
                       onPress={() => setTags(prev => prev.filter(t => t !== tag))}
                       style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}
                     >
-                      <Text style={{ color: '#38bdf8', fontSize: 11, fontWeight: '600' }}>#{tag}</Text>
+                      <Text style={{ color: '#888888', fontSize: 11, fontWeight: '600' }}>#{tag}</Text>
                       <Ionicons name="close-circle" size={12} color={isDark ? '#334155' : '#94a3b8'} />
                     </TouchableOpacity>
                   ))}

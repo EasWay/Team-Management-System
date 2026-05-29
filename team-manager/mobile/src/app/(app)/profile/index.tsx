@@ -24,11 +24,11 @@ import { API_BASE_URL } from '@/lib/constants';
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const QUICK_LINKS: { label: string; icon: IconName; color: string; route: string; desc: string }[] = [
-  { label: 'Files',          icon: 'folder-outline',    color: '#38bdf8', route: '/(app)/files',      desc: 'Team assets & uploads' },
-  { label: 'Calendar',       icon: 'calendar-outline',  color: '#34d399', route: '/(app)/calendar',   desc: 'Events & deadlines' },
-  { label: 'Analytics',      icon: 'bar-chart-outline', color: '#a78bfa', route: '/(app)/analytics',  desc: 'Sprint metrics' },
-  { label: 'Conference',     icon: 'videocam-outline',  color: '#fb923c', route: '/(app)/conference', desc: 'Approvals hub' },
-  { label: 'Messages',       icon: 'mail-outline',      color: '#f472b6', route: '/(app)/messages',   desc: 'Client inquiries' },
+  { label: 'Files',          icon: 'folder-outline',    color: '#888888', route: '/(app)/files',      desc: 'Team assets & uploads' },
+  { label: 'Calendar',       icon: 'calendar-outline',  color: '#888888', route: '/(app)/calendar',   desc: 'Events & deadlines' },
+  { label: 'Analytics',      icon: 'bar-chart-outline', color: '#888888', route: '/(app)/analytics',  desc: 'Sprint metrics' },
+  { label: 'Conference',     icon: 'videocam-outline',  color: '#888888', route: '/(app)/conference', desc: 'Approvals hub' },
+  { label: 'Messages',       icon: 'mail-outline',      color: '#888888', route: '/(app)/messages',   desc: 'Client inquiries' },
 ];
 
 function SectionHeader({ title }: { title: string }) {
@@ -57,8 +57,8 @@ function SettingRow({
         value={value}
         onValueChange={onToggle}
         disabled={loading}
-        trackColor={{ false: '#cbd5e1', true: '#0369a1' }}
-        thumbColor={value ? '#0ea5e9' : '#94a3b8'}
+        trackColor={{ false: '#E0E0E0', true: '#0A0A0A' }}
+        thumbColor={value ? '#FFFFFF' : '#888888'}
       />
     </View>
   );
@@ -177,8 +177,8 @@ export default function ProfileScreen() {
         <View className="mx-5 mt-4 mb-6 bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 items-center">
           {/* Avatar with ring */}
           <View className="mb-4">
-            <View className="w-24 h-24 rounded-full bg-sky-600 items-center justify-center" style={{ shadowColor: '#0ea5e9', shadowRadius: 12, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 } }}>
-              <Text className="text-white text-3xl font-bold">{initials}</Text>
+            <View className="w-24 h-24 rounded-full bg-black dark:bg-white items-center justify-center" style={{ shadowColor: '#000', shadowRadius: 12, shadowOpacity: 0.15, shadowOffset: { width: 0, height: 4 } }}>
+              <Text className="text-white dark:text-black text-3xl font-bold">{initials}</Text>
             </View>
           </View>
 
@@ -186,9 +186,9 @@ export default function ProfileScreen() {
           <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{user?.email}</Text>
 
           {activeTeam && (
-            <View className="mt-3 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-700 rounded-xl px-4 py-1.5 flex-row items-center gap-2">
-              <View className="w-2 h-2 rounded-full bg-sky-500" />
-              <Text className="text-sky-600 dark:text-sky-300 text-xs font-semibold">{activeTeam.name}</Text>
+            <View className="mt-3 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-1.5 flex-row items-center gap-2">
+              <View className="w-2 h-2 rounded-full bg-black dark:bg-white" />
+              <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">{activeTeam.name}</Text>
             </View>
           )}
         </View>
@@ -324,9 +324,9 @@ export default function ProfileScreen() {
               ) : (
                 <TouchableOpacity
                   onPress={handleConnectGoogle}
-                  className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-xl px-3 py-1.5"
+                  className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-1.5"
                 >
-                  <Text className="text-sky-600 dark:text-sky-400 text-xs font-semibold">Connect</Text>
+                  <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-semibold">Connect</Text>
                 </TouchableOpacity>
               )}
             </View>
