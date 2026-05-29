@@ -578,9 +578,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dialogInput: {
-    backgroundColor: '#0a0f1e',
+    backgroundColor: '#000000',
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: '#1A1A1A',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,

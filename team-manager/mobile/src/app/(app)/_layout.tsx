@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { Platform } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -16,23 +16,14 @@ import {
 import { Alert } from '@/components/CustomAlert';
 import * as Haptics from 'expo-haptics';
 
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const TABS: { name: string; title: string; icon: IconName; activeIcon: IconName }[] = [
-  { name: 'index',          title: 'Office',   icon: 'home-outline',               activeIcon: 'home' },
-  { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline',   activeIcon: 'checkmark-circle' },
-  { name: 'projects/index', title: 'Projects', icon: 'folder-outline',             activeIcon: 'folder' },
-  { name: 'messages/index', title: 'Chat',     icon: 'chatbubble-ellipses-outline', activeIcon: 'chatbubble-ellipses' },
-  { name: 'profile/index',  title: 'Profile',  icon: 'person-outline',             activeIcon: 'person' },
-];
-
 export default function AppLayout() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuthStore();
-  const { setTeams, restoreActiveTeam } = useTeamStore();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
+  const { setTeams, restoreActiveTeam, activeTeam } = useTeamStore();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  // ─── Core queries ────────────────────────────────────────────────────────────
   const teamsQuery = trpc.teams.list.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: 4,
@@ -41,10 +32,51 @@ export default function AppLayout() {
   });
 
   const unreadQuery = trpc.notifications.getUnreadCount.useQuery(
-    { teamId: useTeamStore.getState().activeTeam?.id ?? 0 },
-    { enabled: isAuthenticated && !!useTeamStore.getState().activeTeam?.id, refetchInterval: 30_000 }
+    { teamId: activeTeam?.id ?? 0 },
+    { enabled: isAuthenticated && !!activeTeam?.id, refetchInterval: 30_000 }
   );
 
+  // ─── Badge queries ────────────────────────────────────────────────────────────
+  const membersQuery = trpc.teams.getMembers.useQuery(
+    { teamId: activeTeam?.id ?? 0 },
+    { enabled: isAuthenticated && !!activeTeam?.id, staleTime: 60_000 }
+  );
+
+  const currentMemberId = useMemo<number | null>(() => {
+    const members = membersQuery.data as any[] ?? [];
+    const m = members.find((m: any) => (m.member?.email ?? m.email) === user?.email);
+    return m?.member?.id ?? m?.id ?? null;
+  }, [membersQuery.data, user?.email]);
+
+  const convsQuery = trpc.chat.getConversations.useQuery(
+    { memberId: currentMemberId ?? 0, teamId: activeTeam?.id ?? 0 },
+    { enabled: !!currentMemberId && !!activeTeam?.id, refetchInterval: 15_000, staleTime: 10_000 }
+  );
+
+  const tasksQuery = trpc.tasks.list.useQuery(
+    { teamId: activeTeam?.id ?? 0 },
+    { enabled: isAuthenticated && !!activeTeam?.id, staleTime: 30_000 }
+  );
+
+  // ─── Derived badge values ─────────────────────────────────────────────────────
+  const chatBadge = useMemo<number | undefined>(() => {
+    const total = (convsQuery.data as any[] ?? [])
+      .reduce((s: number, c: any) => s + (c.unreadCount ?? 0), 0);
+    return total > 0 ? total : undefined;
+  }, [convsQuery.data]);
+
+  const taskBadge = useMemo<number | undefined>(() => {
+    const open = (tasksQuery.data as any[] ?? [])
+      .filter((t: any) => t.status !== 'done').length;
+    return open > 0 ? open : undefined;
+  }, [tasksQuery.data]);
+
+  const notifBadge = useMemo<number | undefined>(() => {
+    const count = (unreadQuery.data as number | undefined) ?? 0;
+    return count > 0 ? count : undefined;
+  }, [unreadQuery.data]);
+
+  // ─── Side effects ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/(auth)/login');
   }, [isAuthenticated, isLoading]);
@@ -61,7 +93,6 @@ export default function AppLayout() {
     setBadgeCount(count).catch(() => {});
   }, [unreadQuery.data]);
 
-  // Register push token + check if app was opened via notification
   useEffect(() => {
     if (isAuthenticated) {
       registerPushToken().catch(console.warn);
@@ -69,26 +100,38 @@ export default function AppLayout() {
     }
   }, [isAuthenticated]);
 
-  // Notification tap → navigate (works from background/killed state)
   useEffect(() => {
-    const responseSub = setupNotificationResponseListener();
-    return () => responseSub.remove();
+    const sub = setupNotificationResponseListener();
+    return () => sub.remove();
   }, []);
 
-  // Foreground notification → show in-app alert banner
   useEffect(() => {
-    const receivedSub = setupNotificationReceivedListener((notification: any) => {
+    const sub = setupNotificationReceivedListener((notification: any) => {
       const { title, body } = notification.request.content;
-      if (title || body) {
-        Alert.alert(title ?? 'Notification', body ?? '');
-      }
+      if (title || body) Alert.alert(title ?? 'Notification', body ?? '');
     });
-    return () => receivedSub.remove();
+    return () => sub.remove();
   }, []);
 
-  const tabBg = isDark ? '#000000' : '#FFFFFF';
+  // ─── Styles ───────────────────────────────────────────────────────────────────
+  const tabBg     = isDark ? '#000000' : '#FFFFFF';
   const tabBorder = isDark ? '#1A1A1A' : '#E8E8E8';
   const tabInactive = isDark ? '#555555' : '#AAAAAA';
+
+  const badgeStyle = {
+    backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A',
+    color: isDark ? '#000000' : '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700' as const,
+    minWidth: 16,
+    height: 16,
+    lineHeight: Platform.OS === 'android' ? 16 : undefined,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    top: -2,
+  };
+
+  const tap = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
   return (
     <Tabs
@@ -104,33 +147,67 @@ export default function AppLayout() {
         },
         tabBarActiveTintColor: isDark ? '#FFFFFF' : '#0A0A0A',
         tabBarInactiveTintColor: tabInactive,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-          marginTop: 2,
-        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500', marginTop: 2 },
       }}
     >
-      {TABS.map(tab => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{
-            title: tab.title,
-            tabBarIcon: ({ focused, color }) => (
-              <Ionicons
-                name={focused ? tab.activeIcon : tab.icon}
-                size={22}
-                color={color}
-              />
-            ),
-          }}
-          listeners={{
-            tabPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
-          }}
-        />
-      ))}
-      {/* Hidden screens — accessible via router.push */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Office',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
+          ),
+          tabBarBadge: notifBadge,
+          tabBarBadgeStyle: badgeStyle,
+        }}
+        listeners={{ tabPress: tap }}
+      />
+      <Tabs.Screen
+        name="tasks/index"
+        options={{
+          title: 'Tasks',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'checkmark-circle' : 'checkmark-circle-outline'} size={22} color={color} />
+          ),
+          tabBarBadge: taskBadge,
+          tabBarBadgeStyle: badgeStyle,
+        }}
+        listeners={{ tabPress: tap }}
+      />
+      <Tabs.Screen
+        name="projects/index"
+        options={{
+          title: 'Projects',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'folder' : 'folder-outline'} size={22} color={color} />
+          ),
+        }}
+        listeners={{ tabPress: tap }}
+      />
+      <Tabs.Screen
+        name="messages/index"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
+          ),
+          tabBarBadge: chatBadge,
+          tabBarBadgeStyle: badgeStyle,
+        }}
+        listeners={{ tabPress: tap }}
+      />
+      <Tabs.Screen
+        name="profile/index"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
+          ),
+        }}
+        listeners={{ tabPress: tap }}
+      />
+
+      {/* Hidden screens — navigated via router.push */}
       <Tabs.Screen name="files/index"      options={{ href: null }} />
       <Tabs.Screen name="calendar/index"   options={{ href: null }} />
       <Tabs.Screen name="analytics/index"  options={{ href: null }} />

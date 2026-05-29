@@ -8,27 +8,34 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Keyboard,
+  Pressable,
+  Modal,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
-import { useTeamStore } from '@/store/teamStore';
 import { useThemeStore } from '@/store/themeStore';
 import { getSocket } from '@/lib/socket';
 import { format, isToday, isYesterday } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatMsgTime(date: Date | string): string {
-  const d = new Date(date);
-  if (isToday(d))     return format(d, 'h:mm a');
-  if (isYesterday(d)) return `Yesterday ${format(d, 'h:mm a')}`;
-  return format(d, 'MMM d, h:mm a');
+function msgTimeStr(date: Date | string) {
+  return format(new Date(date), 'h:mm a');
 }
 
-function groupByDate(messages: any[]): { date: string; items: any[] }[] {
+function dateLabel(dateStr: string) {
+  const d = new Date(dateStr);
+  if (isToday(d))     return 'Today';
+  if (isYesterday(d)) return 'Yesterday';
+  return format(d, 'MMMM d, yyyy');
+}
+
+type Grouped = { date: string; items: any[] };
+
+function groupByDate(messages: any[]): Grouped[] {
   const map = new Map<string, any[]>();
   for (const msg of messages) {
     const key = format(new Date(msg.createdAt), 'yyyy-MM-dd');
@@ -38,70 +45,231 @@ function groupByDate(messages: any[]): { date: string; items: any[] }[] {
   return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
 }
 
-function dateLabel(dateStr: string): string {
-  const d = new Date(dateStr);
-  if (isToday(d))     return 'Today';
-  if (isYesterday(d)) return 'Yesterday';
-  return format(d, 'MMMM d, yyyy');
-}
-
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-function Avatar({ name, size = 32 }: { name?: string | null; size?: number }) {
+function Avatar({ name, size = 36, isDark }: { name?: string | null; size?: number; isDark: boolean }) {
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
-      backgroundColor: '#E8E8E8', borderWidth: 1.5, borderColor: '#D0D0D0',
+      backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0',
+      borderWidth: 1.5, borderColor: isDark ? '#2A2A2A' : '#D0D0D0',
       alignItems: 'center', justifyContent: 'center',
     }}>
-      <Text style={{ color: '#555555', fontSize: size * 0.38, fontWeight: '800' }}>{initials}</Text>
+      <Text style={{ color: isDark ? '#AAAAAA' : '#555555', fontSize: size * 0.36, fontWeight: '800' }}>
+        {initials}
+      </Text>
+    </View>
+  );
+}
+
+// ─── Typing dots ─────────────────────────────────────────────────────────────
+function TypingIndicator({ isDark }: { isDark: boolean }) {
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12,
+      paddingBottom: 6, gap: 6,
+    }}>
+      <View style={{ width: 28 }} />
+      <View style={{
+        backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+        borderRadius: 18, borderBottomLeftRadius: 4,
+        paddingHorizontal: 14, paddingVertical: 12,
+        flexDirection: 'row', gap: 4, alignItems: 'center',
+        borderWidth: 0.5, borderColor: isDark ? '#2A2A2A' : '#E8E8E8',
+      }}>
+        {[0, 1, 2].map(i => (
+          <View key={i} style={{
+            width: 6, height: 6, borderRadius: 3,
+            backgroundColor: isDark ? '#555555' : '#AAAAAA',
+          }} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── Date pill separator ──────────────────────────────────────────────────────
+function DateSeparator({ label, isDark }: { label: string; isDark: boolean }) {
+  return (
+    <View style={{ alignItems: 'center', marginVertical: 12 }}>
+      <View style={{
+        backgroundColor: isDark ? '#1A1A1A' : 'rgba(0,0,0,0.08)',
+        borderRadius: 100,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+      }}>
+        <Text style={{
+          color: isDark ? '#888888' : '#555555',
+          fontSize: 11, fontWeight: '600', letterSpacing: 0.2,
+        }}>
+          {label}
+        </Text>
+      </View>
     </View>
   );
 }
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
-function MessageBubble({ msg, isMine, partnerName }: { msg: any; isMine: boolean; partnerName: string }) {
-  const isDark = useThemeStore(state => state.isDark);
-  const timeStr = formatMsgTime(msg.createdAt);
+function MessageBubble({
+  msg, isMine, partnerName, isDark, isLastInCluster, onLongPress,
+}: {
+  msg: any;
+  isMine: boolean;
+  partnerName: string;
+  isDark: boolean;
+  isLastInCluster: boolean;
+  onLongPress: (msg: any) => void;
+}) {
+  const timeStr = msgTimeStr(msg.createdAt);
   const isRead  = !!msg.readAt;
+
+  // Mono-WA palette
+  const myBg     = isDark ? '#1E1E1E' : '#0A0A0A';
+  const theirBg  = isDark ? '#141414' : '#FFFFFF';
+  const myText   = '#FFFFFF';
+  const theirText = isDark ? '#F2F2F2' : '#0A0A0A';
+  const myTime   = isDark ? '#666666' : 'rgba(255,255,255,0.55)';
+  const theirTime = isDark ? '#555555' : '#AAAAAA';
 
   return (
     <View style={{
       flexDirection: isMine ? 'row-reverse' : 'row',
       alignItems: 'flex-end',
-      marginBottom: 4,
-      paddingHorizontal: 16,
-      gap: 8,
+      marginBottom: isLastInCluster ? 6 : 2,
+      paddingHorizontal: 10,
+      gap: 5,
     }}>
-      {/* Avatar only for received messages */}
-      {!isMine && <Avatar name={partnerName} size={28} />}
+      {/* Partner avatar placeholder — keeps layout stable */}
+      <View style={{ width: 30, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 0 }}>
+        {!isMine && isLastInCluster && (
+          <Avatar name={partnerName} size={28} isDark={isDark} />
+        )}
+      </View>
 
-      {/* Bubble */}
-      <View style={{
-        maxWidth: '75%',
-        backgroundColor: isMine ? (isDark ? '#2A2A2A' : '#0A0A0A') : (isDark ? '#1A1A1A' : '#F0F0F0'),
-        borderRadius: 18,
-        borderBottomRightRadius: isMine ? 4 : 18,
-        borderBottomLeftRadius: isMine ? 18 : 4,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-      }}>
-        <Text style={{ color: isMine ? (isDark ? '#F2F2F2' : '#FFFFFF') : (isDark ? '#F2F2F2' : '#0A0A0A'), fontSize: 14, lineHeight: 20 }}>
+      <Pressable
+        onLongPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onLongPress(msg);
+        }}
+        style={{
+          maxWidth: '76%',
+          backgroundColor: isMine ? myBg : theirBg,
+          borderRadius: 18,
+          borderBottomRightRadius: isMine && isLastInCluster ? 4 : 18,
+          borderBottomLeftRadius: !isMine && isLastInCluster ? 4 : 18,
+          paddingHorizontal: 13,
+          paddingTop: 8,
+          paddingBottom: 6,
+          // Subtle shadow for partner bubbles in light mode
+          ...(!isMine && !isDark ? {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.07,
+            shadowRadius: 2,
+            elevation: 1,
+          } : {}),
+          borderWidth: isMine ? 0 : (isDark ? 1 : 0.5),
+          borderColor: isDark ? '#2A2A2A' : '#EBEBEB',
+        }}
+      >
+        <Text style={{ color: isMine ? myText : theirText, fontSize: 15, lineHeight: 22 }}>
           {msg.content}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
-          <Text style={{ color: isDark ? '#555555' : '#AAAAAA', fontSize: 10 }}>{timeStr}</Text>
+        {/* Time + read receipt row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 3 }}>
+          <Text style={{ color: isMine ? myTime : theirTime, fontSize: 10 }}>{timeStr}</Text>
           {isMine && (
             <Ionicons
               name={isRead ? 'checkmark-done' : 'checkmark'}
-              size={12}
-              color={isDark ? '#888888' : '#AAAAAA'}
+              size={13}
+              color={isRead
+                ? (isDark ? '#AAAAAA' : 'rgba(255,255,255,0.9)')
+                : (isDark ? '#555555' : 'rgba(255,255,255,0.45)')}
             />
           )}
         </View>
-      </View>
+      </Pressable>
     </View>
+  );
+}
+
+// ─── Context Menu Modal ───────────────────────────────────────────────────────
+function MessageContextMenu({
+  msg, isMine, isDark, onClose, onDelete,
+}: {
+  msg: any | null;
+  isMine: boolean;
+  isDark: boolean;
+  onClose: () => void;
+  onDelete?: (id: number) => void;
+}) {
+  if (!msg) return null;
+
+  const actions: { icon: string; label: string; onPress: () => void; destructive?: boolean }[] = [
+    {
+      icon: 'copy-outline', label: 'Copy',
+      onPress: () => {
+        // Clipboard.setString(msg.content); // expo-clipboard if needed
+        onClose();
+      },
+    },
+    {
+      icon: 'share-outline', label: 'Share',
+      onPress: async () => {
+        await Share.share({ message: msg.content });
+        onClose();
+      },
+    },
+  ];
+  if (isMine && onDelete) {
+    actions.push({
+      icon: 'trash-outline', label: 'Delete',
+      destructive: true,
+      onPress: () => { onDelete(msg.id); onClose(); },
+    });
+  }
+
+  return (
+    <Modal visible={!!msg} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }} onPress={onClose}>
+        <View style={{
+          backgroundColor: isDark ? '#111111' : '#FFFFFF',
+          borderRadius: 20,
+          padding: 8,
+          minWidth: 200,
+          borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E8E8E8',
+          shadowColor: '#000', shadowRadius: 20, shadowOpacity: 0.25, shadowOffset: { width: 0, height: 8 },
+        }}>
+          {/* Message preview */}
+          <View style={{
+            paddingHorizontal: 14, paddingVertical: 10,
+            borderBottomWidth: 1, borderBottomColor: isDark ? '#1E1E1E' : '#F0F0F0',
+            marginBottom: 4,
+          }}>
+            <Text style={{ color: isDark ? '#888888' : '#AAAAAA', fontSize: 12 }} numberOfLines={2}>
+              {msg.content}
+            </Text>
+          </View>
+          {actions.map((a) => (
+            <Pressable
+              key={a.label}
+              onPress={a.onPress}
+              style={({ pressed }) => ({
+                flexDirection: 'row', alignItems: 'center', gap: 12,
+                paddingHorizontal: 14, paddingVertical: 13,
+                borderRadius: 12,
+                backgroundColor: pressed ? (isDark ? '#1A1A1A' : '#F5F5F5') : 'transparent',
+              })}
+            >
+              <Ionicons name={a.icon as any} size={18} color={a.destructive ? '#f87171' : (isDark ? '#FFFFFF' : '#0A0A0A')} />
+              <Text style={{ color: a.destructive ? '#f87171' : (isDark ? '#FFFFFF' : '#0A0A0A'), fontSize: 15, fontWeight: '500' }}>
+                {a.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -109,6 +277,7 @@ function MessageBubble({ msg, isMine, partnerName }: { msg: any; isMine: boolean
 export default function ChatScreen() {
   const isDark = useThemeStore(state => state.isDark);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     userId: string;
     name: string;
@@ -121,14 +290,20 @@ export default function ChatScreen() {
   const myMemberId  = Number(params.memberId);
   const teamId      = Number(params.teamId);
 
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const listRef = useRef<FlatList>(null);
-  const utils = trpc.useUtils();
+  const [message, setMessage]       = useState('');
+  const [sending, setSending]       = useState(false);
+  const [isTyping, setIsTyping]     = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [contextMsg, setContextMsg] = useState<any>(null);
+  const [atBottom, setAtBottom]     = useState(true);
 
+  const listRef  = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
+  const utils    = trpc.useUtils();
+
+  // ─── Queries / Mutations ───────────────────────────────────────────────────
   const messagesQuery = trpc.chat.getMessages.useQuery(
     { memberA: myMemberId, memberB: partnerId, teamId },
-    { enabled: !!myMemberId && !!partnerId && !!teamId, refetchInterval: 5_000 }
+    { enabled: !!myMemberId && !!partnerId && !!teamId, refetchInterval: 8_000, staleTime: 4_000 }
   );
 
   const sendMutation = trpc.chat.send.useMutation({
@@ -138,52 +313,57 @@ export default function ChatScreen() {
       setSending(false);
       utils.chat.getMessages.invalidate();
       utils.chat.getConversations.invalidate();
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
     },
     onError: () => setSending(false),
   });
 
   const markReadMutation = trpc.chat.markRead.useMutation();
 
-  const messages = (messagesQuery.data as any[] ?? []);
+  const messages = messagesQuery.data as any[] ?? [];
 
-  // Mark messages as read when screen opens / receives new messages
+  // ─── Mark read ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (myMemberId && partnerId && teamId) {
       markReadMutation.mutate({ fromMemberId: partnerId, toMemberId: myMemberId, teamId });
     }
-  }, [messages.length, myMemberId, partnerId, teamId]);
+  }, [messages.length]);
 
-  // Real-time socket for new messages
+  // ─── Real-time socket ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!myMemberId) return;
     let cleanup: (() => void) | null = null;
     getSocket().then((sock) => {
       const handler = (msg: any) => {
-        if (
+        const relevant =
           (msg.fromMemberId === partnerId && msg.toMemberId === myMemberId) ||
-          (msg.fromMemberId === myMemberId && msg.toMemberId === partnerId)
-        ) {
-          utils.chat.getMessages.invalidate();
-          utils.chat.getConversations.invalidate();
-          // Auto-mark as read
-          if (msg.fromMemberId === partnerId) {
-            markReadMutation.mutate({ fromMemberId: partnerId, toMemberId: myMemberId, teamId });
-          }
+          (msg.fromMemberId === myMemberId && msg.toMemberId === partnerId);
+        if (!relevant) return;
+        utils.chat.getMessages.invalidate();
+        utils.chat.getConversations.invalidate();
+        if (msg.fromMemberId === partnerId) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          markReadMutation.mutate({ fromMemberId: partnerId, toMemberId: myMemberId, teamId });
         }
       };
+      const typingHandler = (data: any) => {
+        if (data.fromMemberId === partnerId) setIsTyping(data.isTyping);
+      };
       sock.on('chatMessage', handler);
-      cleanup = () => sock.off('chatMessage', handler);
+      sock.on('typing', typingHandler);
+      cleanup = () => { sock.off('chatMessage', handler); sock.off('typing', typingHandler); };
     });
     return () => cleanup?.();
   }, [myMemberId, partnerId, teamId]);
 
-  // Scroll to bottom on new messages
+  // ─── Scroll to bottom on new messages ─────────────────────────────────────
   useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    if (messages.length > 0 && atBottom) {
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
     }
   }, [messages.length]);
 
+  // ─── Send ──────────────────────────────────────────────────────────────────
   const handleSend = useCallback(() => {
     const trimmed = message.trim();
     if (!trimmed || sending) return;
@@ -196,128 +376,248 @@ export default function ChatScreen() {
     });
   }, [message, sending, myMemberId, partnerId, teamId]);
 
+  // ─── Colors ────────────────────────────────────────────────────────────────
+  const headerBg  = isDark ? '#000000' : '#FFFFFF';
+  const chatBg    = isDark ? '#0A0A0A' : '#EBEBEB';
+  const inputBg   = isDark ? '#000000' : '#FFFFFF';
+  const inputCard = isDark ? '#111111' : '#FFFFFF';
+  const borderCol = isDark ? '#1A1A1A' : '#E8E8E8';
+  const fg        = isDark ? '#F2F2F2' : '#0A0A0A';
+  const muted     = isDark ? '#555555' : '#AAAAAA';
+
   const grouped = groupByDate(messages);
 
+  // Flat message list with cluster info
+  const flatItems: any[] = [];
+  for (const g of grouped) {
+    flatItems.push({ type: 'date', label: dateLabel(g.date), key: `d-${g.date}` });
+    for (let i = 0; i < g.items.length; i++) {
+      const msg = g.items[i];
+      const next = g.items[i + 1];
+      const isLastInCluster = !next || next.fromMemberId !== msg.fromMemberId;
+      flatItems.push({ type: 'msg', msg, isLastInCluster, key: `m-${msg.id}` });
+    }
+  }
+  if (isTyping) flatItems.push({ type: 'typing', key: 'typing' });
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        {/* Header */}
+    <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+      {/* Top safe area — header sits below status bar */}
+      <SafeAreaView edges={['top']} style={{ backgroundColor: headerBg }}>
+        {/* ─── Header ─────────────────────────────────────────────────── */}
         <View style={{
-          flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12,
-          borderBottomWidth: 1, borderBottomColor: isDark ? '#0D0D0D' : '#E8E8E8', backgroundColor: isDark ? '#000000' : '#F5F5F5',
+          flexDirection: 'row', alignItems: 'center',
+          paddingHorizontal: 8, paddingVertical: 10,
+          borderBottomWidth: 1, borderBottomColor: borderCol,
+          backgroundColor: headerBg,
+          gap: 6,
         }}>
+          {/* Back */}
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+            style={{ padding: 6, borderRadius: 10 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="arrow-back" size={18} color={isDark ? '#64748b' : '#475569'} />
+            <Ionicons name="arrow-back" size={22} color={fg} />
           </TouchableOpacity>
 
-          <Avatar name={partnerName} size={38} />
+          {/* Avatar + info — tappable area */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+          >
+            <View style={{ position: 'relative' }}>
+              <Avatar name={partnerName} size={40} isDark={isDark} />
+              {/* Online dot */}
+              <View style={{
+                position: 'absolute', bottom: 0, right: 0,
+                width: 11, height: 11, borderRadius: 6,
+                backgroundColor: '#4ADE80',
+                borderWidth: 2, borderColor: headerBg,
+              }} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: fg, fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
+                {partnerName}
+              </Text>
+              <Text style={{ color: muted, fontSize: 12, marginTop: 1 }}>
+                {isTyping ? 'typing…' : 'Online'}
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
-              {partnerName}
-            </Text>
-            <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 11, marginTop: 1 }}>Team member</Text>
-          </View>
-
-          {messagesQuery.isFetching && <ActivityIndicator size="small" color={isDark ? '#334155' : '#94a3b8'} />}
+          {/* Action buttons */}
+          <TouchableOpacity
+            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isDark ? '#111111' : '#F0F0F0', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="call-outline" size={17} color={fg} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isDark ? '#111111' : '#F0F0F0', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="videocam-outline" size={17} color={fg} />
+          </TouchableOpacity>
         </View>
+      </SafeAreaView>
 
+      {/* ─── Chat area ───────────────────────────────────────────────────── */}
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: chatBg }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
         {/* Messages */}
         {messagesQuery.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator color={isDark ? '#FFFFFF' : '#0A0A0A'} />
           </View>
         ) : messages.length === 0 ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
-            <Avatar name={partnerName} size={64} />
-            <Text style={{ color: isDark ? '#64748b' : '#475569', fontSize: 15, fontWeight: '600', marginTop: 16, marginBottom: 6 }}>
-              Start a conversation
-            </Text>
-            <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 13, textAlign: 'center' }}>
-              Send a message to {partnerName}.
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 }}>
+            <View style={{
+              width: 72, height: 72, borderRadius: 36,
+              backgroundColor: isDark ? '#111111' : '#FFFFFF',
+              borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Avatar name={partnerName} size={56} isDark={isDark} />
+            </View>
+            <Text style={{ color: fg, fontSize: 17, fontWeight: '700' }}>{partnerName}</Text>
+            <Text style={{ color: muted, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+              No messages yet. Say hello! 👋
             </Text>
           </View>
         ) : (
           <FlatList
             ref={listRef}
-            data={grouped}
-            keyExtractor={(g) => g.date}
-            contentContainerStyle={{ paddingVertical: 16 }}
+            data={flatItems}
+            keyExtractor={(item: any) => item.key}
+            contentContainerStyle={{ paddingTop: 10, paddingBottom: 10 }}
+            showsVerticalScrollIndicator={false}
             onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
-            renderItem={({ item: group }) => (
-              <View>
-                {/* Date separator */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16, gap: 10 }}>
-                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8' }} />
-                  <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 11, fontWeight: '600' }}>
-                    {dateLabel(group.date)}
-                  </Text>
-                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8' }} />
-                </View>
-                {/* Messages in this date group */}
-                {group.items.map((msg: any) => (
-                  <MessageBubble
-                    key={msg.id}
-                    msg={msg}
-                    isMine={msg.fromMemberId === myMemberId}
-                    partnerName={partnerName}
-                  />
-                ))}
-              </View>
-            )}
+            onScroll={(e) => {
+              const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+              const distFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+              setAtBottom(distFromBottom < 80);
+            }}
+            scrollEventThrottle={100}
+            renderItem={({ item }: { item: any }) => {
+              if (item.type === 'date') {
+                return <DateSeparator label={item.label} isDark={isDark} />;
+              }
+              if (item.type === 'typing') {
+                return <TypingIndicator isDark={isDark} />;
+              }
+              return (
+                <MessageBubble
+                  msg={item.msg}
+                  isMine={item.msg.fromMemberId === myMemberId}
+                  partnerName={partnerName}
+                  isDark={isDark}
+                  isLastInCluster={item.isLastInCluster}
+                  onLongPress={setContextMsg}
+                />
+              );
+            }}
           />
         )}
 
-        {/* Input bar */}
-        <View style={{
-          flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-          paddingHorizontal: 16, paddingVertical: 12,
-          borderTopWidth: 1, borderTopColor: isDark ? '#0D0D0D' : '#E8E8E8',
-          backgroundColor: isDark ? '#000000' : '#F5F5F5',
-        }}>
-          <View style={{
-            flex: 1, backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderRadius: 24, borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
-            paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-            maxHeight: 120,
-          }}>
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              placeholder={`Message ${partnerName.split(' ')[0]}…`}
-              placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
-              style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 14, lineHeight: 20 }}
-              multiline
-              maxLength={4000}
-              returnKeyType="default"
-              onSubmitEditing={Platform.OS === 'ios' ? undefined : handleSend}
-            />
-          </View>
+        {/* Scroll-to-bottom FAB */}
+        {!atBottom && messages.length > 0 && (
           <TouchableOpacity
-            onPress={handleSend}
-            disabled={!message.trim() || sending}
+            onPress={() => listRef.current?.scrollToEnd({ animated: true })}
             style={{
-              width: 44, height: 44, borderRadius: 22,
-              backgroundColor: message.trim() ? (isDark ? '#FFFFFF' : '#0A0A0A') : (isDark ? '#1A1A1A' : '#F0F0F0'),
+              position: 'absolute', bottom: 70, right: 16,
+              width: 38, height: 38, borderRadius: 19,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
               alignItems: 'center', justifyContent: 'center',
-              borderWidth: message.trim() ? 0 : 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
-              shadowColor: message.trim() ? '#000' : 'transparent',
-              shadowRadius: 8, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 3 },
+              shadowColor: '#000', shadowRadius: 8, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 3 },
+              elevation: 4,
             }}
           >
-            {sending
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="send" size={18} color={message.trim() ? '#fff' : (isDark ? '#334155' : '#94a3b8')} />
-            }
+            <Ionicons name="chevron-down" size={18} color={fg} />
           </TouchableOpacity>
-        </View>
+        )}
+
+        {/* ─── Input bar ─────────────────────────────────────────────────── */}
+        <SafeAreaView edges={['bottom']} style={{ backgroundColor: inputBg }}>
+          <View style={{
+            flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+            paddingHorizontal: 10, paddingVertical: 10,
+            borderTopWidth: 1, borderTopColor: borderCol,
+            backgroundColor: inputBg,
+          }}>
+            {/* Emoji button */}
+            <TouchableOpacity
+              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}
+            >
+              <Ionicons name="happy-outline" size={24} color={muted} />
+            </TouchableOpacity>
+
+            {/* Text input */}
+            <View style={{
+              flex: 1, backgroundColor: inputCard,
+              borderRadius: 24, borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
+              paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+              maxHeight: 120, justifyContent: 'center',
+            }}>
+              <TextInput
+                ref={inputRef}
+                value={message}
+                onChangeText={setMessage}
+                placeholder={`Message…`}
+                placeholderTextColor={muted}
+                style={{ color: fg, fontSize: 15, lineHeight: 22, padding: 0 }}
+                multiline
+                maxLength={4000}
+                returnKeyType="default"
+              />
+            </View>
+
+            {/* Attachment */}
+            {!message.trim() && (
+              <TouchableOpacity
+                onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 0 }}
+              >
+                <Ionicons name="attach-outline" size={24} color={muted} />
+              </TouchableOpacity>
+            )}
+
+            {/* Send / Mic */}
+            <TouchableOpacity
+              onPress={message.trim() ? handleSend : () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+              disabled={!!message.trim() && sending}
+              style={{
+                width: 44, height: 44, borderRadius: 22,
+                backgroundColor: message.trim()
+                  ? (isDark ? '#FFFFFF' : '#0A0A0A')
+                  : (isDark ? '#111111' : '#F0F0F0'),
+                alignItems: 'center', justifyContent: 'center',
+                borderWidth: message.trim() ? 0 : 1,
+                borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
+              }}
+            >
+              {sending
+                ? <ActivityIndicator size="small" color={isDark ? '#000000' : '#FFFFFF'} />
+                : message.trim()
+                  ? <Ionicons name="send" size={18} color={isDark ? '#000000' : '#FFFFFF'} />
+                  : <Ionicons name="mic-outline" size={20} color={muted} />}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+      {/* ─── Context menu ────────────────────────────────────────────────── */}
+      <MessageContextMenu
+        msg={contextMsg}
+        isMine={contextMsg?.fromMemberId === myMemberId}
+        isDark={isDark}
+        onClose={() => setContextMsg(null)}
+      />
+    </View>
   );
 }
