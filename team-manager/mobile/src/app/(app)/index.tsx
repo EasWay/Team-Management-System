@@ -133,51 +133,31 @@ export default function MyOfficeScreen() {
 
   const teamId = activeTeam?.id ?? 0;
 
-  const tasksQuery = trpc.tasks.list.useQuery(
+  // Single round-trip: all home-screen data in one request
+  const dashboardQuery = trpc.dashboard.get.useQuery(
     { teamId },
-    { enabled: !!activeTeam?.id }
+    { enabled: !!activeTeam?.id, staleTime: 1000 * 60 * 3 }
   );
-  const projectsQuery = trpc.projects.list.useQuery(
-    { teamId },
-    { enabled: !!activeTeam?.id }
-  );
-  const membersQuery = trpc.teams.getMembers.useQuery(
-    { teamId },
-    { enabled: !!activeTeam?.id }
-  );
+  // Repos come from GitHub API — fetched separately with a longer staleTime
   const reposQuery = trpc.repositories.listFromAccount.useQuery(
     { teamId },
-    { enabled: !!activeTeam?.id }
-  );
-  const metricsQuery = trpc.analytics.getDashboardMetrics.useQuery(
-    { teamId },
-    { enabled: !!activeTeam?.id }
-  );
-  const activitiesQuery = trpc.activities.list.useQuery(
-    { teamId, limit: 8 },
-    { enabled: !!activeTeam?.id }
+    { enabled: !!activeTeam?.id, staleTime: 1000 * 60 * 15 }
   );
 
-  const isRefreshing =
-    tasksQuery.isFetching ||
-    projectsQuery.isFetching ||
-    membersQuery.isFetching;
+  const isRefreshing = dashboardQuery.isFetching || reposQuery.isFetching;
 
   const refetch = () => {
-    tasksQuery.refetch();
-    projectsQuery.refetch();
-    membersQuery.refetch();
+    dashboardQuery.refetch();
     reposQuery.refetch();
-    metricsQuery.refetch();
-    activitiesQuery.refetch();
   };
 
-  const tasks      = (tasksQuery.data    as any[] ?? []);
-  const projects   = (projectsQuery.data as any[] ?? []);
-  const members    = (membersQuery.data  as any[] ?? []);
-  const repos      = (reposQuery.data    as any[] ?? []);
-  const metrics    = metricsQuery.data   as any;
-  const activities = (activitiesQuery.data as any[] ?? []);
+  const dashData   = dashboardQuery.data as any;
+  const tasks      = (dashData?.tasks     as any[] ?? []);
+  const projects   = (dashData?.projects  as any[] ?? []);
+  const members    = (dashData?.members   as any[] ?? []);
+  const metrics    = dashData?.metrics    as any;
+  const activities = (dashData?.activities as any[] ?? []);
+  const repos      = (reposQuery.data     as any[] ?? []);
 
   const myTasks        = tasks.filter((t) => t.assignedTo === user?.id && t.status !== 'done');
   const openTasks      = tasks.filter((t) => t.status !== 'done').length;
@@ -220,7 +200,7 @@ export default function MyOfficeScreen() {
           <View className="mt-6 px-5">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Performance</Text>
-              {metricsQuery.isLoading && <ActivityIndicator size="small" color="#38bdf8" />}
+              {dashboardQuery.isLoading && <ActivityIndicator size="small" color="#38bdf8" />}
             </View>
             {metrics ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
@@ -229,7 +209,7 @@ export default function MyOfficeScreen() {
                 <MetricCard label="Active Members"  value={String(metrics.activeMembers?.value ?? '—')}  unit={metrics.activeMembers?.unit ?? ''}  trend={metrics.activeMembers?.trend ?? ''}  direction={metrics.activeMembers?.direction ?? 'up'}  icon="people-outline" />
                 <MetricCard label="Cycle Time"      value={String(metrics.cycleTime?.value ?? '—')}      unit={metrics.cycleTime?.unit ?? ''}      trend={metrics.cycleTime?.trend ?? ''}      direction={metrics.cycleTime?.direction ?? 'up'}  icon="time-outline" />
               </ScrollView>
-            ) : !metricsQuery.isLoading && (
+            ) : !dashboardQuery.isLoading && (
               <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 items-center">
                 <Text className="text-slate-400 dark:text-slate-500 text-sm">No metrics available yet</Text>
               </View>
@@ -494,13 +474,13 @@ export default function MyOfficeScreen() {
             <View className="flex-row justify-between items-center mb-3">
               <View className="flex-row items-center gap-2">
                 <Text className="text-slate-900 dark:text-white font-bold text-lg">Live Activity</Text>
-                {activitiesQuery.isFetching && <ActivityIndicator size="small" color="#64748b" />}
+                {dashboardQuery.isFetching && <ActivityIndicator size="small" color="#64748b" />}
               </View>
               <View className="w-2 h-2 rounded-full bg-emerald-400" />
             </View>
 
             <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              {activitiesQuery.isLoading ? (
+              {dashboardQuery.isLoading ? (
                 <View className="p-6 items-center">
                   <ActivityIndicator color="#38bdf8" />
                 </View>
