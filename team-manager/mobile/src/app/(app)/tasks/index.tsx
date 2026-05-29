@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { ListRowSkeleton } from '@/components/Skeleton';
 import {
   View,
   Text,
@@ -605,9 +606,7 @@ export default function TasksScreen() {
 
       {/* ── Task list ── */}
       {tasksQuery.isLoading && !tasksQuery.data ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="#38bdf8" size="large" />
-        </View>
+        <ListRowSkeleton count={8} />
       ) : (
         <FlatList
           data={filtered}

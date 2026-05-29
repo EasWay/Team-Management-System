@@ -104,7 +104,11 @@ export const tasks = pgTable("tasks", {
   tags: jsonb("tags"), // array of strings e.g. ['frontend', 'design', 'urgent']
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  teamIdIdx: index("tasks_team_id_idx").on(table.teamId),
+  assignedToIdx: index("tasks_assigned_to_idx").on(table.assignedTo),
+  teamStatusIdx: index("tasks_team_status_idx").on(table.teamId, table.status),
+}));
 
 // Clients table
 export const clients = pgTable("clients", {
@@ -140,7 +144,10 @@ export const projects = pgTable("projects", {
   evaluatedAt: timestamp("evaluated_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  teamIdIdx: index("projects_team_id_idx").on(table.teamId),
+  teamStatusIdx: index("projects_team_status_idx").on(table.teamId, table.status),
+}));
 
 // Project Files table
 export const projectFiles = pgTable("project_files", {
@@ -164,7 +171,10 @@ export const activities = pgTable("activities", {
   teamId: integer("team_id").references(() => teams.id),
   metadata: jsonb("metadata"), // Additional data as JSON
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  teamIdIdx: index("activities_team_id_idx").on(table.teamId),
+  teamCreatedIdx: index("activities_team_created_idx").on(table.teamId, table.createdAt),
+}));
 
 // Repositories table
 export const repositories = pgTable("repositories", {

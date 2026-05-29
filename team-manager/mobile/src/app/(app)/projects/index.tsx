@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ProjectGridSkeleton } from '@/components/Skeleton';
 import {
   View,
   Text,
@@ -303,8 +304,8 @@ export default function ProjectsScreen() {
 
       {/* ── Grid ── */}
       {projectsQuery.isLoading && !projectsQuery.data ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#38bdf8" size="large" />
+        <View style={{ paddingTop: 12 }}>
+          <ProjectGridSkeleton count={6} />
         </View>
       ) : (
         <FlatList

@@ -7,6 +7,13 @@ import { useAuthStore } from '@/store/authStore';
 import { useTeamStore } from '@/store/teamStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/Badge';
+import {
+  StatRowSkeleton,
+  MetricsRowSkeleton,
+  ListRowSkeleton,
+  MemberStripSkeleton,
+  CardSkeleton,
+} from '@/components/Skeleton';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -133,51 +140,31 @@ export default function MyOfficeScreen() {
 
   const teamId = activeTeam?.id ?? 0;
 
-  const tasksQuery = trpc.tasks.list.useQuery(
+  // Single round-trip: all home-screen data in one request
+  const dashboardQuery = trpc.dashboard.get.useQuery(
     { teamId },
-    { enabled: !!activeTeam?.id }
+    { enabled: !!activeTeam?.id, staleTime: 1000 * 60 * 3 }
   );
-  const projectsQuery = trpc.projects.list.useQuery(
-    { teamId },
-    { enabled: !!activeTeam?.id }
-  );
-  const membersQuery = trpc.teams.getMembers.useQuery(
-    { teamId },
-    { enabled: !!activeTeam?.id }
-  );
+  // Repos come from GitHub API — fetched separately with a longer staleTime
   const reposQuery = trpc.repositories.listFromAccount.useQuery(
     { teamId },
-    { enabled: !!activeTeam?.id }
-  );
-  const metricsQuery = trpc.analytics.getDashboardMetrics.useQuery(
-    { teamId },
-    { enabled: !!activeTeam?.id }
-  );
-  const activitiesQuery = trpc.activities.list.useQuery(
-    { teamId, limit: 8 },
-    { enabled: !!activeTeam?.id }
+    { enabled: !!activeTeam?.id, staleTime: 1000 * 60 * 15 }
   );
 
-  const isRefreshing =
-    tasksQuery.isFetching ||
-    projectsQuery.isFetching ||
-    membersQuery.isFetching;
+  const isRefreshing = dashboardQuery.isFetching || reposQuery.isFetching;
 
   const refetch = () => {
-    tasksQuery.refetch();
-    projectsQuery.refetch();
-    membersQuery.refetch();
+    dashboardQuery.refetch();
     reposQuery.refetch();
-    metricsQuery.refetch();
-    activitiesQuery.refetch();
   };
 
-  const tasks      = (tasksQuery.data    as any[] ?? []);
-  const projects   = (projectsQuery.data as any[] ?? []);
-  const members    = (membersQuery.data  as any[] ?? []);
-  const repos      = (reposQuery.data    as any[] ?? []);
-  const metrics    = metricsQuery.data   as any;
-  const activities = (activitiesQuery.data as any[] ?? []);
+  const dashData   = dashboardQuery.data as any;
+  const tasks      = (dashData?.tasks     as any[] ?? []);
+  const projects   = (dashData?.projects  as any[] ?? []);
+  const members    = (dashData?.members   as any[] ?? []);
+  const metrics    = dashData?.metrics    as any;
+  const activities = (dashData?.activities as any[] ?? []);
+  const repos      = (reposQuery.data     as any[] ?? []);
 
   const myTasks        = tasks.filter((t) => t.assignedTo === user?.id && t.status !== 'done');
   const openTasks      = tasks.filter((t) => t.status !== 'done').length;
@@ -208,28 +195,34 @@ export default function MyOfficeScreen() {
         </View>
 
         {/* ── Stats ── */}
-        <View className="flex-row gap-2.5 px-5 mt-4">
-          <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#38bdf8" onPress={() => router.push('/(app)/tasks' as any)} />
-          <StatCard icon="folder"           label="Projects"   value={projects.length} color="#a78bfa" onPress={() => router.push('/(app)/projects' as any)} />
-          <StatCard icon="people"           label="Members"    value={members.length}  color="#34d399" onPress={() => router.push('/(app)/teams' as any)} />
-          <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#94a3b8" onPress={() => router.push('/(app)/teams' as any)} />
-        </View>
+        {dashboardQuery.isLoading && !dashData ? (
+          <StatRowSkeleton />
+        ) : (
+          <View className="flex-row gap-2.5 px-5 mt-4">
+            <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#38bdf8" onPress={() => router.push('/(app)/tasks' as any)} />
+            <StatCard icon="folder"           label="Projects"   value={projects.length} color="#a78bfa" onPress={() => router.push('/(app)/projects' as any)} />
+            <StatCard icon="people"           label="Members"    value={members.length}  color="#34d399" onPress={() => router.push('/(app)/teams' as any)} />
+            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#94a3b8" onPress={() => router.push('/(app)/teams' as any)} />
+          </View>
+        )}
 
         {/* ── Analytics Metrics ── */}
         {activeTeam?.id ? (
           <View className="mt-6 px-5">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Performance</Text>
-              {metricsQuery.isLoading && <ActivityIndicator size="small" color="#38bdf8" />}
+              {dashboardQuery.isFetching && !!dashData && <ActivityIndicator size="small" color="#38bdf8" />}
             </View>
-            {metrics ? (
+            {dashboardQuery.isLoading && !metrics ? (
+              <MetricsRowSkeleton />
+            ) : metrics ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                 <MetricCard label="Sprint Velocity" value={String(metrics.sprintVelocity?.value ?? '—')} unit={metrics.sprintVelocity?.unit ?? ''} trend={metrics.sprintVelocity?.trend ?? ''} direction={metrics.sprintVelocity?.direction ?? 'up'} icon="flash-outline" />
                 <MetricCard label="Open Tasks"      value={String(metrics.openTasks?.value ?? '—')}      unit={metrics.openTasks?.unit ?? ''}      trend={metrics.openTasks?.trend ?? ''}      direction={metrics.openTasks?.direction ?? 'down'}  icon="alert-circle-outline" />
                 <MetricCard label="Active Members"  value={String(metrics.activeMembers?.value ?? '—')}  unit={metrics.activeMembers?.unit ?? ''}  trend={metrics.activeMembers?.trend ?? ''}  direction={metrics.activeMembers?.direction ?? 'up'}  icon="people-outline" />
                 <MetricCard label="Cycle Time"      value={String(metrics.cycleTime?.value ?? '—')}      unit={metrics.cycleTime?.unit ?? ''}      trend={metrics.cycleTime?.trend ?? ''}      direction={metrics.cycleTime?.direction ?? 'up'}  icon="time-outline" />
               </ScrollView>
-            ) : !metricsQuery.isLoading && (
+            ) : (
               <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 items-center">
                 <Text className="text-slate-400 dark:text-slate-500 text-sm">No metrics available yet</Text>
               </View>
@@ -264,7 +257,14 @@ export default function MyOfficeScreen() {
         </View>
 
         {/* ── Team Members ── */}
-        {members.length > 0 && (
+        {dashboardQuery.isLoading && !dashData ? (
+          <View className="mt-6">
+            <View className="flex-row justify-between items-center px-5 mb-3">
+              <Text className="text-slate-900 dark:text-white font-bold text-lg">Team Members</Text>
+            </View>
+            <MemberStripSkeleton count={5} />
+          </View>
+        ) : members.length > 0 && (
           <View className="mt-6">
             <View className="flex-row justify-between items-center px-5 mb-3">
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Team Members</Text>
@@ -323,7 +323,11 @@ export default function MyOfficeScreen() {
             </TouchableOpacity>
           </View>
 
-          {myTasks.length === 0 ? (
+          {dashboardQuery.isLoading && !dashData ? (
+            <View style={{ marginHorizontal: -20 }}>
+              <ListRowSkeleton count={3} />
+            </View>
+          ) : myTasks.length === 0 ? (
             <TouchableOpacity
               onPress={() => router.push('/(app)/tasks' as any)}
               activeOpacity={0.8}
@@ -494,16 +498,14 @@ export default function MyOfficeScreen() {
             <View className="flex-row justify-between items-center mb-3">
               <View className="flex-row items-center gap-2">
                 <Text className="text-slate-900 dark:text-white font-bold text-lg">Live Activity</Text>
-                {activitiesQuery.isFetching && <ActivityIndicator size="small" color="#64748b" />}
+                {dashboardQuery.isFetching && <ActivityIndicator size="small" color="#64748b" />}
               </View>
               <View className="w-2 h-2 rounded-full bg-emerald-400" />
             </View>
 
             <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              {activitiesQuery.isLoading ? (
-                <View className="p-6 items-center">
-                  <ActivityIndicator color="#38bdf8" />
-                </View>
+              {dashboardQuery.isLoading && !dashData ? (
+                <ListRowSkeleton count={4} />
               ) : activities.length === 0 ? (
                 <View className="p-6 items-center">
                   <Ionicons name="radio-outline" size={32} color="#94a3b8" />

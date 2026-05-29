@@ -66,7 +66,7 @@ export default function MessagesScreen() {
 
   const convsQuery = trpc.chat.getConversations.useQuery(
     { memberId: currentMemberId ?? 0, teamId: activeTeam?.id ?? 0 },
-    { enabled: !!currentMemberId && !!activeTeam?.id, refetchInterval: 10_000 }
+    { enabled: !!currentMemberId && !!activeTeam?.id, staleTime: 1000 * 30, refetchInterval: 30_000 }
   );
 
   const conversations = (convsQuery.data as any[] ?? []);
