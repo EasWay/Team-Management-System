@@ -6,16 +6,24 @@ import { useColorScheme } from 'nativewind';
 import { useAuthStore } from '@/store/authStore';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
-import { setBadgeCount } from '@/lib/notifications';
+import {
+  setBadgeCount,
+  registerPushToken,
+  setupNotificationResponseListener,
+  setupNotificationReceivedListener,
+  handleInitialNotification,
+} from '@/lib/notifications';
+import { Alert } from '@/components/CustomAlert';
+import * as Haptics from 'expo-haptics';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TABS: { name: string; title: string; icon: IconName; activeIcon: IconName }[] = [
-  { name: 'index',          title: 'Office',   icon: 'home-outline',              activeIcon: 'home' },
-  { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline',  activeIcon: 'checkmark-circle' },
-  { name: 'projects/index', title: 'Projects', icon: 'folder-outline',            activeIcon: 'folder' },
+  { name: 'index',          title: 'Office',   icon: 'home-outline',               activeIcon: 'home' },
+  { name: 'tasks/index',    title: 'Tasks',    icon: 'checkmark-circle-outline',   activeIcon: 'checkmark-circle' },
+  { name: 'projects/index', title: 'Projects', icon: 'folder-outline',             activeIcon: 'folder' },
   { name: 'messages/index', title: 'Chat',     icon: 'chatbubble-ellipses-outline', activeIcon: 'chatbubble-ellipses' },
-  { name: 'profile/index',  title: 'Profile',  icon: 'person-outline',            activeIcon: 'person' },
+  { name: 'profile/index',  title: 'Profile',  icon: 'person-outline',             activeIcon: 'person' },
 ];
 
 export default function AppLayout() {
@@ -53,7 +61,31 @@ export default function AppLayout() {
     setBadgeCount(count).catch(() => {});
   }, [unreadQuery.data]);
 
-  // Dynamic theme colors
+  // Register push token + check if app was opened via notification
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerPushToken().catch(console.warn);
+      handleInitialNotification().catch(console.warn);
+    }
+  }, [isAuthenticated]);
+
+  // Notification tap → navigate (works from background/killed state)
+  useEffect(() => {
+    const responseSub = setupNotificationResponseListener();
+    return () => responseSub.remove();
+  }, []);
+
+  // Foreground notification → show in-app alert banner
+  useEffect(() => {
+    const receivedSub = setupNotificationReceivedListener((notification: any) => {
+      const { title, body } = notification.request.content;
+      if (title || body) {
+        Alert.alert(title ?? 'Notification', body ?? '');
+      }
+    });
+    return () => receivedSub.remove();
+  }, []);
+
   const tabBg = isDark ? '#000000' : '#FFFFFF';
   const tabBorder = isDark ? '#1A1A1A' : '#E8E8E8';
   const tabInactive = isDark ? '#555555' : '#AAAAAA';
@@ -92,6 +124,9 @@ export default function AppLayout() {
                 color={color}
               />
             ),
+          }}
+          listeners={{
+            tabPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
           }}
         />
       ))}

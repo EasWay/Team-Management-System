@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -84,6 +85,7 @@ export default function MessagesScreen() {
   }, [currentMemberId]);
 
   const openChat = (partnerId: number, partnerName: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
       pathname: '/(app)/chat/[userId]' as any,
       params: {

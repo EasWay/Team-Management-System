@@ -294,7 +294,7 @@ export default function MyOfficeScreen() {
                       <MemberAvatar name={memberName} size={48} />
                       {(m.role === 'admin' || m.role === 'owner') ? (
                         <View
-                          className="absolute -bottom-0.5 -right-0.5 bg-amber-500 rounded-full items-center justify-center"
+                          className="absolute -bottom-0.5 -right-0.5 bg-neutral-800 rounded-full items-center justify-center"
                           style={{ width: 16, height: 16 }}
                         >
                           <Ionicons name="shield-checkmark" size={9} color="#fff" />
@@ -402,8 +402,8 @@ export default function MyOfficeScreen() {
                 className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-2.5 border border-slate-200 dark:border-slate-700"
               >
                 <View className="flex-row items-center gap-3">
-                  <View className="bg-violet-50 dark:bg-violet-900/40 rounded-xl p-2.5 border border-violet-100 dark:border-violet-800/60">
-                    <Ionicons name="folder" size={18} color="#a78bfa" />
+                  <View className="bg-neutral-100 dark:bg-neutral-800/40 rounded-xl p-2.5 border border-neutral-200 dark:border-neutral-700">
+                    <Ionicons name="folder" size={18} color="#888888" />
                   </View>
                   <View className="flex-1">
                     <Text className="text-slate-900 dark:text-white font-semibold" numberOfLines={1}>
@@ -416,7 +416,7 @@ export default function MyOfficeScreen() {
                     ) : null}
                     {project.evaluationData?.overallScore != null && (
                       <View className="flex-row items-center gap-1 mt-0.5">
-                        <Ionicons name="checkmark-circle" size={11} color="#34d399" />
+                        <Ionicons name="checkmark-circle" size={11} color="#888888" />
                         <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-semibold">
                           {project.evaluationData.overallScore}% QA
                         </Text>

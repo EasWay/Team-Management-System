@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -52,6 +53,7 @@ export default function TeamsScreen() {
 
   const createMutation = trpc.teams.create.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       utils.teams.list.invalidate();
       setShowCreate(false);
       setTeamName('');
@@ -62,6 +64,7 @@ export default function TeamsScreen() {
 
   const inviteMutation = trpc.teams.createInvitation.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Sent!', `Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
     },

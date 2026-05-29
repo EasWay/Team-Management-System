@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Alert } from '@/components/CustomAlert';
+import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -162,13 +163,13 @@ export default function ProfileScreen() {
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">Profile</Text>
           {/* Theme Toggle */}
           <TouchableOpacity
-            onPress={() => toggleTheme()}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
             className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800 items-center justify-center border border-slate-300 dark:border-slate-700"
           >
             <Ionicons
               name={isDark ? 'sunny-outline' : 'moon-outline'}
               size={18}
-              color={isDark ? '#fbbf24' : '#6366f1'}
+              color={isDark ? '#AAAAAA' : '#888888'}
             />
           </TouchableOpacity>
         </View>
@@ -199,8 +200,8 @@ export default function ProfileScreen() {
           <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <View className="flex-row items-center justify-between px-5 py-4">
               <View className="flex-row items-center gap-3">
-                <View className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 items-center justify-center">
-                  <Ionicons name={isDark ? 'moon' : 'sunny'} size={16} color={isDark ? '#818cf8' : '#f59e0b'} />
+                <View className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
+                  <Ionicons name={isDark ? 'moon' : 'sunny'} size={16} color={isDark ? '#AAAAAA' : '#555555'} />
                 </View>
                 <View>
                   <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">
@@ -213,9 +214,9 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={isDark}
-                onValueChange={() => toggleTheme()}
-                trackColor={{ false: '#cbd5e1', true: '#4338ca' }}
-                thumbColor={isDark ? '#818cf8' : '#94a3b8'}
+                onValueChange={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
+                trackColor={{ false: '#E0E0E0', true: '#0A0A0A' }}
+                thumbColor={isDark ? '#FFFFFF' : '#888888'}
               />
             </View>
           </View>
@@ -228,7 +229,7 @@ export default function ProfileScreen() {
             {QUICK_LINKS.map((item, idx) => (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => router.push(item.route as any)}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(item.route as any); }}
                 className={`flex-row items-center px-5 py-4 gap-3 ${
                   idx > 0 ? 'border-t border-slate-100 dark:border-slate-700' : ''
                 }`}
@@ -298,17 +299,17 @@ export default function ProfileScreen() {
           <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <View className="flex-row items-center px-5 py-4 gap-3">
               <View className="w-9 h-9 rounded-xl items-center justify-center"
-                style={{ backgroundColor: isGoogleConnected ? '#16a34a1a' : '#64748b1a' }}
+                style={{ backgroundColor: '#88888818' }}
               >
                 <Ionicons
                   name="logo-google"
                   size={18}
-                  color={isGoogleConnected ? '#16a34a' : '#64748b'}
+                  color={isGoogleConnected ? '#888888' : '#AAAAAA'}
                 />
               </View>
               <View className="flex-1">
                 <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">Google Drive</Text>
-                <Text className="text-xs mt-0.5" style={{ color: isGoogleConnected ? '#16a34a' : '#94a3b8' }}>
+                <Text className="text-xs mt-0.5" style={{ color: isGoogleConnected ? '#888888' : '#AAAAAA' }}>
                   {isGoogleConnected ? 'Connected' : 'Not connected'}
                 </Text>
               </View>

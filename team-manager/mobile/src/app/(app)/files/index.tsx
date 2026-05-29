@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Haptics from 'expo-haptics';
 
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
@@ -69,17 +70,17 @@ function formatDate(iso?: string | null): string {
 interface FileMeta { icon: IonIconName; color: string; label: string }
 
 function getFileMeta(mimeType: string, isFolder = false): FileMeta {
-  if (isFolder) return { icon: 'folder', color: '#fbbf24', label: 'Folder' };
-  if (mimeType.startsWith('image/')) return { icon: 'image-outline', color: '#34d399', label: 'Image' };
+  if (isFolder) return { icon: 'folder', color: '#888888', label: 'Folder' };
+  if (mimeType.startsWith('image/')) return { icon: 'image-outline', color: '#AAAAAA', label: 'Image' };
   if (mimeType.includes('pdf')) return { icon: 'document-text-outline', color: '#f87171', label: 'PDF' };
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv'))
-    return { icon: 'grid-outline', color: '#34d399', label: 'Spreadsheet' };
+    return { icon: 'grid-outline', color: '#AAAAAA', label: 'Spreadsheet' };
   if (mimeType.includes('presentation') || mimeType.includes('powerpoint'))
-    return { icon: 'easel-outline', color: '#fb923c', label: 'Slides' };
+    return { icon: 'easel-outline', color: '#888888', label: 'Slides' };
   if (mimeType.includes('document') || mimeType.includes('word'))
-    return { icon: 'document-outline', color: '#60a5fa', label: 'Document' };
-  if (mimeType.includes('video')) return { icon: 'videocam-outline', color: '#a78bfa', label: 'Video' };
-  if (mimeType.includes('audio')) return { icon: 'musical-notes-outline', color: '#f472b6', label: 'Audio' };
+    return { icon: 'document-outline', color: '#888888', label: 'Document' };
+  if (mimeType.includes('video')) return { icon: 'videocam-outline', color: '#888888', label: 'Video' };
+  if (mimeType.includes('audio')) return { icon: 'musical-notes-outline', color: '#888888', label: 'Audio' };
   if (mimeType.includes('zip') || mimeType.includes('compressed') || mimeType.includes('archive'))
     return { icon: 'archive-outline', color: '#888888', label: 'Archive' };
   if (mimeType.includes('code') || mimeType.includes('javascript') || mimeType.includes('python') || mimeType.includes('html'))
@@ -271,6 +272,7 @@ function FileBrowser({
   });
 
   const handleUpload = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (!googleStatusQuery.data?.connected) {
       Alert.alert(
         'Google Account Required',
@@ -424,10 +426,10 @@ function FileBrowser({
       ) : isServiceNotConfigured ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 }}>
           <View style={{
-            width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#fbbf2415' : '#fbbf2422',
+            width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#88888815' : '#88888822',
             alignItems: 'center', justifyContent: 'center', marginBottom: 16,
           }}>
-            <Ionicons name="key-outline" size={28} color="#fbbf24" />
+            <Ionicons name="key-outline" size={28} color="#888888" />
           </View>
           <Text style={{ color: isDark ? '#F2F2F2' : '#0D0D0D', fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
             Google Drive not configured
@@ -608,8 +610,8 @@ function FolderCard({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 }}>
             {connected ? (
               <>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34d399' }} />
-                <Text style={{ color: '#34d399', fontSize: 11, fontWeight: '600' }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#888888' }} />
+                <Text style={{ color: '#888888', fontSize: 11, fontWeight: '600' }}>
                   {canBrowse ? 'Tap to browse' : 'Connected — upload only'}
                 </Text>
               </>
@@ -819,12 +821,12 @@ function ConnectDriveModal({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const ROLE_META: Record<string, { label: string; color: string; icon: IonIconName }> = {
-  project_manager:    { label: 'Project Manager',    color: '#fbbf24', icon: 'briefcase-outline' },
+  project_manager:    { label: 'Project Manager',    color: '#888888', icon: 'briefcase-outline' },
   fullstack_engineer: { label: 'Full Stack Engineer', color: '#888888', icon: 'code-slash-outline' },
-  backend_engineer:   { label: 'Backend Engineer',   color: '#34d399', icon: 'server-outline' },
-  lead_researcher:    { label: 'Lead Researcher',    color: '#a78bfa', icon: 'search-outline' },
-  systems_architect:  { label: 'Systems Architect',  color: '#f472b6', icon: 'git-network-outline' },
-  ai_engineer:        { label: 'AI Engineer',        color: '#fb923c', icon: 'hardware-chip-outline' },
+  backend_engineer:   { label: 'Backend Engineer',   color: '#888888', icon: 'server-outline' },
+  lead_researcher:    { label: 'Lead Researcher',    color: '#888888', icon: 'search-outline' },
+  systems_architect:  { label: 'Systems Architect',  color: '#888888', icon: 'git-network-outline' },
+  ai_engineer:        { label: 'AI Engineer',        color: '#888888', icon: 'hardware-chip-outline' },
   member:             { label: 'Member',             color: '#6B6B6B', icon: 'person-outline' },
 };
 
@@ -1043,7 +1045,7 @@ export default function FilesScreen() {
                   subtitle={`${roleMeta.label}`}
                   driveUrl={conn?.driveUrl}
                   icon={isMe ? 'person-circle-outline' : roleMeta.icon}
-                  color={isMe ? '#34d399' : roleMeta.color}
+                  color={isMe ? '#888888' : roleMeta.color}
                   badge={isMe ? 'YOU' : undefined}
                   canBrowse={canBrowseThis}
                   onPress={() => {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -25,9 +26,9 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const EVENT_TYPES: { key: string; label: string; icon: IconName; color: string }[] = [
   { key: 'meeting',   label: 'Meeting',   icon: 'people-outline',    color: '#888888' },
   { key: 'deadline',  label: 'Deadline',  icon: 'alarm-outline',     color: '#f87171' },
-  { key: 'milestone', label: 'Milestone', icon: 'flag-outline',      color: '#fb923c' },
-  { key: 'review',    label: 'Review',    icon: 'eye-outline',       color: '#a78bfa' },
-  { key: 'other',     label: 'Other',     icon: 'calendar-outline',  color: '#34d399' },
+  { key: 'milestone', label: 'Milestone', icon: 'flag-outline',      color: '#888888' },
+  { key: 'review',    label: 'Review',    icon: 'eye-outline',       color: '#AAAAAA' },
+  { key: 'other',     label: 'Other',     icon: 'calendar-outline',  color: '#888888' },
 ];
 
 function getEventType(type: string) {
@@ -62,6 +63,7 @@ export default function CalendarScreen() {
 
   const createMutation = trpc.calendar.createEvent.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       utils.calendar.getEvents.invalidate();
       setShowCreate(false);
       setTitle('');
@@ -71,7 +73,7 @@ export default function CalendarScreen() {
   });
 
   const deleteMutation = trpc.calendar.deleteEvent.useMutation({
-    onSuccess: () => utils.calendar.getEvents.invalidate(),
+    onSuccess: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); utils.calendar.getEvents.invalidate(); },
     onError: (err: any) => Alert.alert('Error', err.message),
   });
 
@@ -193,7 +195,7 @@ export default function CalendarScreen() {
         <View className="mx-5 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 mb-5">
           <Calendar
             current={selectedDate}
-            onDayPress={(day: any) => setSelectedDate(day.dateString)}
+            onDayPress={(day: any) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedDate(day.dateString); }}
             markedDates={markedDates}
             theme={calTheme}
           />

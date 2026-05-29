@@ -172,7 +172,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row gap-3 mb-3">
               <MetricCard
                 icon="flash-outline"
-                iconColor="#fb923c"
+                iconColor="#888888"
                 label="Sprint Velocity"
                 value={dash.sprintVelocity?.value ?? '—'}
                 unit={dash.sprintVelocity?.unit}
@@ -192,7 +192,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row gap-3">
               <MetricCard
                 icon="people-outline"
-                iconColor="#34d399"
+                iconColor="#888888"
                 label="Active Members"
                 value={dash.activeMembers?.value ?? '—'}
                 unit={dash.activeMembers?.unit}
@@ -201,7 +201,7 @@ export default function AnalyticsScreen() {
               />
               <MetricCard
                 icon="time-outline"
-                iconColor="#a78bfa"
+                iconColor="#888888"
                 label="Cycle Time"
                 value={dash.cycleTime?.value ?? '—'}
                 unit={dash.cycleTime?.unit}

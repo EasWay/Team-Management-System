@@ -18,6 +18,7 @@ import { useTeamStore } from '@/store/teamStore';
 import { useThemeStore } from '@/store/themeStore';
 import { getSocket } from '@/lib/socket';
 import { format, isToday, isYesterday } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatMsgTime(date: Date | string): string {
@@ -186,6 +187,7 @@ export default function ChatScreen() {
   const handleSend = useCallback(() => {
     const trimmed = message.trim();
     if (!trimmed || sending) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     sendMutation.mutate({
       fromMemberId: myMemberId,
       toMemberId: partnerId,

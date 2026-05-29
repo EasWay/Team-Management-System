@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { API_BASE_URL } from '@/lib/constants';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 
 import { Alert } from '@/components/CustomAlert';
 import { useThemeStore } from '@/store/themeStore';
@@ -30,6 +31,7 @@ export default function LoginScreen() {
   const isDark = useThemeStore(state => state.isDark);
 
   const handleGitHubOAuth = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     try {
       const mobileRedirectUri = Linking.createURL('/oauth-callback');
@@ -61,10 +63,12 @@ export default function LoginScreen() {
           accessToken,
           refreshToken ?? ''
         );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace('/(app)');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'OAuth failed';
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Sign In Failed', msg);
     } finally {
       setLoading(false);
@@ -118,14 +122,15 @@ export default function LoginScreen() {
           Sign in to collaborate, manage your projects, and build amazing things together.
         </Text>
 
-        {/* Continue with GitHub — outlined pill button */}
+        {/* Continue with GitHub — compact outlined pill */}
         <TouchableOpacity
           onPress={handleGitHubOAuth}
           disabled={loading}
           style={{
-            width: '100%',
-            height: 56,
-            borderRadius: 28,
+            alignSelf: 'center',
+            paddingHorizontal: 32,
+            height: 48,
+            borderRadius: 24,
             borderWidth: 1.5,
             borderColor: fg,
             flexDirection: 'row',
@@ -138,9 +143,9 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color={fg} />
           ) : (
-            <Ionicons name="logo-github" size={22} color={fg} />
+            <Ionicons name="logo-github" size={20} color={fg} />
           )}
-          <Text style={{ fontSize: 16, fontWeight: '600', color: fg }}>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: fg }}>
             {loading ? 'Signing in…' : 'Continue with GitHub'}
           </Text>
         </TouchableOpacity>
