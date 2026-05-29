@@ -100,12 +100,12 @@ export default function MessagesScreen() {
   const isDark = useThemeStore(state => state.isDark);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }}>
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
-            <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
+            <Text style={{ color: isDark ? '#555555' : '#888888', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
               {activeTeam?.name ?? 'Team'}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -138,10 +138,10 @@ export default function MessagesScreen() {
       ) : conversations.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
           <View style={{
-            width: 72, height: 72, borderRadius: 24, backgroundColor: isDark ? '#0f172a' : '#ffffff',
-            borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+            width: 72, height: 72, borderRadius: 24, backgroundColor: isDark ? '#000000' : '#ffffff',
+            borderWidth: 1, borderColor: isDark ? '#1A1A1A' : '#D0D0D0', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
           }}>
-            <Ionicons name="chatbubble-ellipses-outline" size={32} color={isDark ? '#334155' : '#94a3b8'} />
+            <Ionicons name="chatbubble-ellipses-outline" size={32} color={isDark ? '#555555' : '#AAAAAA'} />
           </View>
           <Text className="text-slate-900 dark:text-white" style={{ fontSize: 17, fontWeight: '700', marginBottom: 6 }}>No conversations yet</Text>
           <Text className="text-slate-500 dark:text-slate-400" style={{ fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
@@ -178,7 +178,7 @@ export default function MessagesScreen() {
                 style={{
                   flexDirection: 'row', alignItems: 'center',
                   paddingHorizontal: 20, paddingVertical: 14,
-                  borderBottomWidth: 1, borderBottomColor: isDark ? '#0f172a' : '#e2e8f0',
+                  borderBottomWidth: 1, borderBottomColor: isDark ? '#000000' : '#E8E8E8',
                   backgroundColor: hasUnread ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : 'transparent',
                 }}
               >
@@ -196,7 +196,7 @@ export default function MessagesScreen() {
                   </View>
                   <Text
                     className="text-slate-500 dark:text-slate-400"
-                    style={{ fontSize: 13, fontWeight: hasUnread ? '500' : '400', color: hasUnread ? undefined : (isDark ? '#334155' : '#94a3b8') }}
+                    style={{ fontSize: 13, fontWeight: hasUnread ? '500' : '400', color: hasUnread ? undefined : (isDark ? '#555555' : '#AAAAAA') }}
                     numberOfLines={1}
                   >
                     {item.lastMessage || 'No messages yet'}
@@ -214,12 +214,12 @@ export default function MessagesScreen() {
       {/* New message member picker overlay */}
       {showPicker && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end', zIndex: 999 }}>
-          <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTopWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', paddingBottom: 40 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1e293b' : '#cbd5e1', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 16 }} />
+          <View style={{ backgroundColor: isDark ? '#000000' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTopWidth: 1, borderColor: isDark ? '#1A1A1A' : '#D0D0D0', paddingBottom: 40 }}>
+            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1A1A1A' : '#D0D0D0', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 16 }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 16 }}>
               <Text className="text-slate-900 dark:text-white" style={{ fontSize: 18, fontWeight: '800' }}>New Message</Text>
               <TouchableOpacity onPress={() => setShowPicker(false)}>
-                <Ionicons name="close" size={20} color={isDark ? '#475569' : '#64748b'} />
+                <Ionicons name="close" size={20} color={isDark ? '#555555' : '#888888'} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -245,7 +245,7 @@ export default function MessagesScreen() {
                         </Text>
                       )}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={isDark ? '#334155' : '#cbd5e1'} />
+                    <Ionicons name="chevron-forward" size={16} color={isDark ? '#334155' : '#D0D0D0'} />
                   </TouchableOpacity>
                 );
               }}

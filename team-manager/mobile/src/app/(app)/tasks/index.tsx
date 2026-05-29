@@ -208,7 +208,7 @@ function TaskCard({
               </View>
 
               {task.createdAt && (
-                <Text style={{ color: isDark ? '#334155' : '#94a3b8', fontSize: 9 }}>
+                <Text style={{ color: isDark ? '#555555' : '#AAAAAA', fontSize: 9 }}>
                   {format(new Date(task.createdAt), 'MMM d')}
                 </Text>
               )}
@@ -506,7 +506,7 @@ export default function TasksScreen() {
 
   const dynamicInputStyle = {
     ...inputStyle,
-    backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
+    backgroundColor: isDark ? '#000000' : '#F5F5F5',
     borderColor: isDark ? '#1A1A1A' : '#D0D0D0',
     color: isDark ? '#F5F5F5' : '#0D0D0D',
   };
@@ -517,7 +517,7 @@ export default function TasksScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }}>
 
       {/* ── Header ── */}
       <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
@@ -584,7 +584,7 @@ export default function TasksScreen() {
                 borderColor: isActive ? s.color + '60' : (isDark ? '#1A1A1A' : '#D0D0D0'),
               }}
             >
-              <Ionicons name={s.icon} size={13} color={isActive ? s.color : (isDark ? '#334155' : '#94a3b8')} />
+              <Ionicons name={s.icon} size={13} color={isActive ? s.color : (isDark ? '#555555' : '#AAAAAA')} />
               <Text style={{ color: isActive ? s.color : (isDark ? '#555555' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{s.label}</Text>
               {count > 0 && (
                 <View style={{
@@ -592,7 +592,7 @@ export default function TasksScreen() {
                   backgroundColor: isActive ? s.color + '30' : (isDark ? '#1A1A1A' : '#F5F5F5'),
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ color: isActive ? s.color : (isDark ? '#334155' : '#64748b'), fontSize: 10, fontWeight: '800' }}>{count}</Text>
+                  <Text style={{ color: isActive ? s.color : (isDark ? '#555555' : '#888888'), fontSize: 10, fontWeight: '800' }}>{count}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -606,7 +606,7 @@ export default function TasksScreen() {
         <Text style={{ color: isDark ? '#555555' : '#64748b', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
           {currentStatusMeta.label}
         </Text>
-        <Text style={{ color: isDark ? '#334155' : '#94a3b8', fontSize: 11 }}>· {filtered.length}</Text>
+        <Text style={{ color: isDark ? '#555555' : '#AAAAAA', fontSize: 11 }}>· {filtered.length}</Text>
       </View>
 
       {/* ── Task list ── */}
@@ -623,12 +623,12 @@ export default function TasksScreen() {
           ListEmptyComponent={
             <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
               <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderWidth: 1, borderColor: isDark ? '#1A1A1A' : '#D0D0D0', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                <Ionicons name="checkmark-done-circle-outline" size={28} color={isDark ? '#334155' : '#94a3b8'} />
+                <Ionicons name="checkmark-done-circle-outline" size={28} color={isDark ? '#555555' : '#AAAAAA'} />
               </View>
               <Text style={{ color: isDark ? '#555555' : '#1A1A1A', fontSize: 15, fontWeight: '600' }}>
                 {scopeMine ? 'No tasks for you here' : `No ${currentStatusMeta.label} tasks`}
               </Text>
-              <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 13, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
+              <Text style={{ color: isDark ? '#555555' : '#888888', fontSize: 13, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
                 {scopeMine ? 'Tasks assigned to you or created by you will appear here.' : 'Create a task to get started.'}
               </Text>
             </View>
@@ -674,7 +674,7 @@ export default function TasksScreen() {
                 value={title}
                 onChangeText={setTitle}
                 placeholder="What needs to be done?"
-                placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
+                placeholderTextColor={isDark ? '#555555' : '#AAAAAA'}
                 style={dynamicInputStyle}
               />
 
@@ -684,7 +684,7 @@ export default function TasksScreen() {
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Add details..."
-                placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
+                placeholderTextColor={isDark ? '#555555' : '#AAAAAA'}
                 multiline
                 style={[dynamicInputStyle, { minHeight: 70, textAlignVertical: 'top' }]}
               />
@@ -703,8 +703,8 @@ export default function TasksScreen() {
                       flexDirection: 'row', alignItems: 'center', gap: 5,
                     }}
                   >
-                    <Ionicons name={meta.icon} size={12} color={priority === key ? meta.color : (isDark ? '#334155' : '#64748b')} />
-                    <Text style={{ color: priority === key ? meta.color : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{meta.label}</Text>
+                    <Ionicons name={meta.icon} size={12} color={priority === key ? meta.color : (isDark ? '#555555' : '#888888')} />
+                    <Text style={{ color: priority === key ? meta.color : (isDark ? '#555555' : '#888888'), fontSize: 12, fontWeight: '700' }}>{meta.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -722,7 +722,7 @@ export default function TasksScreen() {
                       borderWidth: 1.5, borderColor: status === s.key ? s.color : (isDark ? '#1A1A1A' : '#D0D0D0'),
                     }}
                   >
-                    <Text style={{ color: status === s.key ? s.color : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{s.label}</Text>
+                    <Text style={{ color: status === s.key ? s.color : (isDark ? '#555555' : '#888888'), fontSize: 12, fontWeight: '700' }}>{s.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -739,7 +739,7 @@ export default function TasksScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: assigneeId === null ? '#888888' : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>Unassigned</Text>
+                  <Text style={{ color: assigneeId === null ? '#888888' : (isDark ? '#555555' : '#888888'), fontSize: 12, fontWeight: '700' }}>Unassigned</Text>
                 </TouchableOpacity>
                 {membersList.map((m: any) => {
                   const member = m.member ?? m;
@@ -755,7 +755,7 @@ export default function TasksScreen() {
                         flexDirection: 'row', alignItems: 'center', gap: 7,
                       }}
                     >
-                      <MemberAvatar name={member.name} size={22} color={selected ? '#888888' : (isDark ? '#334155' : '#64748b')} />
+                      <MemberAvatar name={member.name} size={22} color={selected ? '#888888' : (isDark ? '#555555' : '#888888')} />
                       <Text style={{ color: selected ? '#888888' : (isDark ? '#555555' : '#64748b'), fontSize: 12, fontWeight: '600' }}>
                         {member.name?.split(' ')[0] ?? 'Member'}
                       </Text>
@@ -770,7 +770,7 @@ export default function TasksScreen() {
                 value={dueDate}
                 onChangeText={setDueDate}
                 placeholder="2025-12-31"
-                placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
+                placeholderTextColor={isDark ? '#555555' : '#AAAAAA'}
                 style={dynamicInputStyle}
               />
 
@@ -782,7 +782,7 @@ export default function TasksScreen() {
                   onChangeText={setTagInput}
                   onSubmitEditing={addTag}
                   placeholder="e.g. frontend"
-                  placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
+                  placeholderTextColor={isDark ? '#555555' : '#AAAAAA'}
                   style={[dynamicInputStyle, { flex: 1, marginBottom: 0 }]}
                   returnKeyType="done"
                 />
@@ -802,7 +802,7 @@ export default function TasksScreen() {
                       style={{ backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}
                     >
                       <Text style={{ color: '#888888', fontSize: 11, fontWeight: '600' }}>#{tag}</Text>
-                      <Ionicons name="close-circle" size={12} color={isDark ? '#334155' : '#94a3b8'} />
+                      <Ionicons name="close-circle" size={12} color={isDark ? '#555555' : '#AAAAAA'} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -831,7 +831,7 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  backgroundColor: '#0a0f1e',
+  backgroundColor: '#000000',
   borderWidth: 1,
   borderColor: '#1A1A1A',
   borderRadius: 14,
