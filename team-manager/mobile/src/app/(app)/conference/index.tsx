@@ -15,22 +15,24 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore } from '@/store/themeStore';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
 import { format } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 
 function StageChip({ label, variant }: { label: string; variant?: 'from' | 'to' }) {
   const isTo = variant === 'to';
   return (
     <View
       className={`rounded-xl px-3 py-1 ${
-        isTo ? 'bg-sky-100 dark:bg-sky-900/40' : 'bg-slate-100 dark:bg-slate-700'
+        isTo ? 'bg-neutral-100 dark:bg-neutral-800' : 'bg-slate-100 dark:bg-slate-700'
       }`}
     >
       <Text
         className={`text-xs font-semibold capitalize ${
-          isTo ? 'text-sky-600 dark:text-sky-300' : 'text-slate-500 dark:text-slate-400'
+          isTo ? 'text-neutral-700 dark:text-neutral-300' : 'text-slate-500 dark:text-slate-400'
         }`}
       >
         {label}
@@ -42,6 +44,7 @@ function StageChip({ label, variant }: { label: string; variant?: 'from' | 'to' 
 export default function ConferenceRoomScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const isDark = useThemeStore(state => state.isDark);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
 
   const utils = trpc.useUtils();
@@ -65,6 +68,7 @@ export default function ConferenceRoomScreen() {
 
   const handleDecision = (approved: boolean) => {
     if (!selectedApproval) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       approved ? 'Approve' : 'Reject',
       `${approved ? 'Approve' : 'Reject'} "${selectedApproval.title}"?`,
@@ -75,8 +79,10 @@ export default function ConferenceRoomScreen() {
           style: approved ? 'default' : 'destructive',
           onPress: () => {
             if (approved) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               approveMutation.mutate({ approvalId: selectedApproval.id });
             } else {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
               rejectMutation.mutate({ approvalId: selectedApproval.id });
             }
           },
@@ -108,15 +114,15 @@ export default function ConferenceRoomScreen() {
 
       {/* Pending banner */}
       {approvals.length > 0 && (
-        <View className="mx-5 mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-600/50 rounded-2xl p-4 flex-row items-center gap-3">
-          <View className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800/40 items-center justify-center">
-            <Ionicons name="hourglass-outline" size={20} color="#f59e0b" />
+        <View className="mx-5 mb-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-4 flex-row items-center gap-3">
+          <View className="w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-800 items-center justify-center">
+            <Ionicons name="hourglass-outline" size={20} color="#888888" />
           </View>
           <View>
-            <Text className="text-amber-700 dark:text-amber-300 font-bold text-base">
+            <Text className="text-neutral-800 dark:text-neutral-100 font-bold text-base">
               {approvals.length} awaiting decision
             </Text>
-            <Text className="text-amber-500 dark:text-amber-400 text-xs mt-0.5">Review and approve or reject</Text>
+            <Text className="text-neutral-500 dark:text-neutral-400 text-xs mt-0.5">Review and approve or reject</Text>
           </View>
         </View>
       )}
@@ -129,7 +135,7 @@ export default function ConferenceRoomScreen() {
           <RefreshControl
             refreshing={approvalsQuery.isFetching}
             onRefresh={() => approvalsQuery.refetch()}
-            tintColor="#0ea5e9"
+            tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
           />
         }
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
@@ -138,7 +144,7 @@ export default function ConferenceRoomScreen() {
             title="All caught up!"
             description="No pending approvals right now."
             icon="checkmark-done-circle-outline"
-            iconColor="#34d399"
+            iconColor="#888888"
           />
         }
         renderItem={({ item }) => (
@@ -151,8 +157,8 @@ export default function ConferenceRoomScreen() {
               <Text className="text-slate-900 dark:text-white font-semibold text-base flex-1 leading-snug">
                 {item.title}
               </Text>
-              <View className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-600/50 rounded-xl px-2.5 py-0.5">
-                <Text className="text-amber-600 dark:text-amber-300 text-xs font-bold">Pending</Text>
+              <View className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-2.5 py-0.5">
+                <Text className="text-neutral-600 dark:text-neutral-300 text-xs font-bold">Pending</Text>
               </View>
             </View>
 
@@ -232,13 +238,13 @@ export default function ConferenceRoomScreen() {
                       key={d.id ?? idx}
                       className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-3.5 mb-2 flex-row items-center gap-3 border border-slate-100 dark:border-slate-700"
                     >
-                      <View className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-900/30 items-center justify-center">
-                        <Ionicons name="document-outline" size={15} color="#38bdf8" />
+                      <View className="w-8 h-8 rounded-xl bg-neutral-50 dark:bg-neutral-800 items-center justify-center">
+                        <Ionicons name="document-outline" size={15} color="#888888" />
                       </View>
                       <Text className="text-slate-700 dark:text-slate-200 flex-1 text-sm">{d.title ?? d.name}</Text>
                       {d.url && (
                         <TouchableOpacity onPress={() => Linking.openURL(d.url)}>
-                          <Text className="text-sky-500 text-sm font-semibold">View</Text>
+                          <Text className="text-neutral-600 dark:text-neutral-400 text-sm font-semibold">View</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -270,8 +276,8 @@ export default function ConferenceRoomScreen() {
                 <TouchableOpacity
                   onPress={() => handleDecision(true)}
                   disabled={approveMutation.isPending || rejectMutation.isPending}
-                  className="flex-1 bg-emerald-500 rounded-2xl py-4 items-center"
-                  style={{ shadowColor: '#10b981', shadowRadius: 8, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 } }}
+                  className="flex-1 bg-neutral-700 dark:bg-neutral-200 rounded-2xl py-4 items-center"
+                  style={{ shadowColor: '#888888', shadowRadius: 8, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 } }}
                 >
                   <Text className="text-white font-bold text-sm">
                     {approveMutation.isPending ? '…' : 'Approve'}

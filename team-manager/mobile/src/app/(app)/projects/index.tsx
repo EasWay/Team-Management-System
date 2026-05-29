@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ProjectGridSkeleton } from '@/components/Skeleton';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -26,14 +27,14 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - 20 * 2 - 12) / 2;
 
 const COVER_PALETTES = [
-  { bg: '#0c2340', accent: '#38bdf8', icon: 'layers-outline'       as IconName },
-  { bg: '#1a0a2e', accent: '#a78bfa', icon: 'analytics-outline'    as IconName },
-  { bg: '#0a2318', accent: '#34d399', icon: 'code-slash-outline'   as IconName },
-  { bg: '#2a1200', accent: '#fb923c', icon: 'bulb-outline'         as IconName },
-  { bg: '#1c0a1c', accent: '#f472b6', icon: 'color-palette-outline' as IconName },
-  { bg: '#0f1f2a', accent: '#67e8f9', icon: 'globe-outline'        as IconName },
-  { bg: '#1e1a00', accent: '#fbbf24', icon: 'bar-chart-outline'    as IconName },
-  { bg: '#120a0a', accent: '#f87171', icon: 'shield-outline'       as IconName },
+  { bg: '#111111', accent: '#AAAAAA', icon: 'layers-outline'        as IconName },
+  { bg: '#1A1A1A', accent: '#888888', icon: 'analytics-outline'     as IconName },
+  { bg: '#111111', accent: '#CCCCCC', icon: 'code-slash-outline'    as IconName },
+  { bg: '#1A1A1A', accent: '#888888', icon: 'bulb-outline'          as IconName },
+  { bg: '#111111', accent: '#AAAAAA', icon: 'color-palette-outline' as IconName },
+  { bg: '#1A1A1A', accent: '#CCCCCC', icon: 'globe-outline'         as IconName },
+  { bg: '#111111', accent: '#888888', icon: 'bar-chart-outline'     as IconName },
+  { bg: '#1A1A1A', accent: '#f87171', icon: 'shield-outline'        as IconName },
 ];
 
 function coverPalette(name: string) {
@@ -42,18 +43,18 @@ function coverPalette(name: string) {
 }
 
 const STAGE_META: Record<string, { label: string; color: string; bg: string }> = {
-  ideation:    { label: 'Ideation',   color: '#a78bfa', bg: '#4c1d9520' },
-  planning:    { label: 'Planning',   color: '#67e8f9', bg: '#0e748020' },
-  development: { label: 'In Dev',     color: '#fb923c', bg: '#c2410c20' },
-  review:      { label: 'In Review',  color: '#38bdf8', bg: '#0369a120' },
-  qa:          { label: 'QA',         color: '#fbbf24', bg: '#92400e20' },
-  completed:   { label: 'Completed',  color: '#34d399', bg: '#06503020' },
-  archived:    { label: 'Archived',   color: '#64748b', bg: '#1e293b40' },
+  ideation:    { label: 'Ideation',   color: '#AAAAAA', bg: '#AAAAAA20' },
+  planning:    { label: 'Planning',   color: '#888888', bg: '#88888820' },
+  development: { label: 'In Dev',     color: '#888888', bg: '#88888820' },
+  review:      { label: 'In Review',  color: '#888888', bg: '#88888820' },
+  qa:          { label: 'QA',         color: '#888888', bg: '#88888820' },
+  completed:   { label: 'Completed',  color: '#AAAAAA', bg: '#AAAAAA20' },
+  archived:    { label: 'Archived',   color: '#555555', bg: '#55555520' },
 };
 
 function StageBadge({ stage }: { stage?: string }) {
   if (!stage) return null;
-  const meta = STAGE_META[stage] ?? { label: stage, color: '#94a3b8', bg: '#1e293b40' };
+  const meta = STAGE_META[stage] ?? { label: stage, color: '#888888', bg: '#88888820' };
   return (
     <View style={{ backgroundColor: meta.bg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 }}>
       <Text style={{ color: meta.color, fontSize: 10, fontWeight: '700' }}>{meta.label}</Text>
@@ -105,9 +106,9 @@ function ProjectCard({ item, onPress }: { item: any; onPress: () => void }) {
           <Ionicons name={palette.icon} size={28} color={palette.accent} />
         </View>
         {item.evaluationData?.overallScore != null && (
-          <View className="absolute top-2 right-2 bg-emerald-900/80 rounded-lg px-1.5 py-0.5 flex-row items-center gap-1">
-            <Ionicons name="checkmark-circle" size={10} color="#34d399" />
-            <Text style={{ color: '#34d399', fontSize: 9, fontWeight: '700' }}>
+          <View className="absolute top-2 right-2 bg-neutral-800/80 rounded-lg px-1.5 py-0.5 flex-row items-center gap-1">
+            <Ionicons name="checkmark-circle" size={10} color="#888888" />
+            <Text style={{ color: '#888888', fontSize: 9, fontWeight: '700' }}>
               {item.evaluationData.overallScore}%
             </Text>
           </View>
@@ -159,6 +160,7 @@ export default function ProjectsScreen() {
 
   const createMutation = trpc.projects.create.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       utils.projects.list.invalidate();
       setShowCreate(false);
       setTitle('');
@@ -225,7 +227,7 @@ export default function ProjectsScreen() {
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
             onPress={() => setShowIdeation(true)}
-            className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/60 border border-purple-200 dark:border-purple-700/60 items-center justify-center"
+            className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60 items-center justify-center"
           >
             <Ionicons name="bulb-outline" size={18} color="#c084fc" />
           </TouchableOpacity>
@@ -318,7 +320,7 @@ export default function ProjectsScreen() {
             <RefreshControl
               refreshing={projectsQuery.isFetching}
               onRefresh={() => projectsQuery.refetch()}
-              tintColor="#0ea5e9"
+              tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
             />
           }
           ListEmptyComponent={
@@ -337,7 +339,7 @@ export default function ProjectsScreen() {
               {!search && (
                 <TouchableOpacity
                   onPress={() => setShowCreate(true)}
-                  className="bg-sky-500 rounded-2xl px-6 py-3"
+                  className="bg-black dark:bg-white rounded-2xl px-6 py-3"
                 >
                   <Text className="text-white font-bold">+ New Project</Text>
                 </TouchableOpacity>
@@ -361,9 +363,9 @@ export default function ProjectsScreen() {
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
           activeOpacity={0.85}
-          className="w-14 h-14 bg-sky-500 rounded-full items-center justify-center"
+          className="w-14 h-14 bg-black dark:bg-white rounded-full items-center justify-center"
           style={{
-            shadowColor: '#38bdf8',
+            shadowColor: '#888888',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.45,
             shadowRadius: 12,
@@ -430,7 +432,7 @@ export default function ProjectsScreen() {
 
             {projectDetailQuery.isLoading ? (
               <View className="items-center justify-center py-16">
-                <ActivityIndicator color="#38bdf8" size="large" />
+                <ActivityIndicator color="#888888" size="large" />
                 <Text className="text-slate-400 mt-3 text-sm">Loading project…</Text>
               </View>
             ) : (() => {
@@ -459,9 +461,9 @@ export default function ProjectsScreen() {
                       <Ionicons name={palette.icon} size={36} color={palette.accent} />
                     </View>
                     {evalScore != null && (
-                      <View className="absolute top-3 right-3 flex-row items-center gap-1 bg-emerald-900/80 rounded-xl px-2.5 py-1">
-                        <Ionicons name="star" size={11} color="#34d399" />
-                        <Text style={{ color: '#34d399', fontSize: 12, fontWeight: '700' }}>{evalScore}%</Text>
+                      <View className="absolute top-3 right-3 flex-row items-center gap-1 bg-neutral-800/80 rounded-xl px-2.5 py-1">
+                        <Ionicons name="star" size={11} color="#888888" />
+                        <Text style={{ color: '#888888', fontSize: 12, fontWeight: '700' }}>{evalScore}%</Text>
                       </View>
                     )}
                     <TouchableOpacity
@@ -513,8 +515,8 @@ export default function ProjectsScreen() {
 
                     {/* Evaluation scores */}
                     {p.evaluationData && (
-                      <View className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-200 dark:border-emerald-700/40">
-                        <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">QA Evaluation</Text>
+                      <View className="bg-neutral-50 dark:bg-neutral-800/20 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-neutral-700/40">
+                        <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-3">QA Evaluation</Text>
                         {[
                           { label: 'Design', value: p.evaluationData.designAlignment },
                           { label: 'Business', value: p.evaluationData.businessAlignment },
@@ -524,11 +526,11 @@ export default function ProjectsScreen() {
                           <View key={item.label} className="mb-2">
                             <View className="flex-row justify-between mb-1">
                               <Text className="text-slate-600 dark:text-slate-400 text-xs">{item.label}</Text>
-                              <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">{item.value}%</Text>
+                              <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">{item.value}%</Text>
                             </View>
                             <View className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <View
-                                className="h-full bg-emerald-500 rounded-full"
+                                className="h-full bg-neutral-700 dark:bg-neutral-200 rounded-full"
                                 style={{ width: `${item.value}%` }}
                               />
                             </View>
@@ -536,8 +538,8 @@ export default function ProjectsScreen() {
                         ))}
                         {p.evaluationData.readyForLaunch && (
                           <View className="flex-row items-center gap-1.5 mt-2">
-                            <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                            <Text className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">Ready for Launch</Text>
+                            <Ionicons name="checkmark-circle" size={14} color="#888888" />
+                            <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">Ready for Launch</Text>
                           </View>
                         )}
                       </View>
@@ -549,16 +551,16 @@ export default function ProjectsScreen() {
                         <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Deliverables</Text>
                         {deliverablesList.map((d: any, i: number) => (
                           <View key={i} className="flex-row items-center gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 mb-2 border border-slate-200 dark:border-slate-700">
-                            <View className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 items-center justify-center">
+                            <View className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
                               <Ionicons
                                 name={d.type === 'github' ? 'logo-github' : d.type === 'figma' ? 'color-palette-outline' : 'link-outline'}
                                 size={14}
-                                color="#38bdf8"
+                                color="#888888"
                               />
                             </View>
                             <View className="flex-1">
                               <Text className="text-slate-900 dark:text-white text-sm font-medium">{d.description || d.type}</Text>
-                              {d.url && <Text className="text-sky-500 text-xs mt-0.5" numberOfLines={1}>{d.url}</Text>}
+                              {d.url && <Text className="text-neutral-600 dark:text-neutral-400 text-xs mt-0.5" numberOfLines={1}>{d.url}</Text>}
                             </View>
                           </View>
                         ))}
@@ -571,8 +573,8 @@ export default function ProjectsScreen() {
                         <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Handoff History</Text>
                         {handoffList.map((h: any, i: number) => (
                           <View key={i} className="flex-row items-start gap-3 mb-3">
-                            <View className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/40 items-center justify-center mt-0.5">
-                              <Ionicons name="arrow-forward" size={11} color="#a78bfa" />
+                            <View className="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-800/40 items-center justify-center mt-0.5">
+                              <Ionicons name="arrow-forward" size={11} color="#888888" />
                             </View>
                             <View className="flex-1">
                               <Text className="text-slate-700 dark:text-slate-300 text-sm font-medium">
@@ -594,8 +596,8 @@ export default function ProjectsScreen() {
 
                     {/* AI ideation summary */}
                     {p.ideationData?.finalDecisionReport?.projectName && (
-                      <View className="bg-purple-50 dark:bg-purple-900/20 rounded-2xl p-4 mb-4 border border-purple-200 dark:border-purple-700/40">
-                        <Text className="text-purple-600 dark:text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">
+                      <View className="bg-neutral-50 dark:bg-neutral-800/20 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-neutral-700/40">
+                        <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">
                           AI Ideation Report
                         </Text>
                         <Text className="text-slate-700 dark:text-slate-300 text-sm leading-5">
@@ -604,8 +606,8 @@ export default function ProjectsScreen() {
                         {p.ideationData.speakers?.length > 0 && (
                           <View className="flex-row flex-wrap gap-1.5 mt-3">
                             {p.ideationData.speakers.map((s: any, i: number) => (
-                              <View key={i} className="bg-purple-100 dark:bg-purple-800/40 rounded-full px-2.5 py-1">
-                                <Text className="text-purple-600 dark:text-purple-300 text-xs font-medium">
+                              <View key={i} className="bg-neutral-100 dark:bg-neutral-800/40 rounded-full px-2.5 py-1">
+                                <Text className="text-neutral-600 dark:text-neutral-300 text-xs font-medium">
                                   {typeof s === 'string' ? s : s.name}
                                 </Text>
                               </View>
@@ -633,7 +635,7 @@ export default function ProjectsScreen() {
               <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
               <View className="flex-row items-center justify-between mb-1">
                 <View className="flex-row items-center gap-2">
-                  <View className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/60 border border-purple-200 dark:border-purple-700 items-center justify-center">
+                  <View className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 items-center justify-center">
                     <Ionicons name="bulb" size={15} color="#c084fc" />
                   </View>
                   <Text className="text-xl font-bold text-slate-900 dark:text-white">Idea Lab</Text>
@@ -663,8 +665,8 @@ export default function ProjectsScreen() {
                   />
                   {processingAI && (
                     <View className="items-center py-4 mb-4">
-                      <ActivityIndicator color="#a78bfa" size="large" />
-                      <Text className="text-purple-500 dark:text-purple-400 mt-3 font-medium">AI is thinking…</Text>
+                      <ActivityIndicator color="#888888" size="large" />
+                      <Text className="text-neutral-500 dark:text-neutral-400 mt-3 font-medium">AI is thinking…</Text>
                     </View>
                   )}
                   <View className="flex-row gap-3">
@@ -678,14 +680,14 @@ export default function ProjectsScreen() {
                       label="Process"
                       onPress={handleProcessIdeation}
                       loading={processingAI}
-                      style={{ flex: 1, backgroundColor: '#7c3aed' }}
+                      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
                     />
                   </View>
                 </>
               ) : (
                 <>
-                  <View className="bg-purple-50 dark:bg-slate-800 rounded-2xl p-4 mb-4 border border-purple-200 dark:border-purple-500/30">
-                    <Text className="text-purple-600 dark:text-purple-400 font-bold mb-2">AI Analysis</Text>
+                  <View className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-neutral-700/30">
+                    <Text className="text-neutral-600 dark:text-neutral-400 font-bold mb-2">AI Analysis</Text>
                     <Text className="text-slate-900 dark:text-white font-semibold mb-1">{aiResult.projectName ?? 'Unnamed Project'}</Text>
                     {aiResult.summary && (
                       <Text className="text-slate-600 dark:text-slate-300 text-sm mb-3">{aiResult.summary}</Text>

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Alert } from '@/components/CustomAlert';
+import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,11 +25,11 @@ import { API_BASE_URL } from '@/lib/constants';
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const QUICK_LINKS: { label: string; icon: IconName; color: string; route: string; desc: string }[] = [
-  { label: 'Files',          icon: 'folder-outline',    color: '#38bdf8', route: '/(app)/files',      desc: 'Team assets & uploads' },
-  { label: 'Calendar',       icon: 'calendar-outline',  color: '#34d399', route: '/(app)/calendar',   desc: 'Events & deadlines' },
-  { label: 'Analytics',      icon: 'bar-chart-outline', color: '#a78bfa', route: '/(app)/analytics',  desc: 'Sprint metrics' },
-  { label: 'Conference',     icon: 'videocam-outline',  color: '#fb923c', route: '/(app)/conference', desc: 'Approvals hub' },
-  { label: 'Messages',       icon: 'mail-outline',      color: '#f472b6', route: '/(app)/messages',   desc: 'Client inquiries' },
+  { label: 'Files',          icon: 'folder-outline',    color: '#888888', route: '/(app)/files',      desc: 'Team assets & uploads' },
+  { label: 'Calendar',       icon: 'calendar-outline',  color: '#888888', route: '/(app)/calendar',   desc: 'Events & deadlines' },
+  { label: 'Analytics',      icon: 'bar-chart-outline', color: '#888888', route: '/(app)/analytics',  desc: 'Sprint metrics' },
+  { label: 'Conference',     icon: 'videocam-outline',  color: '#888888', route: '/(app)/conference', desc: 'Approvals hub' },
+  { label: 'Messages',       icon: 'mail-outline',      color: '#888888', route: '/(app)/messages',   desc: 'Client inquiries' },
 ];
 
 function SectionHeader({ title }: { title: string }) {
@@ -57,8 +58,8 @@ function SettingRow({
         value={value}
         onValueChange={onToggle}
         disabled={loading}
-        trackColor={{ false: '#cbd5e1', true: '#0369a1' }}
-        thumbColor={value ? '#0ea5e9' : '#94a3b8'}
+        trackColor={{ false: '#E0E0E0', true: '#0A0A0A' }}
+        thumbColor={value ? '#FFFFFF' : '#888888'}
       />
     </View>
   );
@@ -162,13 +163,13 @@ export default function ProfileScreen() {
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">Profile</Text>
           {/* Theme Toggle */}
           <TouchableOpacity
-            onPress={() => toggleTheme()}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
             className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800 items-center justify-center border border-slate-300 dark:border-slate-700"
           >
             <Ionicons
               name={isDark ? 'sunny-outline' : 'moon-outline'}
               size={18}
-              color={isDark ? '#fbbf24' : '#6366f1'}
+              color={isDark ? '#AAAAAA' : '#888888'}
             />
           </TouchableOpacity>
         </View>
@@ -177,8 +178,8 @@ export default function ProfileScreen() {
         <View className="mx-5 mt-4 mb-6 bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 items-center">
           {/* Avatar with ring */}
           <View className="mb-4">
-            <View className="w-24 h-24 rounded-full bg-sky-600 items-center justify-center" style={{ shadowColor: '#0ea5e9', shadowRadius: 12, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 } }}>
-              <Text className="text-white text-3xl font-bold">{initials}</Text>
+            <View className="w-24 h-24 rounded-full bg-black dark:bg-white items-center justify-center" style={{ shadowColor: '#000', shadowRadius: 12, shadowOpacity: 0.15, shadowOffset: { width: 0, height: 4 } }}>
+              <Text className="text-white dark:text-black text-3xl font-bold">{initials}</Text>
             </View>
           </View>
 
@@ -186,9 +187,9 @@ export default function ProfileScreen() {
           <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{user?.email}</Text>
 
           {activeTeam && (
-            <View className="mt-3 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-700 rounded-xl px-4 py-1.5 flex-row items-center gap-2">
-              <View className="w-2 h-2 rounded-full bg-sky-500" />
-              <Text className="text-sky-600 dark:text-sky-300 text-xs font-semibold">{activeTeam.name}</Text>
+            <View className="mt-3 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-1.5 flex-row items-center gap-2">
+              <View className="w-2 h-2 rounded-full bg-black dark:bg-white" />
+              <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">{activeTeam.name}</Text>
             </View>
           )}
         </View>
@@ -199,8 +200,8 @@ export default function ProfileScreen() {
           <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <View className="flex-row items-center justify-between px-5 py-4">
               <View className="flex-row items-center gap-3">
-                <View className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 items-center justify-center">
-                  <Ionicons name={isDark ? 'moon' : 'sunny'} size={16} color={isDark ? '#818cf8' : '#f59e0b'} />
+                <View className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
+                  <Ionicons name={isDark ? 'moon' : 'sunny'} size={16} color={isDark ? '#AAAAAA' : '#555555'} />
                 </View>
                 <View>
                   <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">
@@ -213,9 +214,9 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={isDark}
-                onValueChange={() => toggleTheme()}
-                trackColor={{ false: '#cbd5e1', true: '#4338ca' }}
-                thumbColor={isDark ? '#818cf8' : '#94a3b8'}
+                onValueChange={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
+                trackColor={{ false: '#E0E0E0', true: '#0A0A0A' }}
+                thumbColor={isDark ? '#FFFFFF' : '#888888'}
               />
             </View>
           </View>
@@ -228,7 +229,7 @@ export default function ProfileScreen() {
             {QUICK_LINKS.map((item, idx) => (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => router.push(item.route as any)}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(item.route as any); }}
                 className={`flex-row items-center px-5 py-4 gap-3 ${
                   idx > 0 ? 'border-t border-slate-100 dark:border-slate-700' : ''
                 }`}
@@ -298,17 +299,17 @@ export default function ProfileScreen() {
           <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <View className="flex-row items-center px-5 py-4 gap-3">
               <View className="w-9 h-9 rounded-xl items-center justify-center"
-                style={{ backgroundColor: isGoogleConnected ? '#16a34a1a' : '#64748b1a' }}
+                style={{ backgroundColor: '#88888818' }}
               >
                 <Ionicons
                   name="logo-google"
                   size={18}
-                  color={isGoogleConnected ? '#16a34a' : '#64748b'}
+                  color={isGoogleConnected ? '#888888' : '#AAAAAA'}
                 />
               </View>
               <View className="flex-1">
                 <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">Google Drive</Text>
-                <Text className="text-xs mt-0.5" style={{ color: isGoogleConnected ? '#16a34a' : '#94a3b8' }}>
+                <Text className="text-xs mt-0.5" style={{ color: isGoogleConnected ? '#888888' : '#AAAAAA' }}>
                   {isGoogleConnected ? 'Connected' : 'Not connected'}
                 </Text>
               </View>
@@ -324,9 +325,9 @@ export default function ProfileScreen() {
               ) : (
                 <TouchableOpacity
                   onPress={handleConnectGoogle}
-                  className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700 rounded-xl px-3 py-1.5"
+                  className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-1.5"
                 >
-                  <Text className="text-sky-600 dark:text-sky-400 text-xs font-semibold">Connect</Text>
+                  <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-semibold">Connect</Text>
                 </TouchableOpacity>
               )}
             </View>

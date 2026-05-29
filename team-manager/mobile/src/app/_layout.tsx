@@ -7,6 +7,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { trpc, buildTRPCClient } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -14,6 +15,9 @@ import { registerPushToken, setupNotificationResponseListener } from '@/lib/noti
 import { getSocket } from '@/lib/socket';
 import { CustomAlertProvider } from '@/components/CustomAlert';
 import { useColorScheme } from 'nativewind';
+
+// Keep native splash visible until auth + theme are loaded
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const CACHE_VERSION = 'v2'; // bump to bust persisted cache after breaking schema changes
 
@@ -48,8 +52,8 @@ export default function RootLayout() {
   const notifSubRef = useRef<ReturnType<typeof setupNotificationResponseListener> | null>(null);
 
   useEffect(() => {
-    loadFromStorage();
-    loadTheme();
+    Promise.all([loadFromStorage(), loadTheme()])
+      .finally(() => SplashScreen.hideAsync().catch(() => {}));
   }, []);
 
   useEffect(() => {

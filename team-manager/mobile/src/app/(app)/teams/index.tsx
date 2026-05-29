@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -21,11 +22,11 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
-  admin:     { color: '#fbbf24', bg: '#fbbf2420' },
-  owner:     { color: '#f97316', bg: '#f9731620' },
-  team_lead: { color: '#a78bfa', bg: '#a78bfa20' },
-  developer: { color: '#38bdf8', bg: '#38bdf820' },
-  viewer:    { color: '#94a3b8', bg: '#94a3b820' },
+  admin:     { color: '#555555', bg: '#55555520' },
+  owner:     { color: '#333333', bg: '#33333320' },
+  team_lead: { color: '#444444', bg: '#44444420' },
+  developer: { color: '#666666', bg: '#66666620' },
+  viewer:    { color: '#888888', bg: '#88888820' },
 };
 
 function getRoleStyle(role: string) {
@@ -52,6 +53,7 @@ export default function TeamsScreen() {
 
   const createMutation = trpc.teams.create.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       utils.teams.list.invalidate();
       setShowCreate(false);
       setTeamName('');
@@ -62,6 +64,7 @@ export default function TeamsScreen() {
 
   const inviteMutation = trpc.teams.createInvitation.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Sent!', `Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
     },
@@ -96,31 +99,31 @@ export default function TeamsScreen() {
         </View>
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
-          className="bg-sky-500 rounded-2xl px-4 py-2.5 flex-row items-center gap-1.5"
-          style={{ shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 } }}
+          className="bg-black dark:bg-white rounded-2xl px-4 py-2.5 flex-row items-center gap-1.5"
+          style={{ shadowColor: '#000', shadowRadius: 8, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 3 } }}
         >
-          <Ionicons name="add" size={16} color="#fff" />
-          <Text className="text-white font-bold text-sm">New Team</Text>
+          <Ionicons name="add" size={16} color="#fff" className="dark:text-black" />
+          <Text className="text-white dark:text-black font-bold text-sm">New Team</Text>
         </TouchableOpacity>
       </View>
 
       {/* Active team banner */}
       {activeTeam && (
-        <View className="mx-5 mb-4 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-700 rounded-2xl p-4">
+        <View className="mx-5 mb-4 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-4">
           <View className="flex-row items-center gap-2 mb-1">
-            <View className="w-5 h-5 rounded-full bg-sky-500 items-center justify-center">
-              <Ionicons name="checkmark" size={12} color="#fff" />
+            <View className="w-5 h-5 rounded-full bg-black dark:bg-white items-center justify-center">
+              <Ionicons name="checkmark" size={12} color="#fff" className="dark:text-black" />
             </View>
-            <Text className="text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-widest">Active Team</Text>
+            <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold uppercase tracking-widest">Active Team</Text>
           </View>
           <Text className="text-slate-900 dark:text-white font-bold text-lg mt-0.5">{activeTeam.name}</Text>
           <View className="flex-row gap-2 mt-3">
             <TouchableOpacity
               onPress={() => setShowMembers(true)}
-              className="bg-white dark:bg-sky-800/40 border border-sky-200 dark:border-sky-600 rounded-xl px-3 py-1.5 flex-row items-center gap-1.5"
+              className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-xl px-3 py-1.5 flex-row items-center gap-1.5"
             >
-              <Ionicons name="people-outline" size={13} color="#0ea5e9" />
-              <Text className="text-sky-600 dark:text-sky-200 text-xs font-semibold">Members</Text>
+              <Ionicons name="people-outline" size={13} color="#888888" />
+              <Text className="text-neutral-600 dark:text-neutral-300 text-xs font-semibold">Members</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -153,7 +156,7 @@ export default function TeamsScreen() {
           <RefreshControl
             refreshing={teamsQuery.isFetching}
             onRefresh={() => teamsQuery.refetch()}
-            tintColor="#0ea5e9"
+            tintColor="#888888"
           />
         }
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
@@ -163,7 +166,7 @@ export default function TeamsScreen() {
               title="No teams yet"
               description="Create a team or ask someone to invite you."
               icon="people-outline"
-              iconColor="#38bdf8"
+              iconColor="#888888"
             />
           )
         }
@@ -176,11 +179,11 @@ export default function TeamsScreen() {
               onPress={() => setActiveTeam(item)}
               className={`rounded-2xl p-4 mb-3 border ${
                 isActive
-                  ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-600'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                  ? 'bg-neutral-100 dark:bg-neutral-900 border-neutral-300 dark:border-neutral-600'
+                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700'
               }`}
               style={isActive
-                ? { shadowColor: '#0ea5e9', shadowRadius: 8, shadowOpacity: 0.2, shadowOffset: { width: 0, height: 2 } }
+                ? { shadowColor: '#000', shadowRadius: 8, shadowOpacity: 0.08, shadowOffset: { width: 0, height: 2 } }
                 : undefined
               }
             >
@@ -188,9 +191,9 @@ export default function TeamsScreen() {
                 <View className="flex-row items-center gap-2 flex-1">
                   {/* Team initial badge */}
                   <View className="w-10 h-10 rounded-2xl items-center justify-center"
-                    style={{ backgroundColor: isActive ? '#0ea5e920' : '#64748b20' }}>
+                    style={{ backgroundColor: isActive ? '#0A0A0A20' : '#88888820' }}>
                     <Text className="font-bold text-base"
-                      style={{ color: isActive ? '#0ea5e9' : '#64748b' }}>
+                      style={{ color: isActive ? '#0A0A0A' : '#888888' }}>
                       {(item.name?.[0] ?? 'T').toUpperCase()}
                     </Text>
                   </View>
@@ -202,8 +205,8 @@ export default function TeamsScreen() {
                   </View>
                 </View>
                 {isActive && (
-                  <View className="bg-sky-500 rounded-full px-2.5 py-0.5">
-                    <Text className="text-white text-xs font-bold">Active</Text>
+                  <View className="bg-black dark:bg-white rounded-full px-2.5 py-0.5">
+                    <Text className="text-white dark:text-black text-xs font-bold">Active</Text>
                   </View>
                 )}
               </View>
@@ -302,7 +305,7 @@ export default function TeamsScreen() {
               <TouchableOpacity
                 onPress={handleInvite}
                 disabled={!inviteEmail.trim() || inviteMutation.isPending}
-                className="bg-sky-500 rounded-2xl px-4 py-3 justify-center"
+                className="bg-black dark:bg-white rounded-2xl px-4 py-3 justify-center"
               >
                 <Text className="text-white font-bold text-sm">
                   {inviteMutation.isPending ? '…' : 'Invite'}
@@ -323,8 +326,8 @@ export default function TeamsScreen() {
                   const rStyle = getRoleStyle(member.role);
                   return (
                     <View key={member.id} className="flex-row items-center py-3.5 border-b border-slate-100 dark:border-slate-800">
-                      <View className="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-900/40 items-center justify-center mr-3">
-                        <Text className="text-sky-600 dark:text-sky-300 font-bold text-base">
+                      <View className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-800 items-center justify-center mr-3">
+                        <Text className="text-neutral-700 dark:text-neutral-300 font-bold text-base">
                           {displayName[0].toUpperCase()}
                         </Text>
                       </View>

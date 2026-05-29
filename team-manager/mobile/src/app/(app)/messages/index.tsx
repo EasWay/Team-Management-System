@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -20,28 +21,28 @@ import { formatDistanceToNow } from 'date-fns';
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function MemberAvatar({ name, size = 50, unread = 0 }: { name?: string | null; size?: number; unread?: number }) {
   const isDark = useThemeStore(state => state.isDark);
-  const colors = ['#38bdf8', '#a78bfa', '#34d399', '#fb923c', '#f472b6', '#fbbf24'];
-  const idx = ((name?.charCodeAt(0) ?? 0) + (name?.charCodeAt(1) ?? 0)) % colors.length;
-  const color = colors[idx];
+  const avatarBg = isDark ? '#1A1A1A' : '#E8E8E8';
+  const avatarBorder = isDark ? '#2A2A2A' : '#D0D0D0';
+  const avatarText = isDark ? '#AAAAAA' : '#555555';
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <View style={{ position: 'relative' }}>
       <View style={{
         width: size, height: size, borderRadius: size / 2,
-        backgroundColor: color + '25', borderWidth: 2, borderColor: color + '50',
+        backgroundColor: avatarBg, borderWidth: 2, borderColor: avatarBorder,
         alignItems: 'center', justifyContent: 'center',
       }}>
-        <Text style={{ color, fontSize: size * 0.36, fontWeight: '800' }}>{initials}</Text>
+        <Text style={{ color: avatarText, fontSize: size * 0.36, fontWeight: '800' }}>{initials}</Text>
       </View>
       {unread > 0 && (
         <View style={{
           position: 'absolute', top: -2, right: -2,
           minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 3,
-          backgroundColor: '#38bdf8', borderWidth: 2, borderColor: isDark ? '#0a0f1e' : '#f8fafc',
+          backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A', borderWidth: 2, borderColor: isDark ? '#000000' : '#F5F5F5',
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{unread > 99 ? '99+' : unread}</Text>
+          <Text style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 10, fontWeight: '800' }}>{unread > 99 ? '99+' : unread}</Text>
         </View>
       )}
     </View>
@@ -84,6 +85,7 @@ export default function MessagesScreen() {
   }, [currentMemberId]);
 
   const openChat = (partnerId: number, partnerName: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
       pathname: '/(app)/chat/[userId]' as any,
       params: {
@@ -109,8 +111,8 @@ export default function MessagesScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text className="text-slate-900 dark:text-white" style={{ fontSize: 24, fontWeight: '800' }}>Messages</Text>
               {totalUnread > 0 && (
-                <View style={{ backgroundColor: '#38bdf8', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{totalUnread}</Text>
+                <View style={{ backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 }}>
+                  <Text style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 12, fontWeight: '800' }}>{totalUnread}</Text>
                 </View>
               )}
             </View>
@@ -118,12 +120,12 @@ export default function MessagesScreen() {
           <TouchableOpacity
             onPress={() => setShowPicker(true)}
             style={{
-              width: 42, height: 42, borderRadius: 21, backgroundColor: '#0ea5e9',
+              width: 42, height: 42, borderRadius: 21, backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A',
               alignItems: 'center', justifyContent: 'center',
-              shadowColor: '#0ea5e9', shadowRadius: 10, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 3 },
+              shadowColor: '#000', shadowRadius: 10, shadowOpacity: 0.15, shadowOffset: { width: 0, height: 3 },
             }}
           >
-            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Ionicons name="create-outline" size={18} color={isDark ? '#000000' : '#FFFFFF'} />
           </TouchableOpacity>
         </View>
       </View>
@@ -131,7 +133,7 @@ export default function MessagesScreen() {
       {/* Conversations list */}
       {convsQuery.isLoading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="#38bdf8" />
+          <ActivityIndicator color={isDark ? '#FFFFFF' : '#0A0A0A'} />
         </View>
       ) : conversations.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
@@ -148,7 +150,7 @@ export default function MessagesScreen() {
           <TouchableOpacity
             onPress={() => setShowPicker(true)}
             style={{
-              marginTop: 20, backgroundColor: '#0ea5e9', borderRadius: 14,
+              marginTop: 20, backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A', borderRadius: 14,
               paddingHorizontal: 20, paddingVertical: 11,
               flexDirection: 'row', alignItems: 'center', gap: 8,
             }}
@@ -162,7 +164,7 @@ export default function MessagesScreen() {
           data={conversations}
           keyExtractor={(item: any) => String(item.partnerId)}
           refreshControl={
-            <RefreshControl refreshing={convsQuery.isFetching} onRefresh={() => convsQuery.refetch()} tintColor="#0ea5e9" />
+            <RefreshControl refreshing={convsQuery.isFetching} onRefresh={() => convsQuery.refetch()} tintColor={isDark ? '#FFFFFF' : '#0A0A0A'} />
           }
           renderItem={({ item }: { item: any }) => {
             const hasUnread = item.unreadCount > 0;
@@ -177,7 +179,7 @@ export default function MessagesScreen() {
                   flexDirection: 'row', alignItems: 'center',
                   paddingHorizontal: 20, paddingVertical: 14,
                   borderBottomWidth: 1, borderBottomColor: isDark ? '#0f172a' : '#e2e8f0',
-                  backgroundColor: hasUnread ? (isDark ? '#0ea5e908' : '#0ea5e904') : 'transparent',
+                  backgroundColor: hasUnread ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : 'transparent',
                 }}
               >
                 <MemberAvatar name={item.partnerName} size={50} unread={item.unreadCount} />
@@ -201,7 +203,7 @@ export default function MessagesScreen() {
                   </Text>
                 </View>
                 {hasUnread && (
-                  <View style={{ marginLeft: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#38bdf8' }} />
+                  <View style={{ marginLeft: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A' }} />
                 )}
               </TouchableOpacity>
             );

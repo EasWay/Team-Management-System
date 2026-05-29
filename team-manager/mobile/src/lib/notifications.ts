@@ -4,9 +4,8 @@ import { SecureStorage } from './secureStorage';
 import { STORAGE_KEYS, API_BASE_URL } from './constants';
 import Constants from 'expo-constants';
 
-// In Expo SDK 53, push notification functionality has been removed from Expo Go (specifically on Android,
-// where it console.errors and causes a RedBox crash). We dynamically require 'expo-notifications'
-// only when NOT running inside Expo Go, avoiding the auto-registration crash.
+// In Expo SDK 53+, push notification functionality is removed from Expo Go on Android.
+// Dynamically require 'expo-notifications' only when NOT running in Expo Go.
 const isExpoGo = Constants.appOwnership === 'expo';
 let Notifications: any = null;
 
@@ -31,53 +30,63 @@ if (Notifications) {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (!Notifications) {
-    console.log('[Notifications] Skipping permission request in Expo Go');
-    return false;
-  }
+  if (!Notifications) return false;
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   if (existingStatus === 'granted') return true;
-
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
 }
 
 export async function registerPushToken(): Promise<string | null> {
-  if (!Notifications) {
-    console.log('[Notifications] Skipping push token registration in Expo Go');
-    return null;
-  }
+  if (!Notifications) return null;
   const granted = await requestNotificationPermission();
   if (!granted) return null;
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'General',
+      description: 'General notifications',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#0ea5e9',
+      lightColor: '#888888',
     });
-
     await Notifications.setNotificationChannelAsync('tasks', {
       name: 'Task Assignments',
+      description: 'Notifications for task assignments and deadlines',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250],
     });
-
     await Notifications.setNotificationChannelAsync('approvals', {
       name: 'Approvals',
+      description: 'Stage gate approval requests',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250],
+    });
+    await Notifications.setNotificationChannelAsync('messages', {
+      name: 'Messages',
+      description: 'Direct messages from team members',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 150],
+    });
+    await Notifications.setNotificationChannelAsync('files', {
+      name: 'Files',
+      description: 'File uploads and folder activity',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 100],
+    });
+    await Notifications.setNotificationChannelAsync('projects', {
+      name: 'Projects',
+      description: 'Project updates and milestones',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 100],
     });
   }
 
   try {
     const tokenData = await Notifications.getExpoPushTokenAsync();
     const pushToken = tokenData.data;
-
     await SecureStorage.set(STORAGE_KEYS.PUSH_TOKEN, pushToken);
     await syncTokenWithServer(pushToken);
-
     return pushToken;
   } catch (err) {
     console.warn('[Notifications] Could not get push token:', err);
@@ -88,7 +97,6 @@ export async function registerPushToken(): Promise<string | null> {
 async function syncTokenWithServer(pushToken: string): Promise<void> {
   const accessToken = await SecureStorage.get(STORAGE_KEYS.ACCESS_TOKEN);
   if (!accessToken) return;
-
   try {
     await fetch(`${API_BASE_URL}/api/trpc/notifications.registerPushToken`, {
       method: 'POST',
@@ -96,7 +104,7 @@ async function syncTokenWithServer(pushToken: string): Promise<void> {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ json: { pushToken } }),
+      body: JSON.stringify({ json: { pushToken, platform: Platform.OS } }),
     });
   } catch (err) {
     console.warn('[Notifications] Failed to sync push token:', err);
@@ -104,24 +112,33 @@ async function syncTokenWithServer(pushToken: string): Promise<void> {
 }
 
 export function handleNotificationNavigation(data: Record<string, unknown>) {
-  switch (data.type) {
+  const type = data.type as string | undefined;
+  switch (type) {
+    case 'task_assignment':
     case 'task_assigned':
-      router.push(`/(app)/tasks?taskId=${data.taskId}`);
-      break;
-    case 'approval_requested':
-      router.push(`/(app)/conference`);
-      break;
+    case 'deadline_approaching':
     case 'mention':
-      router.push(`/(app)/tasks?taskId=${data.taskId}`);
+      router.push(data.taskId ? `/(app)/tasks?taskId=${data.taskId}` : '/(app)/tasks');
       break;
+    case 'approval_request':
+    case 'approval_requested':
+      router.push('/(app)/conference');
+      break;
+    case 'folder_alert':
     case 'folder_handoff':
-      router.push(`/(app)/projects?projectId=${data.projectId}`);
+    case 'file_uploaded':
+      router.push('/(app)/files');
       break;
+    case 'project_update':
     case 'evaluation_complete':
-      router.push(`/(app)/projects?projectId=${data.projectId}`);
+      router.push(data.projectId ? `/(app)/projects?projectId=${data.projectId}` : '/(app)/projects');
+      break;
+    case 'team_message':
+    case 'message':
+      router.push('/(app)/messages');
       break;
     case 'calendar_reminder':
-      router.push(`/(app)/calendar?eventId=${data.eventId}`);
+      router.push('/(app)/calendar');
       break;
     default:
       router.push('/(app)');
@@ -129,15 +146,31 @@ export function handleNotificationNavigation(data: Record<string, unknown>) {
 }
 
 export function setupNotificationResponseListener() {
-  if (!Notifications) {
-    console.log('[Notifications] Skipping response listener setup in Expo Go');
-    return { remove: () => {} };
-  }
+  if (!Notifications) return { remove: () => {} };
   const subscription = Notifications.addNotificationResponseReceivedListener((response: any) => {
     const data = response.notification.request.content.data as Record<string, unknown>;
     handleNotificationNavigation(data);
   });
   return subscription;
+}
+
+export function setupNotificationReceivedListener(onReceived: (notification: any) => void) {
+  if (!Notifications) return { remove: () => {} };
+  const subscription = Notifications.addNotificationReceivedListener(onReceived);
+  return subscription;
+}
+
+export async function handleInitialNotification(): Promise<void> {
+  if (!Notifications) return;
+  try {
+    const response = await Notifications.getLastNotificationResponseAsync();
+    if (response) {
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      setTimeout(() => handleNotificationNavigation(data), 500);
+    }
+  } catch (err) {
+    console.warn('[Notifications] Failed to check initial notification:', err);
+  }
 }
 
 export async function setBadgeCount(count: number) {

@@ -15,7 +15,7 @@ function MetricCard({
   trend,
   direction,
   icon,
-  iconColor = '#38bdf8',
+  iconColor = '#888888',
 }: {
   label: string;
   value: string | number;
@@ -39,13 +39,13 @@ function MetricCard({
           <Ionicons name={icon} size={17} color={iconColor} />
         </View>
         {trend && (
-          <View className={`flex-row items-center gap-1 rounded-xl px-2 py-0.5 ${isUp ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
+          <View className={`flex-row items-center gap-1 rounded-xl px-2 py-0.5 ${isUp ? 'bg-neutral-50 dark:bg-neutral-800' : 'bg-red-50 dark:bg-red-900/30'}`}>
             <Ionicons
               name={isUp ? 'trending-up' : 'trending-down'}
               size={10}
-              color={isUp ? '#10b981' : '#f87171'}
+              color={isUp ? '#888888' : '#f87171'}
             />
-            <Text className={`text-xs font-bold ${isUp ? 'text-emerald-500' : 'text-red-400'}`}>
+            <Text className={`text-xs font-bold ${isUp ? 'text-neutral-600' : 'text-red-400'}`}>
               {trend}
             </Text>
           </View>
@@ -70,7 +70,7 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
         <Text className="text-slate-900 dark:text-white font-semibold text-base">Sprint Burndown</Text>
         <View className="flex-row gap-3">
           <View className="flex-row items-center gap-1.5">
-            <View className="w-2 h-2 rounded-sm bg-sky-500" />
+            <View className="w-2 h-2 rounded-sm bg-black dark:bg-white" />
             <Text className="text-slate-400 dark:text-slate-500 text-xs">Actual</Text>
           </View>
           <View className="flex-row items-center gap-1.5">
@@ -89,7 +89,7 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
             <View key={idx} className="flex-1 flex-row items-end gap-px justify-center">
               <View
                 className="rounded-t-sm flex-1"
-                style={{ height: actualH, backgroundColor: isBehind ? '#f87171' : '#38bdf8' }}
+                style={{ height: actualH, backgroundColor: isBehind ? '#f87171' : '#888888' }}
               />
               <View
                 className="rounded-t-sm flex-1 bg-slate-300 dark:bg-slate-600"
@@ -144,7 +144,7 @@ export default function AnalyticsScreen() {
           <RefreshControl
             refreshing={dashQuery.isFetching || perfQuery.isFetching}
             onRefresh={refetch}
-            tintColor="#0ea5e9"
+            tintColor={isDark ? '#FFFFFF' : '#0A0A0A'}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -172,7 +172,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row gap-3 mb-3">
               <MetricCard
                 icon="flash-outline"
-                iconColor="#fb923c"
+                iconColor="#888888"
                 label="Sprint Velocity"
                 value={dash.sprintVelocity?.value ?? '—'}
                 unit={dash.sprintVelocity?.unit}
@@ -181,7 +181,7 @@ export default function AnalyticsScreen() {
               />
               <MetricCard
                 icon="list-outline"
-                iconColor="#38bdf8"
+                iconColor="#888888"
                 label="Open Tasks"
                 value={dash.openTasks?.value ?? '—'}
                 unit={dash.openTasks?.unit}
@@ -192,7 +192,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row gap-3">
               <MetricCard
                 icon="people-outline"
-                iconColor="#34d399"
+                iconColor="#888888"
                 label="Active Members"
                 value={dash.activeMembers?.value ?? '—'}
                 unit={dash.activeMembers?.unit}
@@ -201,7 +201,7 @@ export default function AnalyticsScreen() {
               />
               <MetricCard
                 icon="time-outline"
-                iconColor="#a78bfa"
+                iconColor="#888888"
                 label="Cycle Time"
                 value={dash.cycleTime?.value ?? '—'}
                 unit={dash.cycleTime?.unit}
@@ -228,7 +228,7 @@ export default function AnalyticsScreen() {
               const completed = m.completedTasks ?? 0;
               const pct = Math.min(total > 0 ? (completed / total) * 100 : 0, 100);
               const barColor =
-                pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f87171';
+                pct >= 80 ? '#888888' : pct >= 50 ? '#AAAAAA' : '#f87171';
               const name = m.memberName ?? `Member ${m.memberId}`;
               return (
                 <View key={m.memberId} className="mb-4 last:mb-0">

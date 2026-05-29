@@ -151,10 +151,10 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
 
   const statusColor =
     toast.status === 'success'
-      ? '#10b981'
+      ? (isDark ? '#AAAAAA' : '#555555')
       : toast.status === 'error'
       ? '#ef4444'
-      : '#38bdf8';
+      : (isDark ? '#888888' : '#6B6B6B');
 
   const iconName =
     toast.status === 'success'
@@ -178,8 +178,8 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
         style={[
           styles.cardMain,
           {
-            backgroundColor: isDark ? '#121212' : '#ffffff',
-            borderColor: isDark ? '#262626' : '#cbd5e1',
+            backgroundColor: isDark ? '#111111' : '#FFFFFF',
+            borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
           },
         ]}
       >
@@ -187,7 +187,7 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
         <View style={styles.cardContent}>
           <Text style={[styles.cardTitle, { color: statusColor }]}>{toast.title}</Text>
           {toast.message && (
-            <Text style={[styles.cardSubtitle, { color: isDark ? '#a3a3a3' : '#64748b' }]}>
+            <Text style={[styles.cardSubtitle, { color: isDark ? '#888888' : '#6B6B6B' }]}>
               {toast.message}
             </Text>
           )}
@@ -199,9 +199,9 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
               toast.action?.onPress();
               handleClose();
             }}
-            style={[styles.cardActionBtn, { backgroundColor: isDark ? '#ffffff' : '#0ea5e9' }]}
+            style={[styles.cardActionBtn, { backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A' }]}
           >
-            <Text style={[styles.cardActionText, { color: isDark ? '#121212' : '#ffffff' }]}>
+            <Text style={[styles.cardActionText, { color: isDark ? '#000000' : '#FFFFFF' }]}>
               {toast.action.label}
             </Text>
           </TouchableOpacity>
@@ -257,7 +257,7 @@ const MinimalTextToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss:
     outputRange: [0, 1],
   });
 
-  const textColor = toast.status === 'success' ? '#10b981' : toast.status === 'error' ? '#ef4444' : (isDark ? '#f1f5f9' : '#0f172a');
+  const textColor = toast.status === 'success' ? (isDark ? '#AAAAAA' : '#555555') : toast.status === 'error' ? '#ef4444' : (isDark ? '#F2F2F2' : '#0A0A0A');
   const iconName =
     toast.status === 'success'
       ? 'checkmark-circle-outline'
@@ -317,18 +317,18 @@ const CustomDialogModal = () => {
           const isDestructive = btn.style === 'destructive';
           const isCancel = btn.style === 'cancel';
 
-          let btnBg = isDark ? '#1e293b' : '#f1f5f9';
-          let textColor = isDark ? '#f1f5f9' : '#0f172a';
+          let btnBg = isDark ? '#1A1A1A' : '#F0F0F0';
+          let textColor = isDark ? '#F2F2F2' : '#0A0A0A';
 
           if (isDestructive) {
             btnBg = '#ef4444';
             textColor = '#ffffff';
           } else if (isCancel) {
-            btnBg = isDark ? '#0f172a' : '#ffffff';
-            textColor = '#64748b';
+            btnBg = isDark ? '#1A1A1A' : '#F0F0F0';
+            textColor = isDark ? '#888888' : '#6B6B6B';
           } else if (buttons.length === 1 || index === buttons.length - 1) {
-            btnBg = '#0ea5e9'; // primary action
-            textColor = '#ffffff';
+            btnBg = isDark ? '#FFFFFF' : '#0A0A0A';
+            textColor = isDark ? '#000000' : '#FFFFFF';
           }
 
           return (
@@ -339,7 +339,7 @@ const CustomDialogModal = () => {
               style={[
                 styles.dialogButton,
                 { backgroundColor: btnBg, flex: buttons.length === 2 ? 1 : undefined },
-                isCancel && { borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1' },
+                isCancel && { borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#D0D0D0' },
               ]}
             >
               <Text style={[styles.dialogButtonText, { color: textColor }]}>{btn.text}</Text>
@@ -361,16 +361,16 @@ const CustomDialogModal = () => {
           style={[
             styles.dialogContainer,
             {
-              backgroundColor: isDark ? '#0f172a' : '#ffffff',
-              borderColor: isDark ? '#1e293b' : '#cbd5e1',
+              backgroundColor: isDark ? '#0D0D0D' : '#FFFFFF',
+              borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
             },
           ]}
         >
-          <Text style={[styles.dialogTitle, { color: isDark ? '#f1f5f9' : '#0f172a' }]}>
+          <Text style={[styles.dialogTitle, { color: isDark ? '#F2F2F2' : '#0A0A0A' }]}>
             {activeDialog.title}
           </Text>
           {activeDialog.message && (
-            <Text style={[styles.dialogMessage, { color: isDark ? '#94a3b8' : '#475569' }]}>
+            <Text style={[styles.dialogMessage, { color: isDark ? '#888888' : '#6B6B6B' }]}>
               {activeDialog.message}
             </Text>
           )}
@@ -381,13 +381,13 @@ const CustomDialogModal = () => {
               value={inputValue}
               onChangeText={setInputValue}
               placeholder="Type here..."
-              placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
+              placeholderTextColor={isDark ? '#555555' : '#AAAAAA'}
               style={[
                 styles.dialogInput,
                 {
-                  backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
-                  borderColor: isDark ? '#1e293b' : '#cbd5e1',
-                  color: isDark ? '#f1f5f9' : '#0f172a',
+                  backgroundColor: isDark ? '#111111' : '#F5F5F5',
+                  borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
+                  color: isDark ? '#F2F2F2' : '#0A0A0A',
                 },
               ]}
               keyboardType={
@@ -471,9 +471,9 @@ const styles = StyleSheet.create({
     maxWidth: 450,
   },
   cardMain: {
-    backgroundColor: '#121212',
+    backgroundColor: '#111111',
     borderWidth: 1,
-    borderColor: '#262626',
+    borderColor: '#2A2A2A',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -550,9 +550,9 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   dialogContainer: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#0D0D0D',
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: '#2A2A2A',
     borderRadius: 20,
     padding: 20,
     width: '100%',

@@ -48,117 +48,103 @@
   --font-mono: "JetBrains Mono", monospace;
 
   /* Accent colours */
-  --color-accent-success: #10B981;
-  --color-accent-alert: #F43F5E;
+  --color-accent-success: oklch(0.55 0 0);
+  --color-accent-alert: #FF3B30;
 
   /* Shared shadow token */
   --shadow-glass: 0 4px 30px rgba(0, 0, 0, 0.08);
 }
 
 /* ─────────────────────────────────────────────
-   LIGHT THEME  — iOS / Apple Human Interface
-   System background: #F2F2F7  (iOS grouped)
-   Surface:           #FFFFFF  (pure white card)
+   LIGHT THEME  — Mono soft white
+   Background: #F5F5F5  Primary: #0A0A0A (black)
    ───────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
 
-  /* iOS system palette */
-  --background: #F2F2F7;
-  /* iOS grouped background */
-  --foreground: #1C1C1E;
-  /* iOS label */
-  --card: #FFFFFF;
-  --card-foreground: #1C1C1E;
-  --popover: #FFFFFF;
-  --popover-foreground: #1C1C1E;
+  --background:           #F5F5F5;
+  --foreground:           #0A0A0A;
+  --card:                 #FFFFFF;
+  --card-foreground:      #0A0A0A;
+  --popover:              #FFFFFF;
+  --popover-foreground:   #0A0A0A;
 
-  /* Monochrome primary for buttons */
-  --primary: #1C1C1E;
-  --primary-foreground: #FFFFFF;
+  --primary:              #0A0A0A;
+  --primary-foreground:   #FFFFFF;
 
-  /* Tinted fills */
-  --secondary: #F2F2F7;
-  --secondary-foreground: #1C1C1E;
-  --muted: #E5E5EA;
-  /* iOS 2nd grouped bg */
-  --muted-foreground: #6C6C70;
-  /* iOS secondary label */
-  --accent: #E5E5EA;
-  --accent-foreground: #1C1C1E;
+  --secondary:            #F0F0F0;
+  --secondary-foreground: #0A0A0A;
+  --muted:                #E8E8E8;
+  --muted-foreground:     #6B6B6B;
+  --accent:               #E8E8E8;
+  --accent-foreground:    #0A0A0A;
 
-  /* Destructive */
-  --destructive: #FF3B30;
-  /* iOS red */
+  --destructive:          #FF3B30;
   --destructive-foreground: #FFFFFF;
 
-  /* Separator / border */
-  --border: rgba(60, 60, 67, 0.13);
-  /* iOS separator */
-  --input: rgba(60, 60, 67, 0.10);
-  --ring: #1C1C1E;
+  --border:               rgba(0, 0, 0, 0.10);
+  --input:                rgba(0, 0, 0, 0.08);
+  --ring:                 #0A0A0A;
 
-  /* Charts */
   --chart-1: oklch(0.85 0 0);
   --chart-2: oklch(0.70 0 0);
   --chart-3: oklch(0.55 0 0);
   --chart-4: oklch(0.40 0 0);
   --chart-5: oklch(0.25 0 0);
 
-  /* Sidebar */
-  --sidebar: rgba(255, 255, 255, 0.72);
-  --sidebar-foreground: #1C1C1E;
-  --sidebar-primary: #1C1C1E;
+  --sidebar:                    rgba(255, 255, 255, 0.80);
+  --sidebar-foreground:         #0A0A0A;
+  --sidebar-primary:            #0A0A0A;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(60, 60, 67, 0.06);
-  --sidebar-accent-foreground: #1C1C1E;
-  --sidebar-border: rgba(60, 60, 67, 0.12);
-  --sidebar-ring: #1C1C1E;
+  --sidebar-accent:             rgba(0, 0, 0, 0.05);
+  --sidebar-accent-foreground:  #0A0A0A;
+  --sidebar-border:             rgba(0, 0, 0, 0.10);
+  --sidebar-ring:               #0A0A0A;
 }
 
 /* ─────────────────────────────────────────────
-   DARK THEME  — Pure black with subtle glass
+   DARK THEME  — Pure black, white & grey only
    ───────────────────────────────────────────── */
 .dark {
-  --primary: #FFFFFF;
+  --primary:            #FFFFFF;
   --primary-foreground: #000000;
 
-  --background: #000000;
-  --foreground: oklch(0.92 0 0);
+  --background:         #000000;
+  --foreground:         #F2F2F2;
 
-  --card: oklch(0.06 0 0);
-  --card-foreground: oklch(0.92 0 0);
-  --popover: oklch(0.06 0 0);
-  --popover-foreground: oklch(0.92 0 0);
+  --card:               #111111;
+  --card-foreground:    #F2F2F2;
+  --popover:            #111111;
+  --popover-foreground: #F2F2F2;
 
-  --secondary: oklch(0.11 0 0);
-  --secondary-foreground: oklch(0.92 0 0);
-  --muted: oklch(0.11 0 0);
-  --muted-foreground: oklch(0.62 0 0);
-  --accent: oklch(0.11 0 0);
-  --accent-foreground: oklch(0.92 0 0);
+  --secondary:            #1A1A1A;
+  --secondary-foreground: #F2F2F2;
+  --muted:                #1A1A1A;
+  --muted-foreground:     #888888;
+  --accent:               #1A1A1A;
+  --accent-foreground:    #F2F2F2;
 
-  --destructive: oklch(0.65 0.22 22);
-  --destructive-foreground: oklch(0.985 0 0);
+  --destructive:          #FF453A;
+  --destructive-foreground: #FFFFFF;
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(1 0 0);
+  --border: rgba(255, 255, 255, 0.10);
+  --input:  rgba(255, 255, 255, 0.08);
+  --ring:   #FFFFFF;
 
-  --chart-1: oklch(0.9 0 0);
-  --chart-2: oklch(0.7 0 0);
-  --chart-3: oklch(0.5 0 0);
-  --chart-4: oklch(0.3 0 0);
-  --chart-5: oklch(0.1 0 0);
+  --chart-1: oklch(0.90 0 0);
+  --chart-2: oklch(0.72 0 0);
+  --chart-3: oklch(0.54 0 0);
+  --chart-4: oklch(0.36 0 0);
+  --chart-5: oklch(0.18 0 0);
 
-  --sidebar: oklch(0.05 0 0);
-  --sidebar-foreground: oklch(0.92 0 0);
-  --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0 0 0);
-  --sidebar-accent: oklch(0.10 0 0);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(1 0 0);
+  --sidebar:                    #0A0A0A;
+  --sidebar-foreground:         #F2F2F2;
+  --sidebar-primary:            #FFFFFF;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent:             rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground:  #F2F2F2;
+  --sidebar-border:             rgba(255, 255, 255, 0.08);
+  --sidebar-ring:               #FFFFFF;
 }
 
 /* ────────────────────────────

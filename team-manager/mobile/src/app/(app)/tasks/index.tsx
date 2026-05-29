@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ListRowSkeleton } from '@/components/Skeleton';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -28,27 +29,27 @@ type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 const STATUSES: { key: Status; label: string; icon: IconName; color: string }[] = [
   { key: 'todo',        label: 'To Do',      icon: 'list-outline',             color: '#94a3b8' },
-  { key: 'in_progress', label: 'In Progress', icon: 'flash-outline',           color: '#38bdf8' },
-  { key: 'review',      label: 'Review',     icon: 'eye-outline',              color: '#a78bfa' },
-  { key: 'done',        label: 'Done',       icon: 'checkmark-circle-outline', color: '#34d399' },
+  { key: 'in_progress', label: 'In Progress', icon: 'flash-outline',           color: '#888888' },
+  { key: 'review',      label: 'Review',     icon: 'eye-outline',              color: '#888888' },
+  { key: 'done',        label: 'Done',       icon: 'checkmark-circle-outline', color: '#888888' },
 ];
 
 const PRIORITY_META: Record<Priority, { label: string; color: string; bg: string; icon: IconName }> = {
   low:    { label: 'Low',    color: '#64748b', bg: '#64748b18', icon: 'remove-outline' },
-  medium: { label: 'Med',    color: '#38bdf8', bg: '#38bdf818', icon: 'reorder-two-outline' },
-  high:   { label: 'High',   color: '#fb923c', bg: '#fb923c18', icon: 'arrow-up-outline' },
+  medium: { label: 'Med',    color: '#888888', bg: '#88888818', icon: 'reorder-two-outline' },
+  high:   { label: 'High',   color: '#AAAAAA', bg: '#AAAAAA18', icon: 'arrow-up-outline' },
   urgent: { label: 'Urgent', color: '#f87171', bg: '#f8717118', icon: 'warning-outline' },
 };
 
 const MOVE_TARGETS: Record<Status, { to: Status; label: string; color: string }[]> = {
-  todo:        [{ to: 'in_progress', label: 'Start',  color: '#38bdf8' }],
-  in_progress: [{ to: 'review',      label: 'Review', color: '#a78bfa' }, { to: 'done', label: 'Done', color: '#34d399' }],
-  review:      [{ to: 'in_progress', label: 'Revise', color: '#fb923c' }, { to: 'done', label: 'Approve', color: '#34d399' }],
+  todo:        [{ to: 'in_progress', label: 'Start',  color: '#888888' }],
+  in_progress: [{ to: 'review',      label: 'Review', color: '#888888' }, { to: 'done', label: 'Done', color: '#888888' }],
+  review:      [{ to: 'in_progress', label: 'Revise', color: '#AAAAAA' }, { to: 'done', label: 'Approve', color: '#888888' }],
   done:        [{ to: 'todo',        label: 'Reopen', color: '#94a3b8' }],
 };
 
 // ─── Circular Progress Ring ────────────────────────────────────────────────────
-function ProgressRing({ pct = 0, size = 46, color = '#38bdf8', track = '#1e293b' }: {
+function ProgressRing({ pct = 0, size = 46, color = '#888888', track = '#1A1A1A' }: {
   pct?: number; size?: number; color?: string; track?: string;
 }) {
   const isDark = useThemeStore(state => state.isDark);
@@ -93,12 +94,12 @@ function ProgressRing({ pct = 0, size = 46, color = '#38bdf8', track = '#1e293b'
         width: holeSize,
         height: holeSize,
         borderRadius: holeSize / 2,
-        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        backgroundColor: isDark ? '#0D0D0D' : '#ffffff',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
         {filled >= 100
-          ? <Ionicons name="checkmark" size={12} color="#34d399" />
+          ? <Ionicons name="checkmark" size={12} color="#888888" />
           : <Text style={{ color, fontSize: 9, fontWeight: '800', lineHeight: 12 }}>{filled}%</Text>
         }
       </View>
@@ -107,7 +108,7 @@ function ProgressRing({ pct = 0, size = 46, color = '#38bdf8', track = '#1e293b'
 }
 
 // ─── Member Avatar ─────────────────────────────────────────────────────────────
-function MemberAvatar({ name, size = 24, color = '#38bdf8' }: { name?: string | null; size?: number; color?: string }) {
+function MemberAvatar({ name, size = 24, color = '#888888' }: { name?: string | null; size?: number; color?: string }) {
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <View style={{
@@ -147,10 +148,10 @@ function TaskCard({
       onPress={() => onViewDetail(task)}
       activeOpacity={0.88}
       style={{
-        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        backgroundColor: isDark ? '#0D0D0D' : '#ffffff',
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: isDark ? '#1e293b' : '#cbd5e1',
+        borderColor: isDark ? '#1A1A1A' : '#D0D0D0',
         marginBottom: 8,
         overflow: 'hidden',
       }}
@@ -167,7 +168,7 @@ function TaskCard({
           <View style={{ flex: 1 }}>
             {/* Title row */}
             <Text
-              style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 13, fontWeight: '700', lineHeight: 18, marginBottom: 4 }}
+              style={{ color: isDark ? '#F5F5F5' : '#0D0D0D', fontSize: 13, fontWeight: '700', lineHeight: 18, marginBottom: 4 }}
               numberOfLines={2}
             >
               {task.title}
@@ -185,8 +186,8 @@ function TaskCard({
 
               {task.dueDate && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                  <Ionicons name="time-outline" size={10} color={isOverdue ? '#f87171' : (isDark ? '#475569' : '#64748b')} />
-                  <Text style={{ color: isOverdue ? '#f87171' : (isDark ? '#475569' : '#64748b'), fontSize: 9, fontWeight: '500' }}>
+                  <Ionicons name="time-outline" size={10} color={isOverdue ? '#f87171' : (isDark ? '#555555' : '#64748b')} />
+                  <Text style={{ color: isOverdue ? '#f87171' : (isDark ? '#555555' : '#64748b'), fontSize: 9, fontWeight: '500' }}>
                     {format(new Date(task.dueDate), 'MMM d')}
                   </Text>
                 </View>
@@ -198,8 +199,8 @@ function TaskCard({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {task.assignee && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <MemberAvatar name={task.assignee.name} size={18} color="#38bdf8" />
-                    <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 10 }} numberOfLines={1}>
+                    <MemberAvatar name={task.assignee.name} size={18} color="#888888" />
+                    <Text style={{ color: isDark ? '#555555' : '#64748b', fontSize: 10 }} numberOfLines={1}>
                       {task.assignee.name?.split(' ')[0]}
                     </Text>
                   </View>
@@ -217,7 +218,7 @@ function TaskCard({
 
         {/* Move buttons — only shown when user can edit */}
         {moves.length > 0 && (
-          <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: isDark ? '#1e293b' : '#cbd5e1' }}>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: isDark ? '#1A1A1A' : '#D0D0D0' }}>
             {moves.map((m) => (
               <TouchableOpacity
                 key={m.to}
@@ -247,10 +248,10 @@ function TaskCard({
               }}
               style={{
                 width: 30, paddingVertical: 6, borderRadius: 8,
-                backgroundColor: isDark ? '#1e293b' : '#f1f5f9', alignItems: 'center',
+                backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', alignItems: 'center',
               }}
             >
-              <Ionicons name="stats-chart-outline" size={12} color={isDark ? '#475569' : '#64748b'} />
+              <Ionicons name="stats-chart-outline" size={12} color={isDark ? '#555555' : '#64748b'} />
             </TouchableOpacity>
           </View>
         )}
@@ -292,8 +293,8 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
           </View>
           {task.completionPercentage != null && (
             <View className="bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-1 flex-row items-center gap-1">
-              <Ionicons name="stats-chart-outline" size={11} color="#38bdf8" />
-              <Text className="text-sky-600 dark:text-sky-400 text-xs font-bold">{task.completionPercentage}% done</Text>
+              <Ionicons name="stats-chart-outline" size={11} color="#888888" />
+              <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-bold">{task.completionPercentage}% done</Text>
             </View>
           )}
         </View>
@@ -312,7 +313,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
               <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-2">Assigned To</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.assignee.name} size={28} color="#38bdf8" />
+                <MemberAvatar name={task.assignee.name} size={28} color="#888888" />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.assignee.name}</Text>
               </View>
             </View>
@@ -321,7 +322,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
               <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-2">Created By</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.creator.name} size={28} color="#a78bfa" />
+                <MemberAvatar name={task.creator.name} size={28} color="#888888" />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.creator.name}</Text>
               </View>
             </View>
@@ -351,7 +352,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-row flex-wrap gap-2">
               {tags.map((tag) => (
                 <View key={tag} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5">
-                  <Text className="text-sky-600 dark:text-sky-400 text-xs font-semibold">#{tag}</Text>
+                  <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-semibold">#{tag}</Text>
                 </View>
               ))}
             </View>
@@ -425,6 +426,7 @@ export default function TasksScreen() {
 
   const createMutation = trpc.tasks.create.useMutation({
     onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       utils.tasks.list.invalidate();
       setShowCreate(false);
       resetForm();
@@ -433,7 +435,10 @@ export default function TasksScreen() {
   });
 
   const moveMutation = trpc.tasks.move.useMutation({
-    onSuccess: () => utils.tasks.list.invalidate(),
+    onSuccess: () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      utils.tasks.list.invalidate();
+    },
     onError: (err: any) => Alert.alert('Error', err.message),
   });
 
@@ -502,13 +507,13 @@ export default function TasksScreen() {
   const dynamicInputStyle = {
     ...inputStyle,
     backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
-    borderColor: isDark ? '#1e293b' : '#cbd5e1',
-    color: isDark ? '#f1f5f9' : '#0f172a',
+    borderColor: isDark ? '#1A1A1A' : '#D0D0D0',
+    color: isDark ? '#F5F5F5' : '#0D0D0D',
   };
 
   const dynamicLabelStyle = {
     ...labelStyle,
-    color: isDark ? '#475569' : '#64748b',
+    color: isDark ? '#555555' : '#64748b',
   };
 
   return (
@@ -518,7 +523,7 @@ export default function TasksScreen() {
       <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <View>
-            <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
+            <Text style={{ color: isDark ? '#555555' : '#64748b', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>
               {activeTeam?.name ?? 'Tasks'}
             </Text>
             <Text className="text-slate-900 dark:text-white" style={{ fontSize: 24, fontWeight: '800' }}>
@@ -528,9 +533,9 @@ export default function TasksScreen() {
           <TouchableOpacity
             onPress={() => setShowCreate(true)}
             style={{
-              backgroundColor: '#0ea5e9', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 9,
+              backgroundColor: '#888888', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 9,
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              shadowColor: '#0ea5e9', shadowRadius: 12, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 },
+              shadowColor: '#888888', shadowRadius: 12, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 },
             }}
           >
             <Ionicons name="add" size={16} color="#fff" />
@@ -540,17 +545,17 @@ export default function TasksScreen() {
 
         {/* Scope toggle (only if not PM) */}
         {!isProjectManager && (
-          <View style={{ flexDirection: 'row', backgroundColor: isDark ? '#0f172a' : '#e2e8f0', borderRadius: 12, padding: 3, alignSelf: 'flex-start', marginBottom: 4 }}>
+          <View style={{ flexDirection: 'row', backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', borderRadius: 12, padding: 3, alignSelf: 'flex-start', marginBottom: 4 }}>
             {[{ v: true, l: 'Mine' }, { v: false, l: 'All' }].map(({ v, l }) => (
               <TouchableOpacity
                 key={l}
                 onPress={() => setScopeMine(v)}
                 style={{
                   paddingHorizontal: 16, paddingVertical: 6, borderRadius: 10,
-                  backgroundColor: scopeMine === v ? '#38bdf8' : 'transparent',
+                  backgroundColor: scopeMine === v ? '#888888' : 'transparent',
                 }}
               >
-                <Text style={{ color: scopeMine === v ? '#fff' : (isDark ? '#475569' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{l}</Text>
+                <Text style={{ color: scopeMine === v ? '#fff' : (isDark ? '#555555' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{l}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -574,17 +579,17 @@ export default function TasksScreen() {
               style={{
                 paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14,
                 flexDirection: 'row', alignItems: 'center', gap: 7,
-                backgroundColor: isActive ? s.color + '22' : (isDark ? '#0f172a' : '#ffffff'),
+                backgroundColor: isActive ? s.color + '22' : (isDark ? '#0D0D0D' : '#ffffff'),
                 borderWidth: 1,
-                borderColor: isActive ? s.color + '60' : (isDark ? '#1e293b' : '#cbd5e1'),
+                borderColor: isActive ? s.color + '60' : (isDark ? '#1A1A1A' : '#D0D0D0'),
               }}
             >
               <Ionicons name={s.icon} size={13} color={isActive ? s.color : (isDark ? '#334155' : '#94a3b8')} />
-              <Text style={{ color: isActive ? s.color : (isDark ? '#475569' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{s.label}</Text>
+              <Text style={{ color: isActive ? s.color : (isDark ? '#555555' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{s.label}</Text>
               {count > 0 && (
                 <View style={{
                   minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
-                  backgroundColor: isActive ? s.color + '30' : (isDark ? '#1e293b' : '#f1f5f9'),
+                  backgroundColor: isActive ? s.color + '30' : (isDark ? '#1A1A1A' : '#F5F5F5'),
                   alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Text style={{ color: isActive ? s.color : (isDark ? '#334155' : '#64748b'), fontSize: 10, fontWeight: '800' }}>{count}</Text>
@@ -598,7 +603,7 @@ export default function TasksScreen() {
       {/* ── Section header ── */}
       <View style={{ paddingHorizontal: 20, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: currentStatusMeta.color }} />
-        <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+        <Text style={{ color: isDark ? '#555555' : '#64748b', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
           {currentStatusMeta.label}
         </Text>
         <Text style={{ color: isDark ? '#334155' : '#94a3b8', fontSize: 11 }}>· {filtered.length}</Text>
@@ -612,15 +617,15 @@ export default function TasksScreen() {
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           refreshControl={
-            <RefreshControl refreshing={tasksQuery.isFetching} onRefresh={() => tasksQuery.refetch()} tintColor="#0ea5e9" />
+            <RefreshControl refreshing={tasksQuery.isFetching} onRefresh={() => tasksQuery.refetch()} tintColor={isDark ? '#FFFFFF' : '#0A0A0A'} />
           }
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
-              <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#0f172a' : '#ffffff', borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderWidth: 1, borderColor: isDark ? '#1A1A1A' : '#D0D0D0', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <Ionicons name="checkmark-done-circle-outline" size={28} color={isDark ? '#334155' : '#94a3b8'} />
               </View>
-              <Text style={{ color: isDark ? '#475569' : '#1e293b', fontSize: 15, fontWeight: '600' }}>
+              <Text style={{ color: isDark ? '#555555' : '#1A1A1A', fontSize: 15, fontWeight: '600' }}>
                 {scopeMine ? 'No tasks for you here' : `No ${currentStatusMeta.label} tasks`}
               </Text>
               <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 13, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 }}>
@@ -650,16 +655,16 @@ export default function TasksScreen() {
       {/* ── Create Task Modal ── */}
       <Modal visible={showCreate} animationType="slide" transparent onRequestClose={() => { setShowCreate(false); resetForm(); }}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: isDark ? '#0f172a' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTopWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1', maxHeight: '92%' }}>
-            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1e293b' : '#cbd5e1', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 4 }} />
+          <View style={{ backgroundColor: isDark ? '#0D0D0D' : '#ffffff', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTopWidth: 1, borderColor: isDark ? '#1A1A1A' : '#D0D0D0', maxHeight: '92%' }}>
+            <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#1A1A1A' : '#D0D0D0', borderRadius: 2, alignSelf: 'center', marginTop: 14, marginBottom: 4 }} />
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 20, fontWeight: '800' }}>New Task</Text>
+                <Text style={{ color: isDark ? '#F5F5F5' : '#0D0D0D', fontSize: 20, fontWeight: '800' }}>New Task</Text>
                 <TouchableOpacity
                   onPress={() => { setShowCreate(false); resetForm(); }}
-                  style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: isDark ? '#1e293b' : '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <Ionicons name="close" size={16} color={isDark ? '#475569' : '#64748b'} />
+                  <Ionicons name="close" size={16} color={isDark ? '#555555' : '#64748b'} />
                 </TouchableOpacity>
               </View>
 
@@ -693,8 +698,8 @@ export default function TasksScreen() {
                     onPress={() => setPriority(key)}
                     style={{
                       paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
-                      backgroundColor: priority === key ? meta.color + '20' : (isDark ? '#0f172a' : '#f1f5f9'),
-                      borderWidth: 1.5, borderColor: priority === key ? meta.color : (isDark ? '#1e293b' : '#cbd5e1'),
+                      backgroundColor: priority === key ? meta.color + '20' : (isDark ? '#0D0D0D' : '#F5F5F5'),
+                      borderWidth: 1.5, borderColor: priority === key ? meta.color : (isDark ? '#1A1A1A' : '#D0D0D0'),
                       flexDirection: 'row', alignItems: 'center', gap: 5,
                     }}
                   >
@@ -713,8 +718,8 @@ export default function TasksScreen() {
                     onPress={() => setStatus(s.key)}
                     style={{
                       paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
-                      backgroundColor: status === s.key ? s.color + '20' : (isDark ? '#0f172a' : '#f1f5f9'),
-                      borderWidth: 1.5, borderColor: status === s.key ? s.color : (isDark ? '#1e293b' : '#cbd5e1'),
+                      backgroundColor: status === s.key ? s.color + '20' : (isDark ? '#0D0D0D' : '#F5F5F5'),
+                      borderWidth: 1.5, borderColor: status === s.key ? s.color : (isDark ? '#1A1A1A' : '#D0D0D0'),
                     }}
                   >
                     <Text style={{ color: status === s.key ? s.color : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>{s.label}</Text>
@@ -729,12 +734,12 @@ export default function TasksScreen() {
                   onPress={() => setAssigneeId(null)}
                   style={{
                     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12,
-                    backgroundColor: assigneeId === null ? '#38bdf820' : (isDark ? '#0f172a' : '#f1f5f9'),
-                    borderWidth: 1.5, borderColor: assigneeId === null ? '#38bdf8' : (isDark ? '#1e293b' : '#cbd5e1'),
+                    backgroundColor: assigneeId === null ? '#88888820' : (isDark ? '#0D0D0D' : '#F5F5F5'),
+                    borderWidth: 1.5, borderColor: assigneeId === null ? '#888888' : (isDark ? '#1A1A1A' : '#D0D0D0'),
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: assigneeId === null ? '#38bdf8' : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>Unassigned</Text>
+                  <Text style={{ color: assigneeId === null ? '#888888' : (isDark ? '#334155' : '#64748b'), fontSize: 12, fontWeight: '700' }}>Unassigned</Text>
                 </TouchableOpacity>
                 {membersList.map((m: any) => {
                   const member = m.member ?? m;
@@ -745,13 +750,13 @@ export default function TasksScreen() {
                       onPress={() => setAssigneeId(member.id)}
                       style={{
                         paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12,
-                        backgroundColor: selected ? '#38bdf820' : (isDark ? '#0f172a' : '#f1f5f9'),
-                        borderWidth: 1.5, borderColor: selected ? '#38bdf8' : (isDark ? '#1e293b' : '#cbd5e1'),
+                        backgroundColor: selected ? '#88888820' : (isDark ? '#0D0D0D' : '#F5F5F5'),
+                        borderWidth: 1.5, borderColor: selected ? '#888888' : (isDark ? '#1A1A1A' : '#D0D0D0'),
                         flexDirection: 'row', alignItems: 'center', gap: 7,
                       }}
                     >
-                      <MemberAvatar name={member.name} size={22} color={selected ? '#38bdf8' : (isDark ? '#334155' : '#64748b')} />
-                      <Text style={{ color: selected ? '#38bdf8' : (isDark ? '#475569' : '#64748b'), fontSize: 12, fontWeight: '600' }}>
+                      <MemberAvatar name={member.name} size={22} color={selected ? '#888888' : (isDark ? '#334155' : '#64748b')} />
+                      <Text style={{ color: selected ? '#888888' : (isDark ? '#555555' : '#64748b'), fontSize: 12, fontWeight: '600' }}>
                         {member.name?.split(' ')[0] ?? 'Member'}
                       </Text>
                     </TouchableOpacity>
@@ -783,9 +788,9 @@ export default function TasksScreen() {
                 />
                 <TouchableOpacity
                   onPress={addTag}
-                  style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' }}
+                  style={{ backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' }}
                 >
-                  <Ionicons name="add" size={18} color="#38bdf8" />
+                  <Ionicons name="add" size={18} color="#888888" />
                 </TouchableOpacity>
               </View>
               {tags.length > 0 && (
@@ -794,9 +799,9 @@ export default function TasksScreen() {
                     <TouchableOpacity
                       key={tag}
                       onPress={() => setTags(prev => prev.filter(t => t !== tag))}
-                      style={{ backgroundColor: isDark ? '#1e293b' : '#f1f5f9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      style={{ backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}
                     >
-                      <Text style={{ color: '#38bdf8', fontSize: 11, fontWeight: '600' }}>#{tag}</Text>
+                      <Text style={{ color: '#888888', fontSize: 11, fontWeight: '600' }}>#{tag}</Text>
                       <Ionicons name="close-circle" size={12} color={isDark ? '#334155' : '#94a3b8'} />
                     </TouchableOpacity>
                   ))}
@@ -817,7 +822,7 @@ export default function TasksScreen() {
 }
 
 const labelStyle = {
-  color: '#475569',
+  color: '#555555',
   fontSize: 11,
   fontWeight: '700' as const,
   textTransform: 'uppercase' as const,
@@ -828,11 +833,11 @@ const labelStyle = {
 const inputStyle = {
   backgroundColor: '#0a0f1e',
   borderWidth: 1,
-  borderColor: '#1e293b',
+  borderColor: '#1A1A1A',
   borderRadius: 14,
   paddingHorizontal: 16,
   paddingVertical: 12,
-  color: '#f1f5f9',
+  color: '#F5F5F5',
   fontSize: 14,
   marginBottom: 16,
 };

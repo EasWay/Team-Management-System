@@ -131,7 +131,7 @@ function DialogContent({
           // Animations
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           // Dark mode — subtle dark glass
-          "dark:bg-[rgba(28,28,30,0.88)] dark:border dark:border-white/10 dark:shadow-[0_2px_32px_rgba(0,0,0,0.6),0_0_0_0.5px_rgba(255,255,255,0.06)_inset] dark:[backdrop-filter:blur(40px)_saturate(160%)]",
+          "dark:bg-[rgba(17,17,17,0.90)] dark:border dark:border-white/10 dark:shadow-[0_2px_32px_rgba(0,0,0,0.6),0_0_0_0.5px_rgba(255,255,255,0.06)_inset] dark:[backdrop-filter:blur(40px)_saturate(160%)]",
           // Light mode — frosted white glass
           "bg-white/80 border border-white/80 shadow-[0_1px_0_rgba(255,255,255,0.95)_inset,0_0_0_0.5px_rgba(255,255,255,0.6)_inset,0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] [backdrop-filter:blur(40px)_saturate(180%)]",
           className
