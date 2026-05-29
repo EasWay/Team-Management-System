@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
+import { useThemeStore } from '@/store/themeStore';
 import { getSocket } from '@/lib/socket';
 import { format, isToday, isYesterday } from 'date-fns';
 
@@ -63,6 +64,7 @@ function Avatar({ name, size = 32 }: { name?: string | null; size?: number }) {
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({ msg, isMine, partnerName }: { msg: any; isMine: boolean; partnerName: string }) {
+  const isDark = useThemeStore(state => state.isDark);
   const timeStr = formatMsgTime(msg.createdAt);
   const isRead  = !!msg.readAt;
 
@@ -80,18 +82,18 @@ function MessageBubble({ msg, isMine, partnerName }: { msg: any; isMine: boolean
       {/* Bubble */}
       <View style={{
         maxWidth: '75%',
-        backgroundColor: isMine ? '#0369a1' : '#1e293b',
+        backgroundColor: isMine ? '#0369a1' : (isDark ? '#1e293b' : '#f1f5f9'),
         borderRadius: 18,
         borderBottomRightRadius: isMine ? 4 : 18,
         borderBottomLeftRadius: isMine ? 18 : 4,
         paddingHorizontal: 14,
         paddingVertical: 10,
       }}>
-        <Text style={{ color: isMine ? '#e0f2fe' : '#e2e8f0', fontSize: 14, lineHeight: 20 }}>
+        <Text style={{ color: isMine ? '#e0f2fe' : (isDark ? '#e2e8f0' : '#0f172a'), fontSize: 14, lineHeight: 20 }}>
           {msg.content}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
-          <Text style={{ color: isMine ? '#7dd3fc' : '#475569', fontSize: 10 }}>{timeStr}</Text>
+          <Text style={{ color: isMine ? '#7dd3fc' : (isDark ? '#475569' : '#64748b'), fontSize: 10 }}>{timeStr}</Text>
           {isMine && (
             <Ionicons
               name={isRead ? 'checkmark-done' : 'checkmark'}
@@ -107,6 +109,7 @@ function MessageBubble({ msg, isMine, partnerName }: { msg: any; isMine: boolean
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ChatScreen() {
+  const isDark = useThemeStore(state => state.isDark);
   const router = useRouter();
   const params = useLocalSearchParams<{
     userId: string;
@@ -197,7 +200,7 @@ export default function ChatScreen() {
   const grouped = groupByDate(messages);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0a0f1e' }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#0a0f1e' : '#f8fafc' }} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -206,25 +209,25 @@ export default function ChatScreen() {
         {/* Header */}
         <View style={{
           flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12,
-          borderBottomWidth: 1, borderBottomColor: '#0f172a', backgroundColor: '#0a0f1e',
+          borderBottomWidth: 1, borderBottomColor: isDark ? '#0f172a' : '#e2e8f0', backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
         }}>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0f172a' : '#e2e8f0', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}
           >
-            <Ionicons name="arrow-back" size={18} color="#64748b" />
+            <Ionicons name="arrow-back" size={18} color={isDark ? '#64748b' : '#475569'} />
           </TouchableOpacity>
 
           <Avatar name={partnerName} size={38} />
 
           <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ color: '#f1f5f9', fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
+            <Text style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
               {partnerName}
             </Text>
-            <Text style={{ color: '#334155', fontSize: 11, marginTop: 1 }}>Team member</Text>
+            <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 11, marginTop: 1 }}>Team member</Text>
           </View>
 
-          {messagesQuery.isFetching && <ActivityIndicator size="small" color="#334155" />}
+          {messagesQuery.isFetching && <ActivityIndicator size="small" color={isDark ? '#334155' : '#94a3b8'} />}
         </View>
 
         {/* Messages */}
@@ -235,10 +238,10 @@ export default function ChatScreen() {
         ) : messages.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
             <Avatar name={partnerName} size={64} />
-            <Text style={{ color: '#64748b', fontSize: 15, fontWeight: '600', marginTop: 16, marginBottom: 6 }}>
+            <Text style={{ color: isDark ? '#64748b' : '#475569', fontSize: 15, fontWeight: '600', marginTop: 16, marginBottom: 6 }}>
               Start a conversation
             </Text>
-            <Text style={{ color: '#334155', fontSize: 13, textAlign: 'center' }}>
+            <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 13, textAlign: 'center' }}>
               Send a message to {partnerName}.
             </Text>
           </View>
@@ -253,11 +256,11 @@ export default function ChatScreen() {
               <View>
                 {/* Date separator */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12, paddingHorizontal: 16, gap: 10 }}>
-                  <View style={{ flex: 1, height: 1, backgroundColor: '#0f172a' }} />
-                  <Text style={{ color: '#334155', fontSize: 11, fontWeight: '600' }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0f172a' : '#e2e8f0' }} />
+                  <Text style={{ color: isDark ? '#334155' : '#64748b', fontSize: 11, fontWeight: '600' }}>
                     {dateLabel(group.date)}
                   </Text>
-                  <View style={{ flex: 1, height: 1, backgroundColor: '#0f172a' }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#0f172a' : '#e2e8f0' }} />
                 </View>
                 {/* Messages in this date group */}
                 {group.items.map((msg: any) => (
@@ -277,11 +280,11 @@ export default function ChatScreen() {
         <View style={{
           flexDirection: 'row', alignItems: 'flex-end', gap: 10,
           paddingHorizontal: 16, paddingVertical: 12,
-          borderTopWidth: 1, borderTopColor: '#0f172a',
-          backgroundColor: '#0a0f1e',
+          borderTopWidth: 1, borderTopColor: isDark ? '#0f172a' : '#e2e8f0',
+          backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
         }}>
           <View style={{
-            flex: 1, backgroundColor: '#0f172a', borderRadius: 24, borderWidth: 1, borderColor: '#1e293b',
+            flex: 1, backgroundColor: isDark ? '#0f172a' : '#ffffff', borderRadius: 24, borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
             paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 10 : 6,
             maxHeight: 120,
           }}>
@@ -289,8 +292,8 @@ export default function ChatScreen() {
               value={message}
               onChangeText={setMessage}
               placeholder={`Message ${partnerName.split(' ')[0]}…`}
-              placeholderTextColor="#334155"
-              style={{ color: '#f1f5f9', fontSize: 14, lineHeight: 20 }}
+              placeholderTextColor={isDark ? '#334155' : '#94a3b8'}
+              style={{ color: isDark ? '#f1f5f9' : '#0f172a', fontSize: 14, lineHeight: 20 }}
               multiline
               maxLength={4000}
               returnKeyType="default"
@@ -302,16 +305,16 @@ export default function ChatScreen() {
             disabled={!message.trim() || sending}
             style={{
               width: 44, height: 44, borderRadius: 22,
-              backgroundColor: message.trim() ? '#0ea5e9' : '#0f172a',
+              backgroundColor: message.trim() ? '#0ea5e9' : (isDark ? '#0f172a' : '#ffffff'),
               alignItems: 'center', justifyContent: 'center',
-              borderWidth: message.trim() ? 0 : 1, borderColor: '#1e293b',
+              borderWidth: message.trim() ? 0 : 1, borderColor: isDark ? '#1e293b' : '#cbd5e1',
               shadowColor: message.trim() ? '#0ea5e9' : 'transparent',
               shadowRadius: 8, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 3 },
             }}
           >
             {sending
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="send" size={18} color={message.trim() ? '#fff' : '#334155'} />
+              : <Ionicons name="send" size={18} color={message.trim() ? '#fff' : (isDark ? '#334155' : '#94a3b8')} />
             }
           </TouchableOpacity>
         </View>

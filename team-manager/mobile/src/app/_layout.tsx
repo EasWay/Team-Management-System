@@ -10,6 +10,7 @@ import { useThemeStore } from '@/store/themeStore';
 import { registerPushToken, setupNotificationResponseListener } from '@/lib/notifications';
 import { getSocket } from '@/lib/socket';
 import { CustomAlertProvider } from '@/components/CustomAlert';
+import { useColorScheme } from 'nativewind';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,13 +26,18 @@ const trpcClient = buildTRPCClient();
 
 export default function RootLayout() {
   const { loadFromStorage, isAuthenticated } = useAuthStore();
-  const { load: loadTheme } = useThemeStore();
+  const { load: loadTheme, isDark } = useThemeStore();
+  const { setColorScheme } = useColorScheme();
   const notifSubRef = useRef<ReturnType<typeof setupNotificationResponseListener> | null>(null);
 
   useEffect(() => {
     loadFromStorage();
     loadTheme();
   }, []);
+
+  useEffect(() => {
+    setColorScheme(isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   useEffect(() => {
     if (isAuthenticated) {

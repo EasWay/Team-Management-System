@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAlertStore, AlertButton, ToastVariant, ToastStatus, ToastConfig } from '../store/alertStore';
+import { useThemeStore } from '../store/themeStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -108,6 +109,7 @@ export const Alert = {
 // ─── Minimalist Card Toast ───────────────────────────────────────────────────────
 
 const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => void }) => {
+  const isDark = useThemeStore(state => state.isDark);
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -172,11 +174,23 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
       ]}
     >
       {/* Top Main Card */}
-      <View style={[styles.cardMain, { borderColor: statusColor + '30' }]}>
+      <View
+        style={[
+          styles.cardMain,
+          {
+            backgroundColor: isDark ? '#121212' : '#ffffff',
+            borderColor: isDark ? '#262626' : '#cbd5e1',
+          },
+        ]}
+      >
         <Ionicons name={iconName} size={15} color={statusColor} style={{ marginRight: 8, marginTop: 1 }} />
         <View style={styles.cardContent}>
           <Text style={[styles.cardTitle, { color: statusColor }]}>{toast.title}</Text>
-          {toast.message && <Text style={styles.cardSubtitle}>{toast.message}</Text>}
+          {toast.message && (
+            <Text style={[styles.cardSubtitle, { color: isDark ? '#a3a3a3' : '#64748b' }]}>
+              {toast.message}
+            </Text>
+          )}
         </View>
         {toast.action ? (
           <TouchableOpacity
@@ -185,13 +199,15 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
               toast.action?.onPress();
               handleClose();
             }}
-            style={styles.cardActionBtn}
+            style={[styles.cardActionBtn, { backgroundColor: isDark ? '#ffffff' : '#0ea5e9' }]}
           >
-            <Text style={styles.cardActionText}>{toast.action.label}</Text>
+            <Text style={[styles.cardActionText, { color: isDark ? '#121212' : '#ffffff' }]}>
+              {toast.action.label}
+            </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={handleClose} style={styles.cardCloseBtn}>
-            <Ionicons name="close" size={14} color="#666" />
+            <Ionicons name="close" size={14} color={isDark ? '#666' : '#94a3b8'} />
           </TouchableOpacity>
         )}
       </View>
@@ -202,6 +218,7 @@ const CardToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => 
 // ─── Minimal Text Toast ─────────────────────────────────────────────────────────
 
 const MinimalTextToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss: () => void }) => {
+  const isDark = useThemeStore(state => state.isDark);
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -240,7 +257,7 @@ const MinimalTextToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss:
     outputRange: [0, 1],
   });
 
-  const textColor = toast.status === 'success' ? '#10b981' : toast.status === 'error' ? '#ef4444' : '#f1f5f9';
+  const textColor = toast.status === 'success' ? '#10b981' : toast.status === 'error' ? '#ef4444' : (isDark ? '#f1f5f9' : '#0f172a');
   const iconName =
     toast.status === 'success'
       ? 'checkmark-circle-outline'
@@ -267,6 +284,7 @@ const MinimalTextToast = ({ toast, onDismiss }: { toast: ToastConfig; onDismiss:
 // ─── Custom Dialog / Prompt Modal ───────────────────────────────────────────────
 
 const CustomDialogModal = () => {
+  const isDark = useThemeStore(state => state.isDark);
   const { activeDialog, hideDialog } = useAlertStore();
   const [inputValue, setInputValue] = useState('');
 
@@ -299,14 +317,14 @@ const CustomDialogModal = () => {
           const isDestructive = btn.style === 'destructive';
           const isCancel = btn.style === 'cancel';
 
-          let btnBg = '#1e293b';
-          let textColor = '#f1f5f9';
+          let btnBg = isDark ? '#1e293b' : '#f1f5f9';
+          let textColor = isDark ? '#f1f5f9' : '#0f172a';
 
           if (isDestructive) {
             btnBg = '#ef4444';
             textColor = '#ffffff';
           } else if (isCancel) {
-            btnBg = '#0f172a';
+            btnBg = isDark ? '#0f172a' : '#ffffff';
             textColor = '#64748b';
           } else if (buttons.length === 1 || index === buttons.length - 1) {
             btnBg = '#0ea5e9'; // primary action
@@ -321,7 +339,7 @@ const CustomDialogModal = () => {
               style={[
                 styles.dialogButton,
                 { backgroundColor: btnBg, flex: buttons.length === 2 ? 1 : undefined },
-                isCancel && { borderWidth: 1, borderColor: '#1e293b' },
+                isCancel && { borderWidth: 1, borderColor: isDark ? '#1e293b' : '#cbd5e1' },
               ]}
             >
               <Text style={[styles.dialogButtonText, { color: textColor }]}>{btn.text}</Text>
@@ -339,9 +357,23 @@ const CustomDialogModal = () => {
           <View style={StyleSheet.absoluteFillObject} />
         </TouchableWithoutFeedback>
 
-        <View style={styles.dialogContainer}>
-          <Text style={styles.dialogTitle}>{activeDialog.title}</Text>
-          {activeDialog.message && <Text style={styles.dialogMessage}>{activeDialog.message}</Text>}
+        <View
+          style={[
+            styles.dialogContainer,
+            {
+              backgroundColor: isDark ? '#0f172a' : '#ffffff',
+              borderColor: isDark ? '#1e293b' : '#cbd5e1',
+            },
+          ]}
+        >
+          <Text style={[styles.dialogTitle, { color: isDark ? '#f1f5f9' : '#0f172a' }]}>
+            {activeDialog.title}
+          </Text>
+          {activeDialog.message && (
+            <Text style={[styles.dialogMessage, { color: isDark ? '#94a3b8' : '#475569' }]}>
+              {activeDialog.message}
+            </Text>
+          )}
 
           {activeDialog.isPrompt && (
             <TextInput
@@ -349,8 +381,15 @@ const CustomDialogModal = () => {
               value={inputValue}
               onChangeText={setInputValue}
               placeholder="Type here..."
-              placeholderTextColor="#475569"
-              style={styles.dialogInput}
+              placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
+              style={[
+                styles.dialogInput,
+                {
+                  backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
+                  borderColor: isDark ? '#1e293b' : '#cbd5e1',
+                  color: isDark ? '#f1f5f9' : '#0f172a',
+                },
+              ]}
               keyboardType={
                 activeDialog.title.includes('0-100') ||
                 activeDialog.title.includes('0–100') ||

@@ -13,9 +13,9 @@ interface ButtonProps {
 
 const variantClasses = {
   primary: { btn: 'bg-sky-600 active:bg-sky-700', text: 'text-white' },
-  secondary: { btn: 'bg-slate-700 active:bg-slate-600 border border-slate-600', text: 'text-slate-200' },
+  secondary: { btn: 'bg-slate-100 dark:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-600 border border-slate-200 dark:border-slate-600', text: 'text-slate-800 dark:text-slate-200' },
   danger: { btn: 'bg-red-600 active:bg-red-700', text: 'text-white' },
-  ghost: { btn: 'bg-transparent active:bg-slate-800', text: 'text-sky-400' },
+  ghost: { btn: 'bg-transparent active:bg-slate-100 dark:active:bg-slate-800', text: 'text-sky-500 dark:text-sky-400' },
 };
 
 export function Button({

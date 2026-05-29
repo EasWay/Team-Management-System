@@ -14,6 +14,7 @@ import { API_BASE_URL } from '@/lib/constants';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Alert } from '@/components/CustomAlert';
+import { useThemeStore } from '@/store/themeStore';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,6 +22,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const isDark = useThemeStore(state => state.isDark);
 
   const handleGitHubOAuth = async () => {
     setLoading(true);
@@ -65,7 +67,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
       <View className="flex-1 px-6 justify-center">
         {/* Header */}
         <View className="mb-12 items-center">
@@ -74,8 +76,8 @@ export default function LoginScreen() {
           >
             <Ionicons name="people" size={36} color="white" />
           </View>
-          <Text className="text-4xl font-bold text-white mb-2">Team Manager</Text>
-          <Text className="text-slate-400 text-base text-center">
+          <Text className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Team Manager</Text>
+          <Text className="text-slate-500 dark:text-slate-400 text-base text-center">
             Sign in to collaborate with your team
           </Text>
         </View>
@@ -84,15 +86,15 @@ export default function LoginScreen() {
         <TouchableOpacity
           onPress={handleGitHubOAuth}
           disabled={loading}
-          className="bg-slate-800 border border-slate-600 rounded-2xl p-4 flex-row items-center justify-center gap-3"
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex-row items-center justify-center gap-3"
           style={{ minHeight: 56 }}
         >
           {loading ? (
-            <ActivityIndicator color="#94a3b8" />
+            <ActivityIndicator color={isDark ? '#94a3b8' : '#64748b'} />
           ) : (
-            <Ionicons name="logo-github" size={22} color="white" />
+            <Ionicons name="logo-github" size={22} color={isDark ? 'white' : '#0f172a'} />
           )}
-          <Text className="text-white font-semibold text-base">
+          <Text className="text-slate-850 dark:text-white font-semibold text-base">
             {loading ? 'Signing in…' : 'Continue with GitHub'}
           </Text>
         </TouchableOpacity>

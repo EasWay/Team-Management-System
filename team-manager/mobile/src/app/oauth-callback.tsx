@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
+import { useThemeStore } from '@/store/themeStore';
 import { API_BASE_URL } from '@/lib/constants';
 
 /**
@@ -18,6 +19,7 @@ export default function OAuthCallbackScreen() {
   }>();
   const router = useRouter();
   const { setAuth } = useAuthStore();
+  const isDark = useThemeStore(state => state.isDark);
   const handledRef = useRef(false);
 
   useEffect(() => {
@@ -77,14 +79,14 @@ export default function OAuthCallbackScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#0a0f1e',
+        backgroundColor: isDark ? '#0a0f1e' : '#f8fafc',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 16,
       }}
     >
       <ActivityIndicator size="large" color="#38bdf8" />
-      <Text style={{ color: '#475569', fontSize: 14, fontWeight: '500' }}>
+      <Text style={{ color: isDark ? '#475569' : '#64748b', fontSize: 14, fontWeight: '500' }}>
         Signing you in…
       </Text>
     </View>
