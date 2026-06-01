@@ -1,5 +1,5 @@
 import '../global.css';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -11,7 +11,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { trpc, buildTRPCClient } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
-import { registerPushToken, setupNotificationResponseListener } from '@/lib/notifications';
 import { getSocket } from '@/lib/socket';
 import { CustomAlertProvider } from '@/components/CustomAlert';
 import { useColorScheme } from 'nativewind';
@@ -49,8 +48,6 @@ export default function RootLayout() {
   const { loadFromStorage, isAuthenticated } = useAuthStore();
   const { load: loadTheme, isDark } = useThemeStore();
   const { setColorScheme } = useColorScheme();
-  const notifSubRef = useRef<ReturnType<typeof setupNotificationResponseListener> | null>(null);
-
   useEffect(() => {
     Promise.all([loadFromStorage(), loadTheme()])
       .finally(() => SplashScreen.hideAsync().catch(() => {}));
@@ -63,12 +60,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (isAuthenticated) {
       getSocket().catch(console.warn);
-      registerPushToken().catch(console.warn);
-      notifSubRef.current = setupNotificationResponseListener();
     }
-    return () => {
-      notifSubRef.current?.remove();
-    };
   }, [isAuthenticated]);
 
   return (

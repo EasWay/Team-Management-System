@@ -1,23 +1,11 @@
+import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SecureStorage } from './secureStorage';
 import { STORAGE_KEYS, API_BASE_URL } from './constants';
 import Constants from 'expo-constants';
 
-// In Expo SDK 53+, push notification functionality is removed from Expo Go on Android.
-// Dynamically require 'expo-notifications' only when NOT running in Expo Go.
-const isExpoGo = Constants.appOwnership === 'expo';
-let Notifications: any = null;
-
-if (!isExpoGo) {
-  try {
-    Notifications = require('expo-notifications');
-  } catch (err) {
-    console.warn('[Notifications] Failed to require expo-notifications:', err);
-  }
-}
-
-if (Notifications) {
+if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -30,7 +18,7 @@ if (Notifications) {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (!Notifications) return false;
+  if (Platform.OS === 'web') return false;
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   if (existingStatus === 'granted') return true;
   const { status } = await Notifications.requestPermissionsAsync();
@@ -38,7 +26,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 export async function registerPushToken(): Promise<string | null> {
-  if (!Notifications) return null;
+  if (Platform.OS === 'web') return null;
+
   const granted = await requestNotificationPermission();
   if (!granted) return null;
 
@@ -83,7 +72,14 @@ export async function registerPushToken(): Promise<string | null> {
   }
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      (Constants as any).easConfig?.projectId;
+    if (!projectId) {
+      console.warn('[Notifications] No EAS projectId found in app config');
+      return null;
+    }
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     const pushToken = tokenData.data;
     await SecureStorage.set(STORAGE_KEYS.PUSH_TOKEN, pushToken);
     await syncTokenWithServer(pushToken);
@@ -146,22 +142,22 @@ export function handleNotificationNavigation(data: Record<string, unknown>) {
 }
 
 export function setupNotificationResponseListener() {
-  if (!Notifications) return { remove: () => {} };
-  const subscription = Notifications.addNotificationResponseReceivedListener((response: any) => {
+  if (Platform.OS === 'web') return { remove: () => {} };
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data as Record<string, unknown>;
     handleNotificationNavigation(data);
   });
   return subscription;
 }
 
-export function setupNotificationReceivedListener(onReceived: (notification: any) => void) {
-  if (!Notifications) return { remove: () => {} };
+export function setupNotificationReceivedListener(onReceived: (notification: Notifications.Notification) => void) {
+  if (Platform.OS === 'web') return { remove: () => {} };
   const subscription = Notifications.addNotificationReceivedListener(onReceived);
   return subscription;
 }
 
 export async function handleInitialNotification(): Promise<void> {
-  if (!Notifications) return;
+  if (Platform.OS === 'web') return;
   try {
     const response = await Notifications.getLastNotificationResponseAsync();
     if (response) {
@@ -174,7 +170,7 @@ export async function handleInitialNotification(): Promise<void> {
 }
 
 export async function setBadgeCount(count: number) {
-  if (!Notifications) return;
+  if (Platform.OS === 'web') return;
   try {
     await Notifications.setBadgeCountAsync(count);
   } catch (err) {
