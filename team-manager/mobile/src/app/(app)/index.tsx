@@ -2,6 +2,8 @@ import { ScrollView, View, Text, TouchableOpacity, RefreshControl, Linking, Acti
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { trpc } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useTeamStore } from '@/store/teamStore';
@@ -194,6 +196,22 @@ export default function MyOfficeScreen() {
               <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">{activeTeam.name}</Text>
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* ── Hero Video ── */}
+        <View style={{ marginTop: 12, height: 186, overflow: 'hidden' }}>
+          <Video
+            source={require('../../../assets/mobile dash hero.mp4')}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode={ResizeMode.COVER}
+            isLooping
+            isMuted
+            shouldPlay
+          />
+          <LinearGradient
+            colors={['transparent', isDark ? '#000000' : '#fafafa']}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 90 }}
+          />
         </View>
 
         {/* ── Stats ── */}
