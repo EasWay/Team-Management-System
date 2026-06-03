@@ -156,7 +156,7 @@ export default function CalendarScreen() {
       };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -171,14 +171,14 @@ export default function CalendarScreen() {
         <View className="px-5 pt-5 pb-4 flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-800 items-center justify-center"
+            className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
           >
             <Ionicons name="arrow-back" size={18} color="#64748b" />
           </TouchableOpacity>
           <View className="flex-1">
             <Text className="text-2xl font-bold text-slate-900 dark:text-white">Calendar</Text>
             {activeTeam && (
-              <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{activeTeam.name}</Text>
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">{activeTeam.name}</Text>
             )}
           </View>
           <TouchableOpacity
@@ -192,7 +192,7 @@ export default function CalendarScreen() {
         </View>
 
         {/* Calendar widget */}
-        <View className="mx-5 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 mb-5">
+        <View className="mx-5 rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 mb-5">
           <Calendar
             current={selectedDate}
             onDayPress={(day: any) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedDate(day.dateString); }}
@@ -207,7 +207,7 @@ export default function CalendarScreen() {
             <Text className="text-slate-900 dark:text-white font-bold text-lg">
               {format(new Date(selectedDate), 'EEE, MMM d')}
             </Text>
-            <Text className="text-slate-400 dark:text-slate-500 text-xs">
+            <Text className="text-slate-400 dark:text-neutral-500 text-xs">
               {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
             </Text>
           </View>
@@ -215,10 +215,10 @@ export default function CalendarScreen() {
           {dayEvents.length === 0 ? (
             <TouchableOpacity
               onPress={() => setShowCreate(true)}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 items-center border border-dashed border-slate-200 dark:border-slate-700"
+              className="bg-white dark:bg-neutral-900 rounded-2xl p-6 items-center border border-dashed border-slate-200 dark:border-neutral-800"
             >
               <Ionicons name="calendar-outline" size={32} color="#94a3b8" />
-              <Text className="text-slate-400 dark:text-slate-500 font-medium mt-3">No events</Text>
+              <Text className="text-slate-400 dark:text-neutral-500 font-medium mt-3">No events</Text>
               <Text className="text-neutral-600 dark:text-neutral-400 text-sm mt-1.5">+ Add event</Text>
             </TouchableOpacity>
           ) : (
@@ -227,7 +227,7 @@ export default function CalendarScreen() {
               return (
                 <View
                   key={event.id}
-                  className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-3 border border-slate-200 dark:border-slate-700 flex-row items-start gap-3"
+                  className="bg-white dark:bg-neutral-900 rounded-2xl p-4 mb-3 border border-slate-200 dark:border-neutral-800 flex-row items-start gap-3"
                   style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3 }}
                 >
                   {/* Color stripe */}
@@ -245,11 +245,11 @@ export default function CalendarScreen() {
                   <View className="flex-1">
                     <Text className="text-slate-900 dark:text-white font-semibold text-base">{event.title}</Text>
                     {event.description && (
-                      <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-5">{event.description}</Text>
+                      <Text className="text-slate-500 dark:text-neutral-400 text-sm mt-1 leading-5">{event.description}</Text>
                     )}
                     <View className="flex-row items-center gap-1.5 mt-2">
                       <Ionicons name="time-outline" size={12} color="#94a3b8" />
-                      <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                      <Text className="text-slate-400 dark:text-neutral-500 text-xs">
                         {format(new Date(event.startDate), 'h:mm a')}
                         {' – '}
                         {format(new Date(event.endDate), 'h:mm a')}
@@ -283,54 +283,54 @@ export default function CalendarScreen() {
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ justifyContent: 'flex-end', flexGrow: 1 }}
           >
-            <View className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-slate-700">
-              <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+            <View className="bg-white dark:bg-black rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800">
+              <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
               <Text className="text-xl font-bold text-slate-900 dark:text-white mb-5">New Event</Text>
 
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Title *</Text>
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Title *</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Event title"
                 placeholderTextColor="#94a3b8"
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
+                className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
               />
 
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Notes</Text>
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Notes</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Optional description"
                 placeholderTextColor="#94a3b8"
                 multiline
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
+                className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
                 style={{ minHeight: 72, textAlignVertical: 'top' }}
               />
 
               <View className="flex-row gap-4 mb-4">
                 <View className="flex-1">
-                  <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Start</Text>
+                  <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Start</Text>
                   <TextInput
                     value={startTime}
                     onChangeText={setStartTime}
                     placeholder="09:00"
                     placeholderTextColor="#94a3b8"
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-slate-900 dark:text-white"
+                    className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3 text-slate-900 dark:text-white"
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">End</Text>
+                  <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">End</Text>
                   <TextInput
                     value={endTime}
                     onChangeText={setEndTime}
                     placeholder="10:00"
                     placeholderTextColor="#94a3b8"
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-slate-900 dark:text-white"
+                    className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3 text-slate-900 dark:text-white"
                   />
                 </View>
               </View>
 
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Type</Text>
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Type</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

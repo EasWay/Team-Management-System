@@ -14,9 +14,9 @@ export function EmptyState({ title, description, icon = 'file-tray-outline', ico
   return (
     <View className="flex-1 items-center justify-center p-8">
       <Ionicons name={icon} size={48} color={iconColor} />
-      <Text className="text-lg font-semibold text-slate-900 dark:text-slate-200 text-center mt-4">{title}</Text>
+      <Text className="text-lg font-semibold text-slate-900 dark:text-neutral-200 text-center mt-4">{title}</Text>
       {description && (
-        <Text className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2">{description}</Text>
+        <Text className="text-sm text-slate-500 dark:text-neutral-400 text-center mt-2">{description}</Text>
       )}
     </View>
   );

@@ -114,9 +114,17 @@ export default function AppLayout() {
   }, []);
 
   // ─── Styles ───────────────────────────────────────────────────────────────────
-  const tabBg     = isDark ? '#000000' : '#FFFFFF';
-  const tabBorder = isDark ? '#1A1A1A' : '#E8E8E8';
+  const tabBg      = isDark ? '#000000' : '#FFFFFF';
+  const tabBorder  = isDark ? '#1A1A1A' : '#E8E8E8';
   const tabInactive = isDark ? '#555555' : '#AAAAAA';
+
+  const TAB_COLORS = {
+    office:   '#5B8DEF',
+    tasks:    '#10B981',
+    projects: '#8B5CF6',
+    chat:     '#F59E0B',
+    profile:  '#EC4899',
+  };
 
   const badgeStyle = {
     backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A',
@@ -145,7 +153,7 @@ export default function AppLayout() {
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: isDark ? '#FFFFFF' : '#0A0A0A',
+        tabBarActiveTintColor: isDark ? '#FFFFFF' : '#0A0A0A', // overridden per-tab below
         tabBarInactiveTintColor: tabInactive,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500', marginTop: 2 },
       }}
@@ -154,6 +162,7 @@ export default function AppLayout() {
         name="index"
         options={{
           title: 'Office',
+          tabBarActiveTintColor: TAB_COLORS.office,
           tabBarIcon: ({ focused, color }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
           ),
@@ -166,6 +175,7 @@ export default function AppLayout() {
         name="tasks/index"
         options={{
           title: 'Tasks',
+          tabBarActiveTintColor: TAB_COLORS.tasks,
           tabBarIcon: ({ focused, color }) => (
             <Ionicons name={focused ? 'checkmark-circle' : 'checkmark-circle-outline'} size={22} color={color} />
           ),
@@ -178,6 +188,7 @@ export default function AppLayout() {
         name="projects/index"
         options={{
           title: 'Projects',
+          tabBarActiveTintColor: TAB_COLORS.projects,
           tabBarIcon: ({ focused, color }) => (
             <Ionicons name={focused ? 'folder' : 'folder-outline'} size={22} color={color} />
           ),
@@ -188,6 +199,7 @@ export default function AppLayout() {
         name="messages/index"
         options={{
           title: 'Chat',
+          tabBarActiveTintColor: TAB_COLORS.chat,
           tabBarIcon: ({ focused, color }) => (
             <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} size={22} color={color} />
           ),
@@ -200,6 +212,7 @@ export default function AppLayout() {
         name="profile/index"
         options={{
           title: 'Profile',
+          tabBarActiveTintColor: TAB_COLORS.profile,
           tabBarIcon: ({ focused, color }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
           ),

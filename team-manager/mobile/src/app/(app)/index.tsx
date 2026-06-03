@@ -19,13 +19,13 @@ import {
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const QUICK_ACTIONS: { label: string; icon: IconName; route: string; color: string }[] = [
-  { label: 'Tasks',      icon: 'checkmark-circle', route: '/(app)/tasks',      color: '#555555' },
-  { label: 'Projects',   icon: 'folder',           route: '/(app)/projects',   color: '#777777' },
-  { label: 'Calendar',   icon: 'calendar',         route: '/(app)/calendar',   color: '#555555' },
-  { label: 'Conference', icon: 'videocam',         route: '/(app)/conference', color: '#777777' },
+  { label: 'Tasks',      icon: 'checkmark-circle', route: '/(app)/tasks',      color: '#10B981' },
+  { label: 'Projects',   icon: 'folder',           route: '/(app)/projects',   color: '#8B5CF6' },
+  { label: 'Calendar',   icon: 'calendar',         route: '/(app)/calendar',   color: '#F59E0B' },
+  { label: 'Conference', icon: 'videocam',         route: '/(app)/conference', color: '#5B8DEF' },
 ];
 
-const AVATAR_COLORS = ['#333333', '#555555', '#444444', '#666666', '#3A3A3A', '#4A4A4A'];
+const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
 
 const STAGE_COLORS: Record<string, 'primary' | 'warning' | 'success' | 'danger' | 'default'> = {
   ideation:    'primary',
@@ -68,11 +68,11 @@ function StatCard({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
-      className="flex-1 bg-white dark:bg-slate-800 rounded-2xl p-4 items-center border border-slate-200 dark:border-slate-700"
+      className="flex-1 bg-white dark:bg-neutral-900 rounded-2xl p-4 items-center border border-slate-200 dark:border-neutral-800"
     >
       <Ionicons name={icon} size={22} color={color} />
       <Text className="text-slate-900 dark:text-white text-xl font-bold mt-1">{value}</Text>
-      <Text className="text-slate-400 dark:text-slate-500 text-xs mt-0.5 text-center">{label}</Text>
+      <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5 text-center">{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -87,18 +87,18 @@ function MetricCard({
   const trendIcon: IconName = isUp ? 'trending-up-outline' : 'trending-down-outline';
   return (
     <View
-      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4"
+      className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4"
       style={{ minWidth: 148 }}
     >
       <View className="flex-row justify-between items-start mb-3">
-        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider flex-1 mr-1" numberOfLines={2}>
+        <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider flex-1 mr-1" numberOfLines={2}>
           {label}
         </Text>
         <Ionicons name={icon} size={14} color="#94a3b8" />
       </View>
       <Text className="text-slate-900 dark:text-white text-2xl font-bold tracking-tight">
         {value}
-        <Text className="text-slate-400 dark:text-slate-500 text-xs font-normal"> {unit}</Text>
+        <Text className="text-slate-400 dark:text-neutral-500 text-xs font-normal"> {unit}</Text>
       </Text>
       <View className="flex-row items-center gap-1 mt-2">
         <Ionicons name={trendIcon} size={11} color={trendColor} />
@@ -109,12 +109,12 @@ function MetricCard({
 }
 
 function activityIcon(type: string): { icon: IconName; color: string } {
-  if (type.includes('task'))                        return { icon: 'checkmark-circle-outline', color: '#888888' };
-  if (type.includes('project'))                     return { icon: 'folder-outline',           color: '#888888' };
-  if (type.includes('member') || type.includes('invite')) return { icon: 'person-add-outline', color: '#888888' };
-  if (type.includes('comment'))                     return { icon: 'chatbubble-outline',        color: '#888888' };
-  if (type.includes('repo'))                        return { icon: 'logo-github',               color: '#888888' };
-  return                                                   { icon: 'radio-button-on-outline',   color: '#888888' };
+  if (type.includes('task'))                             return { icon: 'checkmark-circle-outline', color: '#10B981' };
+  if (type.includes('project'))                          return { icon: 'folder-outline',           color: '#8B5CF6' };
+  if (type.includes('member') || type.includes('invite')) return { icon: 'person-add-outline',      color: '#5B8DEF' };
+  if (type.includes('comment'))                          return { icon: 'chatbubble-outline',        color: '#F59E0B' };
+  if (type.includes('repo'))                             return { icon: 'logo-github',               color: '#EC4899' };
+  return                                                        { icon: 'radio-button-on-outline',   color: '#94a3b8' };
 }
 
 function statusVariant(status: string): 'primary' | 'success' | 'warning' | 'danger' | 'default' {
@@ -184,7 +184,7 @@ export default function MyOfficeScreen() {
         <View className="px-5 pt-5 pb-2 flex-row items-start justify-between">
           <View className="flex-1">
             <Text className="text-2xl font-bold text-slate-900 dark:text-white">{greeting()}</Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{user?.name ?? user?.email}</Text>
+            <Text className="text-slate-500 dark:text-neutral-400 text-sm mt-0.5">{user?.name ?? user?.email}</Text>
           </View>
           {activeTeam && (
             <TouchableOpacity
@@ -201,10 +201,10 @@ export default function MyOfficeScreen() {
           <StatRowSkeleton />
         ) : (
           <View className="flex-row gap-2.5 px-5 mt-4">
-            <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#555555" onPress={() => router.push('/(app)/tasks' as any)} />
-            <StatCard icon="folder"           label="Projects"   value={projects.length} color="#777777" onPress={() => router.push('/(app)/projects' as any)} />
-            <StatCard icon="people"           label="Members"    value={members.length}  color="#555555" onPress={() => router.push('/(app)/teams' as any)} />
-            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#888888" onPress={() => router.push('/(app)/teams' as any)} />
+            <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#10B981" onPress={() => router.push('/(app)/tasks' as any)} />
+            <StatCard icon="folder"           label="Projects"   value={projects.length} color="#8B5CF6" onPress={() => router.push('/(app)/projects' as any)} />
+            <StatCard icon="people"           label="Members"    value={members.length}  color="#5B8DEF" onPress={() => router.push('/(app)/teams' as any)} />
+            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#EC4899" onPress={() => router.push('/(app)/teams' as any)} />
           </View>
         )}
 
@@ -225,8 +225,8 @@ export default function MyOfficeScreen() {
                 <MetricCard label="Cycle Time"      value={String(metrics.cycleTime?.value ?? '—')}      unit={metrics.cycleTime?.unit ?? ''}      trend={metrics.cycleTime?.trend ?? ''}      direction={metrics.cycleTime?.direction ?? 'up'}  icon="time-outline" />
               </ScrollView>
             ) : (
-              <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 items-center">
-                <Text className="text-slate-400 dark:text-slate-500 text-sm">No metrics available yet</Text>
+              <View className="bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-slate-200 dark:border-neutral-800 items-center">
+                <Text className="text-slate-400 dark:text-neutral-500 text-sm">No metrics available yet</Text>
               </View>
             )}
           </View>
@@ -234,7 +234,7 @@ export default function MyOfficeScreen() {
 
         {/* ── Quick Actions ── */}
         <View className="px-5 mt-6">
-          <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">
+          <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-widest mb-3">
             Quick Access
           </Text>
           <View className="flex-row flex-wrap gap-3">
@@ -243,7 +243,7 @@ export default function MyOfficeScreen() {
                 key={item.label}
                 onPress={() => router.push(item.route as any)}
                 activeOpacity={0.75}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 flex-row items-center gap-3"
+                className="bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-slate-200 dark:border-neutral-800 flex-row items-center gap-3"
                 style={{ width: '47%' }}
               >
                 <View
@@ -252,7 +252,7 @@ export default function MyOfficeScreen() {
                 >
                   <Ionicons name={item.icon} size={20} color={item.color} />
                 </View>
-                <Text className="text-slate-800 dark:text-slate-100 font-semibold text-sm">{item.label}</Text>
+                <Text className="text-slate-800 dark:text-neutral-100 font-semibold text-sm">{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -301,11 +301,11 @@ export default function MyOfficeScreen() {
                         </View>
                       ) : null}
                     </View>
-                    <Text className="text-slate-500 dark:text-slate-400 text-xs text-center" numberOfLines={1}>
+                    <Text className="text-slate-500 dark:text-neutral-400 text-xs text-center" numberOfLines={1}>
                       {firstName}
                     </Text>
                     {m.role && (
-                      <Text className="text-slate-400 dark:text-slate-600 text-center" numberOfLines={1} style={{ fontSize: 9 }}>
+                      <Text className="text-slate-400 dark:text-neutral-600 text-center" numberOfLines={1} style={{ fontSize: 9 }}>
                         {m.role}
                       </Text>
                     )}
@@ -333,11 +333,11 @@ export default function MyOfficeScreen() {
             <TouchableOpacity
               onPress={() => router.push('/(app)/tasks' as any)}
               activeOpacity={0.8}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 items-center border border-slate-200 dark:border-slate-700"
+              className="bg-white dark:bg-neutral-900 rounded-2xl p-6 items-center border border-slate-200 dark:border-neutral-800"
             >
               <Ionicons name="checkmark-done-circle" size={40} color="#888888" />
-              <Text className="text-slate-700 dark:text-slate-300 font-semibold mt-3">All caught up!</Text>
-              <Text className="text-slate-400 dark:text-slate-500 text-sm mt-1">No tasks assigned to you.</Text>
+              <Text className="text-slate-700 dark:text-neutral-300 font-semibold mt-3">All caught up!</Text>
+              <Text className="text-slate-400 dark:text-neutral-500 text-sm mt-1">No tasks assigned to you.</Text>
             </TouchableOpacity>
           ) : (
             myTasks.slice(0, 5).map((task: any) => (
@@ -345,7 +345,7 @@ export default function MyOfficeScreen() {
                 key={task.id}
                 onPress={() => router.push(`/(app)/tasks?taskId=${task.id}` as any)}
                 activeOpacity={0.75}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-2.5 border border-slate-200 dark:border-slate-700"
+                className="bg-white dark:bg-neutral-900 rounded-2xl p-4 mb-2.5 border border-slate-200 dark:border-neutral-800"
               >
                 <View className="flex-row justify-between items-start mb-2">
                   <Text className="text-slate-900 dark:text-white font-semibold flex-1 mr-2" numberOfLines={1}>
@@ -354,7 +354,7 @@ export default function MyOfficeScreen() {
                   <Badge label={task.status} variant={statusVariant(task.status)} />
                 </View>
                 {task.description ? (
-                  <Text className="text-slate-400 dark:text-slate-500 text-sm mb-2" numberOfLines={2}>
+                  <Text className="text-slate-400 dark:text-neutral-500 text-sm mb-2" numberOfLines={2}>
                     {task.description}
                   </Text>
                 ) : null}
@@ -363,7 +363,7 @@ export default function MyOfficeScreen() {
                   {task.dueDate && (
                     <View className="flex-row items-center gap-1">
                       <Ionicons name="calendar-outline" size={11} color="#94a3b8" />
-                      <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                      <Text className="text-slate-400 dark:text-neutral-500 text-xs">
                         {format(new Date(task.dueDate), 'MMM d')}
                       </Text>
                     </View>
@@ -387,10 +387,10 @@ export default function MyOfficeScreen() {
             <TouchableOpacity
               onPress={() => router.push('/(app)/projects' as any)}
               activeOpacity={0.8}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 items-center border border-slate-200 dark:border-slate-700"
+              className="bg-white dark:bg-neutral-900 rounded-2xl p-6 items-center border border-slate-200 dark:border-neutral-800"
             >
               <Ionicons name="folder-open-outline" size={40} color="#94a3b8" />
-              <Text className="text-slate-500 dark:text-slate-400 font-medium mt-3">No projects yet</Text>
+              <Text className="text-slate-500 dark:text-neutral-400 font-medium mt-3">No projects yet</Text>
               <Text className="text-neutral-500 text-sm mt-2 font-semibold">+ Create one</Text>
             </TouchableOpacity>
           ) : (
@@ -399,7 +399,7 @@ export default function MyOfficeScreen() {
                 key={project.id}
                 onPress={() => router.push(`/(app)/projects?projectId=${project.id}` as any)}
                 activeOpacity={0.75}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-2.5 border border-slate-200 dark:border-slate-700"
+                className="bg-white dark:bg-neutral-900 rounded-2xl p-4 mb-2.5 border border-slate-200 dark:border-neutral-800"
               >
                 <View className="flex-row items-center gap-3">
                   <View className="bg-neutral-100 dark:bg-neutral-800/40 rounded-xl p-2.5 border border-neutral-200 dark:border-neutral-700">
@@ -410,7 +410,7 @@ export default function MyOfficeScreen() {
                       {project.name}
                     </Text>
                     {project.description ? (
-                      <Text className="text-slate-400 dark:text-slate-500 text-sm mt-0.5" numberOfLines={1}>
+                      <Text className="text-slate-400 dark:text-neutral-500 text-sm mt-0.5" numberOfLines={1}>
                         {project.description}
                       </Text>
                     ) : null}
@@ -442,7 +442,7 @@ export default function MyOfficeScreen() {
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Repositories</Text>
               <View className="flex-row items-center gap-1">
                 <Ionicons name="logo-github" size={14} color="#94a3b8" />
-                <Text className="text-slate-400 dark:text-slate-500 text-xs">{repos.length} connected</Text>
+                <Text className="text-slate-400 dark:text-neutral-500 text-xs">{repos.length} connected</Text>
               </View>
             </View>
             <ScrollView
@@ -458,7 +458,7 @@ export default function MyOfficeScreen() {
                     if (url) Linking.openURL(url).catch(() => {});
                   }}
                   activeOpacity={0.8}
-                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4"
+                  className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4"
                   style={{ width: 200 }}
                 >
                   <View className="flex-row items-center gap-2 mb-2">
@@ -469,7 +469,7 @@ export default function MyOfficeScreen() {
                     {repo.private && <Ionicons name="lock-closed" size={12} color="#94a3b8" />}
                   </View>
                   {repo.description ? (
-                    <Text className="text-slate-400 dark:text-slate-500 text-xs mb-2" numberOfLines={2}>
+                    <Text className="text-slate-400 dark:text-neutral-500 text-xs mb-2" numberOfLines={2}>
                       {repo.description}
                     </Text>
                   ) : null}
@@ -477,13 +477,13 @@ export default function MyOfficeScreen() {
                     {repo.language && (
                       <View className="flex-row items-center gap-1">
                         <View className="w-2 h-2 rounded-full bg-neutral-400" />
-                        <Text className="text-slate-400 dark:text-slate-500 text-xs">{repo.language}</Text>
+                        <Text className="text-slate-400 dark:text-neutral-500 text-xs">{repo.language}</Text>
                       </View>
                     )}
                     {repo.stargazers_count != null && (
                       <View className="flex-row items-center gap-1">
                         <Ionicons name="star-outline" size={11} color="#94a3b8" />
-                        <Text className="text-slate-400 dark:text-slate-500 text-xs">{repo.stargazers_count}</Text>
+                        <Text className="text-slate-400 dark:text-neutral-500 text-xs">{repo.stargazers_count}</Text>
                       </View>
                     )}
                     <Ionicons name="open-outline" size={11} color="#94a3b8" style={{ marginLeft: 'auto' }} />
@@ -505,13 +505,13 @@ export default function MyOfficeScreen() {
               <View className="w-2 h-2 rounded-full bg-neutral-400" />
             </View>
 
-            <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <View className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
               {dashboardQuery.isLoading && !dashData ? (
                 <ListRowSkeleton count={4} />
               ) : activities.length === 0 ? (
                 <View className="p-6 items-center">
                   <Ionicons name="radio-outline" size={32} color="#94a3b8" />
-                  <Text className="text-slate-400 dark:text-slate-500 text-sm mt-2">No recent activity</Text>
+                  <Text className="text-slate-400 dark:text-neutral-500 text-sm mt-2">No recent activity</Text>
                 </View>
               ) : (
                 activities.map((activity: any, index: number) => {
@@ -521,7 +521,7 @@ export default function MyOfficeScreen() {
                     <View
                       key={activity.id}
                       className={`flex-row items-start gap-3 px-4 py-3.5 ${
-                        !isLast ? 'border-b border-slate-100 dark:border-slate-700/60' : ''
+                        !isLast ? 'border-b border-slate-100 dark:border-neutral-800/60' : ''
                       }`}
                     >
                       <View
@@ -536,13 +536,13 @@ export default function MyOfficeScreen() {
                         <Ionicons name={icon} size={15} color={color} />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-slate-700 dark:text-slate-200 text-sm" numberOfLines={2}>
+                        <Text className="text-slate-700 dark:text-neutral-200 text-sm" numberOfLines={2}>
                           {activity.userName ? (
                             <Text className="text-slate-900 dark:text-white font-semibold">{activity.userName} </Text>
                           ) : null}
                           {activity.description}
                         </Text>
-                        <Text className="text-slate-400 dark:text-slate-600 text-xs mt-0.5">
+                        <Text className="text-slate-400 dark:text-neutral-600 text-xs mt-0.5">
                           {activity.createdAt
                             ? formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })
                             : ''}
@@ -556,9 +556,9 @@ export default function MyOfficeScreen() {
           </View>
         ) : (
           <View className="px-5 mt-6 mb-10">
-            <View className="bg-white dark:bg-slate-800/50 rounded-2xl p-8 items-center border border-dashed border-slate-200 dark:border-slate-700/50">
+            <View className="bg-white dark:bg-neutral-900/50 rounded-2xl p-8 items-center border border-dashed border-slate-200 dark:border-neutral-800/50">
               <Ionicons name="people-outline" size={40} color="#94a3b8" />
-              <Text className="text-slate-500 dark:text-slate-400 font-medium mt-3">No active team</Text>
+              <Text className="text-slate-500 dark:text-neutral-400 font-medium mt-3">No active team</Text>
               <TouchableOpacity
                 onPress={() => router.push('/(app)/teams' as any)}
                 className="mt-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl px-4 py-2"

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
+import { useThemeStore } from '@/store/themeStore';
 import { LoadingScreen } from '@/components/LoadingScreen';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -28,7 +29,7 @@ function MetricCard({
   const isUp = direction === 'up';
   return (
     <View
-      className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 flex-1"
+      className="bg-white dark:bg-neutral-900 rounded-2xl p-5 border border-slate-200 dark:border-neutral-800 flex-1"
       style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3 }}
     >
       <View className="flex-row justify-between items-start mb-3">
@@ -53,9 +54,9 @@ function MetricCard({
       </View>
       <Text className="text-slate-900 dark:text-white text-2xl font-bold tracking-tight">
         {value}
-        {unit && <Text className="text-slate-400 dark:text-slate-500 text-xs font-normal ml-1"> {unit}</Text>}
+        {unit && <Text className="text-slate-400 dark:text-neutral-500 text-xs font-normal ml-1"> {unit}</Text>}
       </Text>
-      <Text className="text-slate-400 dark:text-slate-500 text-xs mt-1">{label}</Text>
+      <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-1">{label}</Text>
     </View>
   );
 }
@@ -65,17 +66,17 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
   const maxVal = Math.max(...data.map((d) => Math.max(d.actual, d.ideal)), 1);
 
   return (
-    <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 mb-4 border border-slate-200 dark:border-slate-700">
+    <View className="bg-white dark:bg-neutral-900 rounded-2xl p-5 mb-4 border border-slate-200 dark:border-neutral-800">
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-slate-900 dark:text-white font-semibold text-base">Sprint Burndown</Text>
         <View className="flex-row gap-3">
           <View className="flex-row items-center gap-1.5">
             <View className="w-2 h-2 rounded-sm bg-black dark:bg-white" />
-            <Text className="text-slate-400 dark:text-slate-500 text-xs">Actual</Text>
+            <Text className="text-slate-400 dark:text-neutral-500 text-xs">Actual</Text>
           </View>
           <View className="flex-row items-center gap-1.5">
-            <View className="w-2 h-2 rounded-sm bg-slate-300 dark:bg-slate-600" />
-            <Text className="text-slate-400 dark:text-slate-500 text-xs">Ideal</Text>
+            <View className="w-2 h-2 rounded-sm bg-slate-300 dark:bg-neutral-600" />
+            <Text className="text-slate-400 dark:text-neutral-500 text-xs">Ideal</Text>
           </View>
         </View>
       </View>
@@ -92,7 +93,7 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
                 style={{ height: actualH, backgroundColor: isBehind ? '#f87171' : '#888888' }}
               />
               <View
-                className="rounded-t-sm flex-1 bg-slate-300 dark:bg-slate-600"
+                className="rounded-t-sm flex-1 bg-slate-300 dark:bg-neutral-600"
                 style={{ height: idealH }}
               />
             </View>
@@ -104,7 +105,7 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
       <View className="flex-row mt-2 overflow-hidden">
         {data.slice(0, 12).filter((_, i) => i % 3 === 0).map((point, i) => (
           <View key={i} className="flex-1">
-            <Text className="text-slate-400 dark:text-slate-600 text-xs text-center">{point.day}</Text>
+            <Text className="text-slate-400 dark:text-neutral-600 text-xs text-center">{point.day}</Text>
           </View>
         ))}
       </View>
@@ -115,6 +116,7 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
 export default function AnalyticsScreen() {
   const router = useRouter();
   const { activeTeam } = useTeamStore();
+  const isDark = useThemeStore(state => state.isDark);
 
   const dashQuery = trpc.analytics.getDashboardMetrics.useQuery(
     { teamId: activeTeam?.id ?? 0 },
@@ -138,7 +140,7 @@ export default function AnalyticsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -153,20 +155,20 @@ export default function AnalyticsScreen() {
         <View className="px-5 pt-5 pb-4 flex-row items-center gap-3">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-800 items-center justify-center"
+            className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
           >
             <Ionicons name="arrow-back" size={18} color="#64748b" />
           </TouchableOpacity>
           <View>
             <Text className="text-2xl font-bold text-slate-900 dark:text-white">Analytics</Text>
-            {activeTeam && <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{activeTeam.name}</Text>}
+            {activeTeam && <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">{activeTeam.name}</Text>}
           </View>
         </View>
 
         {/* KPI cards 2×2 grid */}
         {dash && (
           <View className="px-5 mb-5">
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">
+            <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-widest mb-3">
               Sprint Overview
             </Text>
             <View className="flex-row gap-3 mb-3">
@@ -221,7 +223,7 @@ export default function AnalyticsScreen() {
 
         {/* Member performance */}
         {perf?.memberMetrics?.length > 0 && (
-          <View className="mx-5 bg-white dark:bg-slate-800 rounded-2xl p-5 mb-8 border border-slate-200 dark:border-slate-700">
+          <View className="mx-5 bg-white dark:bg-neutral-900 rounded-2xl p-5 mb-8 border border-slate-200 dark:border-neutral-800">
             <Text className="text-slate-900 dark:text-white font-semibold text-base mb-4">Member Performance</Text>
             {perf.memberMetrics.slice(0, 8).map((m: any) => {
               const total = m.totalTasks ?? 1;
@@ -234,18 +236,18 @@ export default function AnalyticsScreen() {
                 <View key={m.memberId} className="mb-4 last:mb-0">
                   <View className="flex-row justify-between items-center mb-1.5">
                     <View className="flex-row items-center gap-2">
-                      <View className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 items-center justify-center">
-                        <Text className="text-slate-500 dark:text-slate-300 text-xs font-bold">
+                      <View className="w-7 h-7 rounded-full bg-slate-100 dark:bg-neutral-800 items-center justify-center">
+                        <Text className="text-slate-500 dark:text-neutral-300 text-xs font-bold">
                           {name[0].toUpperCase()}
                         </Text>
                       </View>
-                      <Text className="text-slate-700 dark:text-slate-200 text-sm font-medium">{name}</Text>
+                      <Text className="text-slate-700 dark:text-neutral-200 text-sm font-medium">{name}</Text>
                     </View>
-                    <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                    <Text className="text-slate-400 dark:text-neutral-500 text-xs">
                       {completed}/{total}
                     </Text>
                   </View>
-                  <View className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <View className="h-2 bg-slate-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                     <View
                       className="h-full rounded-full"
                       style={{ width: `${pct}%`, backgroundColor: barColor }}
@@ -258,10 +260,10 @@ export default function AnalyticsScreen() {
         )}
 
         {!dash && !perf?.memberMetrics?.length && (
-          <View className="mx-5 bg-white dark:bg-slate-800 rounded-2xl p-8 items-center border border-slate-200 dark:border-slate-700">
+          <View className="mx-5 bg-white dark:bg-neutral-900 rounded-2xl p-8 items-center border border-slate-200 dark:border-neutral-800">
             <Ionicons name="bar-chart-outline" size={40} color="#94a3b8" />
-            <Text className="text-slate-500 dark:text-slate-400 font-medium mt-3">No data yet</Text>
-            <Text className="text-slate-400 dark:text-slate-500 text-xs mt-1 text-center">
+            <Text className="text-slate-500 dark:text-neutral-400 font-medium mt-3">No data yet</Text>
+            <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-1 text-center">
               Analytics will appear once your team has tasks and activity.
             </Text>
           </View>

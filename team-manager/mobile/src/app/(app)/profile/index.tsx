@@ -24,17 +24,19 @@ import { API_BASE_URL } from '@/lib/constants';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
+const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
+
 const QUICK_LINKS: { label: string; icon: IconName; color: string; route: string; desc: string }[] = [
-  { label: 'Files',          icon: 'folder-outline',    color: '#888888', route: '/(app)/files',      desc: 'Team assets & uploads' },
-  { label: 'Calendar',       icon: 'calendar-outline',  color: '#888888', route: '/(app)/calendar',   desc: 'Events & deadlines' },
-  { label: 'Analytics',      icon: 'bar-chart-outline', color: '#888888', route: '/(app)/analytics',  desc: 'Sprint metrics' },
-  { label: 'Conference',     icon: 'videocam-outline',  color: '#888888', route: '/(app)/conference', desc: 'Approvals hub' },
-  { label: 'Messages',       icon: 'mail-outline',      color: '#888888', route: '/(app)/messages',   desc: 'Client inquiries' },
+  { label: 'Files',          icon: 'folder-outline',    color: '#8B5CF6', route: '/(app)/files',      desc: 'Team assets & uploads' },
+  { label: 'Calendar',       icon: 'calendar-outline',  color: '#F59E0B', route: '/(app)/calendar',   desc: 'Events & deadlines' },
+  { label: 'Analytics',      icon: 'bar-chart-outline', color: '#06B6D4', route: '/(app)/analytics',  desc: 'Sprint metrics' },
+  { label: 'Conference',     icon: 'videocam-outline',  color: '#5B8DEF', route: '/(app)/conference', desc: 'Approvals hub' },
+  { label: 'Messages',       icon: 'mail-outline',      color: '#EC4899', route: '/(app)/messages',   desc: 'Client inquiries' },
 ];
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-3 px-1">
+    <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-widest mb-3 px-1">
       {title}
     </Text>
   );
@@ -51,15 +53,16 @@ function SettingRow({
   onToggle: (v: boolean) => void;
   loading?: boolean;
 }) {
+  const isDark = useThemeStore(state => state.isDark);
   return (
-    <View className="flex-row items-center justify-between py-4 border-b border-slate-100 dark:border-slate-800">
-      <Text className="text-slate-700 dark:text-slate-200 text-sm">{label}</Text>
+    <View className="flex-row items-center justify-between py-4 border-b border-slate-100 dark:border-neutral-800">
+      <Text className="text-slate-700 dark:text-neutral-200 text-sm">{label}</Text>
       <Switch
         value={value}
         onValueChange={onToggle}
         disabled={loading}
-        trackColor={{ false: '#E0E0E0', true: '#0A0A0A' }}
-        thumbColor={value ? '#FFFFFF' : '#888888'}
+        trackColor={{ false: isDark ? '#2A2A2A' : '#E0E0E0', true: isDark ? '#FFFFFF' : '#0A0A0A' }}
+        thumbColor={value ? (isDark ? '#000000' : '#FFFFFF') : '#888888'}
       />
     </View>
   );
@@ -153,9 +156,10 @@ export default function ProfileScreen() {
 
   const displayName = user?.name ?? user?.email ?? 'User';
   const initials = displayName.split(' ').map((n: string) => n[0] ?? '').slice(0, 2).join('').toUpperCase();
+  const avatarAccent = AVATAR_COLORS[(displayName.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
@@ -164,7 +168,7 @@ export default function ProfileScreen() {
           {/* Theme Toggle */}
           <TouchableOpacity
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTheme(); }}
-            className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-slate-800 items-center justify-center border border-slate-300 dark:border-slate-700"
+            className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-neutral-900 items-center justify-center border border-slate-300 dark:border-neutral-800"
           >
             <Ionicons
               name={isDark ? 'sunny-outline' : 'moon-outline'}
@@ -175,16 +179,16 @@ export default function ProfileScreen() {
         </View>
 
         {/* Avatar card */}
-        <View className="mx-5 mt-4 mb-6 bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 items-center">
+        <View className="mx-5 mt-4 mb-6 bg-white dark:bg-neutral-900 rounded-3xl p-6 border border-slate-200 dark:border-neutral-800 items-center">
           {/* Avatar with ring */}
           <View className="mb-4">
-            <View className="w-24 h-24 rounded-full bg-black dark:bg-white items-center justify-center" style={{ shadowColor: '#000', shadowRadius: 12, shadowOpacity: 0.15, shadowOffset: { width: 0, height: 4 } }}>
-              <Text className="text-white dark:text-black text-3xl font-bold">{initials}</Text>
+            <View className="w-24 h-24 rounded-full items-center justify-center" style={{ backgroundColor: avatarAccent + '28', borderWidth: 3, borderColor: avatarAccent + '70', shadowColor: avatarAccent, shadowRadius: 12, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 } }}>
+              <Text style={{ color: avatarAccent }} className="text-3xl font-bold">{initials}</Text>
             </View>
           </View>
 
           <Text className="text-slate-900 dark:text-white text-xl font-bold">{displayName}</Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{user?.email}</Text>
+          <Text className="text-slate-500 dark:text-neutral-400 text-sm mt-1">{user?.email}</Text>
 
           {activeTeam && (
             <View className="mt-3 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-1.5 flex-row items-center gap-2">
@@ -197,17 +201,17 @@ export default function ProfileScreen() {
         {/* Appearance */}
         <View className="mx-5 mb-6">
           <SectionHeader title="Appearance" />
-          <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <View className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
             <View className="flex-row items-center justify-between px-5 py-4">
               <View className="flex-row items-center gap-3">
                 <View className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
                   <Ionicons name={isDark ? 'moon' : 'sunny'} size={16} color={isDark ? '#AAAAAA' : '#555555'} />
                 </View>
                 <View>
-                  <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">
+                  <Text className="text-slate-800 dark:text-neutral-100 font-medium text-sm">
                     {isDark ? 'Dark Mode' : 'Light Mode'}
                   </Text>
-                  <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                  <Text className="text-slate-400 dark:text-neutral-500 text-xs">
                     {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
                   </Text>
                 </View>
@@ -225,13 +229,13 @@ export default function ProfileScreen() {
         {/* Quick links */}
         <View className="mx-5 mb-6">
           <SectionHeader title="Tools" />
-          <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <View className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
             {QUICK_LINKS.map((item, idx) => (
               <TouchableOpacity
                 key={item.label}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(item.route as any); }}
                 className={`flex-row items-center px-5 py-4 gap-3 ${
-                  idx > 0 ? 'border-t border-slate-100 dark:border-slate-700' : ''
+                  idx > 0 ? 'border-t border-slate-100 dark:border-neutral-800' : ''
                 }`}
               >
                 <View
@@ -241,8 +245,8 @@ export default function ProfileScreen() {
                   <Ionicons name={item.icon} size={18} color={item.color} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">{item.label}</Text>
-                  <Text className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">{item.desc}</Text>
+                  <Text className="text-slate-800 dark:text-neutral-100 font-medium text-sm">{item.label}</Text>
+                  <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5">{item.desc}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={15} color="#94a3b8" />
               </TouchableOpacity>
@@ -253,7 +257,7 @@ export default function ProfileScreen() {
         {/* Notification preferences */}
         <View className="mx-5 mb-6">
           <SectionHeader title="Notifications" />
-          <View className="bg-white dark:bg-slate-800 rounded-2xl px-5 border border-slate-200 dark:border-slate-700">
+          <View className="bg-white dark:bg-neutral-900 rounded-2xl px-5 border border-slate-200 dark:border-neutral-800">
             <SettingRow
               label="Push Notifications"
               value={prefs.pushEnabled ?? true}
@@ -296,7 +300,7 @@ export default function ProfileScreen() {
         {/* Connections */}
         <View className="mx-5 mb-6">
           <SectionHeader title="Connections" />
-          <View className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <View className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
             <View className="flex-row items-center px-5 py-4 gap-3">
               <View className="w-9 h-9 rounded-xl items-center justify-center"
                 style={{ backgroundColor: '#88888818' }}
@@ -308,7 +312,7 @@ export default function ProfileScreen() {
                 />
               </View>
               <View className="flex-1">
-                <Text className="text-slate-800 dark:text-slate-100 font-medium text-sm">Google Drive</Text>
+                <Text className="text-slate-800 dark:text-neutral-100 font-medium text-sm">Google Drive</Text>
                 <Text className="text-xs mt-0.5" style={{ color: isGoogleConnected ? '#888888' : '#AAAAAA' }}>
                   {isGoogleConnected ? 'Connected' : 'Not connected'}
                 </Text>
