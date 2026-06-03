@@ -277,7 +277,6 @@ function MessageContextMenu({
 export default function ChatScreen() {
   const isDark = useThemeStore(state => state.isDark);
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     userId: string;
     name: string;

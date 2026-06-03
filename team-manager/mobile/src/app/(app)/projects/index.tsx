@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
+import { useThemeStore } from '@/store/themeStore';
 import { Button } from '@/components/Button';
 import { format } from 'date-fns';
 
@@ -85,6 +86,7 @@ function filterProjects(projects: any[], filter: FilterKey, search: string) {
 }
 
 function ProjectCard({ item, onPress }: { item: any; onPress: () => void }) {
+  const isDark = useThemeStore(state => state.isDark);
   const palette = coverPalette(item.name ?? '');
   const dateStr = item.createdAt ? format(new Date(item.createdAt), 'MMM d, yyyy') : null;
 
@@ -92,8 +94,15 @@ function ProjectCard({ item, onPress }: { item: any; onPress: () => void }) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
-      style={{ width: CARD_WIDTH }}
-      className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 mb-3"
+      style={{
+        width: CARD_WIDTH,
+        backgroundColor: isDark ? '#111111' : '#FFFFFF',
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: isDark ? '#1A1A1A' : '#E2E8F0',
+        marginBottom: 12,
+      }}
     >
       {/* Cover — intentionally dark/branded regardless of theme */}
       <View style={{ height: 110, backgroundColor: palette.bg }} className="items-center justify-center">
@@ -116,14 +125,17 @@ function ProjectCard({ item, onPress }: { item: any; onPress: () => void }) {
       </View>
 
       {/* Info */}
-      <View className="p-3">
-        <Text className="text-slate-900 dark:text-white font-bold text-sm mb-1" numberOfLines={1}>
+      <View style={{ padding: 12 }}>
+        <Text
+          style={{ color: isDark ? '#FFFFFF' : '#0A0A0A', fontWeight: '700', fontSize: 14, marginBottom: 4 }}
+          numberOfLines={1}
+        >
           {item.name}
         </Text>
         {dateStr && (
-          <View className="flex-row items-center gap-1 mb-2">
-            <Ionicons name="calendar-outline" size={10} color="#94a3b8" />
-            <Text className="text-slate-400 dark:text-slate-500" style={{ fontSize: 10 }}>{dateStr}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            <Ionicons name="calendar-outline" size={10} color="#888888" />
+            <Text style={{ color: isDark ? '#555555' : '#94a3b8', fontSize: 10 }}>{dateStr}</Text>
           </View>
         )}
         <StageBadge stage={item.workflowStage} />
@@ -134,6 +146,7 @@ function ProjectCard({ item, onPress }: { item: any; onPress: () => void }) {
 
 export default function ProjectsScreen() {
   const { activeTeam } = useTeamStore();
+  const isDark = useThemeStore(state => state.isDark);
   const [filter, setFilter]           = useState<FilterKey>('all');
   const [search, setSearch]           = useState('');
   const [showCreate, setShowCreate]     = useState(false);
@@ -213,44 +226,69 @@ export default function ProjectsScreen() {
     });
   };
 
+  // ─── Shared palette ────────────────────────────────────────────────────────
+  const bg       = isDark ? '#000000' : '#F5F5F5';
+  const surface  = isDark ? '#111111' : '#FFFFFF';
+  const border   = isDark ? '#1A1A1A' : '#E2E8F0';
+  const fg       = isDark ? '#FFFFFF' : '#0A0A0A';
+  const muted    = isDark ? '#555555' : '#94a3b8';
+  const handle   = isDark ? '#333333' : '#D0D0D0';
+  const inputBg  = isDark ? '#0D0D0D' : '#F5F5F5';
+  const inputBdr = isDark ? '#2A2A2A' : '#D0D0D0';
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: bg }} edges={['top']}>
 
       {/* ── Header ── */}
       <View className="px-5 pt-5 pb-3 flex-row justify-between items-center">
         <View>
-          <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">
+          <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 2 }}>
             {activeTeam?.name ?? 'No team'}
           </Text>
-          <Text className="text-slate-900 dark:text-white text-2xl font-bold mt-0.5">Projects Library</Text>
+          <Text style={{ color: fg, fontSize: 24, fontWeight: '800', marginTop: 2 }}>Projects Library</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <TouchableOpacity
             onPress={() => setShowIdeation(true)}
-            className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/60 items-center justify-center"
+            style={{
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0',
+              borderWidth: 1, borderColor: border,
+              alignItems: 'center', justifyContent: 'center',
+            }}
           >
             <Ionicons name="bulb-outline" size={18} color="#c084fc" />
           </TouchableOpacity>
-          <TouchableOpacity className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 items-center justify-center">
-            <Ionicons name="notifications-outline" size={18} color="#94a3b8" />
+          <TouchableOpacity style={{
+            width: 36, height: 36, borderRadius: 18,
+            backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0',
+            borderWidth: 1, borderColor: border,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons name="notifications-outline" size={18} color={muted} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ── Search ── */}
-      <View className="mx-5 mb-4 flex-row items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 h-11 gap-2">
-        <Ionicons name="search-outline" size={16} color="#94a3b8" />
+      <View style={{
+        marginHorizontal: 20, marginBottom: 16,
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: surface, borderWidth: 1, borderColor: border,
+        borderRadius: 16, paddingHorizontal: 16, height: 44, gap: 8,
+      }}>
+        <Ionicons name="search-outline" size={16} color={muted} />
         <TextInput
           value={search}
           onChangeText={setSearch}
           placeholder="Search projects..."
-          placeholderTextColor="#94a3b8"
-          className="flex-1 text-slate-900 dark:text-white text-sm"
+          placeholderTextColor={muted}
+          style={{ flex: 1, color: fg, fontSize: 14 }}
           returnKeyType="search"
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={16} color="#94a3b8" />
+            <Ionicons name="close-circle" size={16} color={muted} />
           </TouchableOpacity>
         )}
       </View>
@@ -271,30 +309,29 @@ export default function ProjectsScreen() {
             <TouchableOpacity
               key={f.key}
               onPress={() => setFilter(f.key)}
-              className={`px-4 py-2 rounded-2xl flex-row items-center gap-1.5 border ${
-                active
-                  ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-              }`}
+              style={{
+                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16,
+                flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1,
+                backgroundColor: active ? (isDark ? '#FFFFFF' : '#0A0A0A') : surface,
+                borderColor: active ? (isDark ? '#FFFFFF' : '#0A0A0A') : border,
+              }}
             >
-              <Text
-                className={`text-sm font-semibold ${
-                  active ? 'text-white dark:text-slate-900' : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
+              <Text style={{
+                fontSize: 14, fontWeight: '600',
+                color: active ? (isDark ? '#000000' : '#FFFFFF') : muted,
+              }}>
                 {f.label}
               </Text>
               {count > 0 && (
-                <View
-                  className={`rounded-full min-w-5 h-5 items-center justify-center px-1 ${
-                    active ? 'bg-white/20 dark:bg-slate-900/20' : 'bg-slate-100 dark:bg-slate-700'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-bold ${
-                      active ? 'text-white dark:text-slate-900' : 'text-slate-500 dark:text-slate-400'
-                    }`}
-                  >
+                <View style={{
+                  borderRadius: 100, minWidth: 20, height: 20,
+                  alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
+                  backgroundColor: active ? 'rgba(128,128,128,0.25)' : (isDark ? '#1A1A1A' : '#F0F0F0'),
+                }}>
+                  <Text style={{
+                    fontSize: 12, fontWeight: '700',
+                    color: active ? (isDark ? '#333333' : '#DDDDDD') : muted,
+                  }}>
                     {count}
                   </Text>
                 </View>
@@ -325,13 +362,17 @@ export default function ProjectsScreen() {
           }
           ListEmptyComponent={
             <View className="items-center justify-center py-16 px-8">
-              <View className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 items-center justify-center mb-4">
-                <Ionicons name="folder-open-outline" size={32} color="#94a3b8" />
+              <View style={{
+                width: 64, height: 64, borderRadius: 16,
+                backgroundColor: surface, borderWidth: 1, borderColor: border,
+                alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+              }}>
+                <Ionicons name="folder-open-outline" size={32} color={muted} />
               </View>
-              <Text className="text-slate-900 dark:text-white font-semibold text-lg mb-1">
+              <Text style={{ color: fg, fontWeight: '600', fontSize: 18, marginBottom: 4 }}>
                 {search ? 'No results' : 'No projects yet'}
               </Text>
-              <Text className="text-slate-400 dark:text-slate-500 text-sm text-center mb-6">
+              <Text style={{ color: muted, fontSize: 14, textAlign: 'center', marginBottom: 24 }}>
                 {search
                   ? `No projects matching "${search}"`
                   : 'Create a project or use the AI Idea Lab to brainstorm one.'}
@@ -339,9 +380,9 @@ export default function ProjectsScreen() {
               {!search && (
                 <TouchableOpacity
                   onPress={() => setShowCreate(true)}
-                  className="bg-black dark:bg-white rounded-2xl px-6 py-3"
+                  style={{ backgroundColor: isDark ? '#FFFFFF' : '#0A0A0A', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 12 }}
                 >
-                  <Text className="text-white font-bold">+ New Project</Text>
+                  <Text style={{ color: isDark ? '#000000' : '#FFFFFF', fontWeight: '700' }}>+ New Project</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -363,8 +404,10 @@ export default function ProjectsScreen() {
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
           activeOpacity={0.85}
-          className="w-14 h-14 bg-black dark:bg-white rounded-full items-center justify-center"
           style={{
+            width: 56, height: 56, borderRadius: 28,
+            backgroundColor: isDark ? '#FFFFFF' : '#000000',
+            alignItems: 'center', justifyContent: 'center',
             shadowColor: '#888888',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.45,
@@ -372,44 +415,61 @@ export default function ProjectsScreen() {
             elevation: 8,
           }}
         >
-          <Ionicons name="add" size={28} color="#fff" />
+          <Ionicons name="add" size={28} color={isDark ? '#000000' : '#FFFFFF'} />
         </TouchableOpacity>
       </View>
 
       {/* ── Create Modal ── */}
       <Modal visible={showCreate} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-slate-700">
-            <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: isDark ? '#0D0D0D' : '#FFFFFF',
+            borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48,
+            borderTopWidth: 1, borderColor: border,
+          }}>
+            <View style={{ width: 40, height: 4, backgroundColor: handle, borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
             <View className="flex-row items-center justify-between mb-5">
-              <Text className="text-xl font-bold text-slate-900 dark:text-white">New Project</Text>
+              <Text style={{ color: fg, fontSize: 20, fontWeight: '800' }}>New Project</Text>
               <TouchableOpacity
                 onPress={() => setShowCreate(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                style={{
+                  width: 32, height: 32, borderRadius: 16,
+                  backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
               >
-                <Ionicons name="close" size={16} color="#64748b" />
+                <Ionicons name="close" size={16} color={muted} />
               </TouchableOpacity>
             </View>
 
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Title *</Text>
+            <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Title *</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
               placeholder="Project name"
-              placeholderTextColor="#94a3b8"
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
+              placeholderTextColor={muted}
+              style={{
+                backgroundColor: inputBg, borderWidth: 1, borderColor: inputBdr,
+                borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
+                color: fg, fontSize: 14, marginBottom: 16,
+              }}
             />
 
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Description</Text>
+            <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Description</Text>
             <TextInput
               value={description}
               onChangeText={setDescription}
               placeholder="What is this project about?"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={muted}
               multiline
               numberOfLines={3}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-6"
-              style={{ textAlignVertical: 'top', minHeight: 80 }}
+              style={{
+                backgroundColor: inputBg, borderWidth: 1, borderColor: inputBdr,
+                borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
+                color: fg, fontSize: 14, marginBottom: 24,
+                textAlignVertical: 'top', minHeight: 80,
+              }}
             />
 
             <View className="flex-row gap-3">
@@ -422,24 +482,28 @@ export default function ProjectsScreen() {
 
       {/* ── Project Detail Modal ── */}
       <Modal visible={showDetail} animationType="slide" transparent onRequestClose={() => setShowDetail(false)}>
-        <View className="flex-1 bg-black/60 justify-end">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
           <View
-            className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700"
-            style={{ maxHeight: '92%' }}
+            style={{
+              backgroundColor: isDark ? '#0D0D0D' : '#FFFFFF',
+              borderTopLeftRadius: 28, borderTopRightRadius: 28,
+              borderTopWidth: 1, borderColor: border,
+              maxHeight: '92%',
+            }}
           >
             {/* Handle */}
-            <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mt-4 mb-2" />
+            <View style={{ width: 40, height: 4, backgroundColor: handle, borderRadius: 2, alignSelf: 'center', marginTop: 16, marginBottom: 8 }} />
 
             {projectDetailQuery.isLoading ? (
               <View className="items-center justify-center py-16">
                 <ActivityIndicator color="#888888" size="large" />
-                <Text className="text-slate-400 mt-3 text-sm">Loading project…</Text>
+                <Text style={{ color: muted, marginTop: 12, fontSize: 14 }}>Loading project…</Text>
               </View>
             ) : (() => {
               const p = projectDetailQuery.data as any;
               if (!p) return (
                 <View className="items-center justify-center py-16">
-                  <Text className="text-slate-400">Project not found</Text>
+                  <Text style={{ color: muted }}>Project not found</Text>
                 </View>
               );
               const palette = coverPalette(p.name ?? '');
@@ -477,7 +541,7 @@ export default function ProjectsScreen() {
                   {/* Main info */}
                   <View className="px-5 pt-5">
                     <View className="flex-row items-start justify-between gap-2 mb-3">
-                      <Text className="text-slate-900 dark:text-white text-xl font-bold flex-1 leading-tight">{p.name}</Text>
+                      <Text style={{ color: fg, fontSize: 20, fontWeight: '800', flex: 1, lineHeight: 28 }}>{p.name}</Text>
                       <View style={{ backgroundColor: stageMeta.bg, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
                         <Text style={{ color: stageMeta.color, fontSize: 11, fontWeight: '700' }}>{stageMeta.label}</Text>
                       </View>
@@ -487,16 +551,16 @@ export default function ProjectsScreen() {
                     <View className="flex-row gap-4 mb-4">
                       {p.dateReceived && (
                         <View className="flex-row items-center gap-1.5">
-                          <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
-                          <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                          <Ionicons name="calendar-outline" size={13} color={muted} />
+                          <Text style={{ color: muted, fontSize: 12 }}>
                             Started {format(new Date(p.dateReceived), 'MMM d, yyyy')}
                           </Text>
                         </View>
                       )}
                       {p.dateEnded && (
                         <View className="flex-row items-center gap-1.5">
-                          <Ionicons name="flag-outline" size={13} color="#94a3b8" />
-                          <Text className="text-slate-400 dark:text-slate-500 text-xs">
+                          <Ionicons name="flag-outline" size={13} color={muted} />
+                          <Text style={{ color: muted, fontSize: 12 }}>
                             Due {format(new Date(p.dateEnded), 'MMM d, yyyy')}
                           </Text>
                         </View>
@@ -505,9 +569,9 @@ export default function ProjectsScreen() {
 
                     {/* Description */}
                     {(p.description || p.definition) && (
-                      <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 mb-4 border border-slate-200 dark:border-slate-700">
-                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">About</Text>
-                        <Text className="text-slate-700 dark:text-slate-300 text-sm leading-5">
+                      <View style={{ backgroundColor: surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: border }}>
+                        <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>About</Text>
+                        <Text style={{ color: isDark ? '#CCCCCC' : '#374151', fontSize: 14, lineHeight: 20 }}>
                           {p.definition || p.description}
                         </Text>
                       </View>
@@ -515,8 +579,8 @@ export default function ProjectsScreen() {
 
                     {/* Evaluation scores */}
                     {p.evaluationData && (
-                      <View className="bg-neutral-50 dark:bg-neutral-800/20 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-neutral-700/40">
-                        <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-3">QA Evaluation</Text>
+                      <View style={{ backgroundColor: isDark ? '#0D0D0D' : '#F9F9F9', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: border }}>
+                        <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>QA Evaluation</Text>
                         {[
                           { label: 'Design', value: p.evaluationData.designAlignment },
                           { label: 'Business', value: p.evaluationData.businessAlignment },
@@ -525,13 +589,12 @@ export default function ProjectsScreen() {
                         ].filter(x => x.value != null).map((item) => (
                           <View key={item.label} className="mb-2">
                             <View className="flex-row justify-between mb-1">
-                              <Text className="text-slate-600 dark:text-slate-400 text-xs">{item.label}</Text>
-                              <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">{item.value}%</Text>
+                              <Text style={{ color: muted, fontSize: 12 }}>{item.label}</Text>
+                              <Text style={{ color: '#888888', fontSize: 12, fontWeight: '700' }}>{item.value}%</Text>
                             </View>
-                            <View className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <View style={{ height: 6, backgroundColor: isDark ? '#1A1A1A' : '#E0E0E0', borderRadius: 3, overflow: 'hidden' }}>
                               <View
-                                className="h-full bg-neutral-700 dark:bg-neutral-200 rounded-full"
-                                style={{ width: `${item.value}%` }}
+                                style={{ height: '100%', backgroundColor: '#888888', borderRadius: 3, width: `${item.value}%` }}
                               />
                             </View>
                           </View>
@@ -539,7 +602,7 @@ export default function ProjectsScreen() {
                         {p.evaluationData.readyForLaunch && (
                           <View className="flex-row items-center gap-1.5 mt-2">
                             <Ionicons name="checkmark-circle" size={14} color="#888888" />
-                            <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold">Ready for Launch</Text>
+                            <Text style={{ color: '#888888', fontSize: 12, fontWeight: '700' }}>Ready for Launch</Text>
                           </View>
                         )}
                       </View>
@@ -548,10 +611,14 @@ export default function ProjectsScreen() {
                     {/* Deliverables */}
                     {deliverablesList.length > 0 && (
                       <View className="mb-4">
-                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Deliverables</Text>
+                        <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Deliverables</Text>
                         {deliverablesList.map((d: any, i: number) => (
-                          <View key={i} className="flex-row items-center gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 mb-2 border border-slate-200 dark:border-slate-700">
-                            <View className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 items-center justify-center">
+                          <View key={i} style={{
+                            flexDirection: 'row', alignItems: 'center', gap: 12,
+                            backgroundColor: surface, borderRadius: 12, padding: 12, marginBottom: 8,
+                            borderWidth: 1, borderColor: border,
+                          }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0', alignItems: 'center', justifyContent: 'center' }}>
                               <Ionicons
                                 name={d.type === 'github' ? 'logo-github' : d.type === 'figma' ? 'color-palette-outline' : 'link-outline'}
                                 size={14}
@@ -559,8 +626,8 @@ export default function ProjectsScreen() {
                               />
                             </View>
                             <View className="flex-1">
-                              <Text className="text-slate-900 dark:text-white text-sm font-medium">{d.description || d.type}</Text>
-                              {d.url && <Text className="text-neutral-600 dark:text-neutral-400 text-xs mt-0.5" numberOfLines={1}>{d.url}</Text>}
+                              <Text style={{ color: fg, fontSize: 14, fontWeight: '500' }}>{d.description || d.type}</Text>
+                              {d.url && <Text style={{ color: '#888888', fontSize: 12, marginTop: 2 }} numberOfLines={1}>{d.url}</Text>}
                             </View>
                           </View>
                         ))}
@@ -570,21 +637,21 @@ export default function ProjectsScreen() {
                     {/* Handoff history */}
                     {handoffList.length > 0 && (
                       <View className="mb-4">
-                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Handoff History</Text>
+                        <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Handoff History</Text>
                         {handoffList.map((h: any, i: number) => (
                           <View key={i} className="flex-row items-start gap-3 mb-3">
-                            <View className="w-6 h-6 rounded-full bg-neutral-100 dark:bg-neutral-800/40 items-center justify-center mt-0.5">
+                            <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                               <Ionicons name="arrow-forward" size={11} color="#888888" />
                             </View>
                             <View className="flex-1">
-                              <Text className="text-slate-700 dark:text-slate-300 text-sm font-medium">
+                              <Text style={{ color: isDark ? '#CCCCCC' : '#374151', fontSize: 14, fontWeight: '500' }}>
                                 {h.from} → {h.to}
                               </Text>
                               {h.comments && (
-                                <Text className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">{h.comments}</Text>
+                                <Text style={{ color: muted, fontSize: 12, marginTop: 2 }}>{h.comments}</Text>
                               )}
                               {h.timestamp && (
-                                <Text className="text-slate-300 dark:text-slate-600 text-xs mt-0.5">
+                                <Text style={{ color: isDark ? '#333333' : '#CCCCCC', fontSize: 12, marginTop: 2 }}>
                                   {format(new Date(h.timestamp), 'MMM d, yyyy')}
                                 </Text>
                               )}
@@ -596,18 +663,18 @@ export default function ProjectsScreen() {
 
                     {/* AI ideation summary */}
                     {p.ideationData?.finalDecisionReport?.projectName && (
-                      <View className="bg-neutral-50 dark:bg-neutral-800/20 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-neutral-700/40">
-                        <Text className="text-neutral-600 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">
+                      <View style={{ backgroundColor: isDark ? '#0D0D0D' : '#F9F9F9', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: border }}>
+                        <Text style={{ color: muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
                           AI Ideation Report
                         </Text>
-                        <Text className="text-slate-700 dark:text-slate-300 text-sm leading-5">
+                        <Text style={{ color: isDark ? '#CCCCCC' : '#374151', fontSize: 14, lineHeight: 20 }}>
                           {p.ideationData.finalDecisionReport.executiveSummary || 'No summary available.'}
                         </Text>
                         {p.ideationData.speakers?.length > 0 && (
                           <View className="flex-row flex-wrap gap-1.5 mt-3">
                             {p.ideationData.speakers.map((s: any, i: number) => (
-                              <View key={i} className="bg-neutral-100 dark:bg-neutral-800/40 rounded-full px-2.5 py-1">
-                                <Text className="text-neutral-600 dark:text-neutral-300 text-xs font-medium">
+                              <View key={i} style={{ backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 }}>
+                                <Text style={{ color: isDark ? '#AAAAAA' : '#555555', fontSize: 12, fontWeight: '500' }}>
                                   {typeof s === 'string' ? s : s.name}
                                 </Text>
                               </View>
@@ -626,28 +693,42 @@ export default function ProjectsScreen() {
 
       {/* ── Idea Lab Modal ── */}
       <Modal visible={showIdeation} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50 justify-end">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <ScrollView
             contentContainerStyle={{ justifyContent: 'flex-end', flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
           >
-            <View className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-slate-700">
-              <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+            <View style={{
+              backgroundColor: isDark ? '#0D0D0D' : '#FFFFFF',
+              borderTopLeftRadius: 28, borderTopRightRadius: 28,
+              paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48,
+              borderTopWidth: 1, borderColor: border,
+            }}>
+              <View style={{ width: 40, height: 4, backgroundColor: handle, borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
               <View className="flex-row items-center justify-between mb-1">
                 <View className="flex-row items-center gap-2">
-                  <View className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 items-center justify-center">
+                  <View style={{
+                    width: 32, height: 32, borderRadius: 16,
+                    backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0',
+                    borderWidth: 1, borderColor: border,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
                     <Ionicons name="bulb" size={15} color="#c084fc" />
                   </View>
-                  <Text className="text-xl font-bold text-slate-900 dark:text-white">Idea Lab</Text>
+                  <Text style={{ color: fg, fontSize: 20, fontWeight: '800' }}>Idea Lab</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => { setShowIdeation(false); setAiResult(null); }}
-                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                  style={{
+                    width: 32, height: 32, borderRadius: 16,
+                    backgroundColor: isDark ? '#1A1A1A' : '#F0F0F0',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
                 >
-                  <Ionicons name="close" size={16} color="#64748b" />
+                  <Ionicons name="close" size={16} color={muted} />
                 </TouchableOpacity>
               </View>
-              <Text className="text-slate-500 dark:text-slate-400 text-sm mb-5">
+              <Text style={{ color: muted, fontSize: 14, marginBottom: 20, marginTop: 4 }}>
                 Paste your WhatsApp / Slack brainstorming chat and let AI extract a project plan.
               </Text>
 
@@ -657,16 +738,20 @@ export default function ProjectsScreen() {
                     value={chatLogs}
                     onChangeText={setChatLogs}
                     placeholder="Paste chat logs here..."
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={muted}
                     multiline
                     numberOfLines={8}
-                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-5"
-                    style={{ minHeight: 150, textAlignVertical: 'top' }}
+                    style={{
+                      backgroundColor: inputBg, borderWidth: 1, borderColor: inputBdr,
+                      borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
+                      color: fg, fontSize: 14, marginBottom: 20,
+                      minHeight: 150, textAlignVertical: 'top',
+                    }}
                   />
                   {processingAI && (
                     <View className="items-center py-4 mb-4">
                       <ActivityIndicator color="#888888" size="large" />
-                      <Text className="text-neutral-500 dark:text-neutral-400 mt-3 font-medium">AI is thinking…</Text>
+                      <Text style={{ color: muted, marginTop: 12, fontWeight: '500' }}>AI is thinking…</Text>
                     </View>
                   )}
                   <View className="flex-row gap-3">
@@ -680,20 +765,24 @@ export default function ProjectsScreen() {
                       label="Process"
                       onPress={handleProcessIdeation}
                       loading={processingAI}
-                      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
+                      style={{ flex: 1 }}
                     />
                   </View>
                 </>
               ) : (
                 <>
-                  <View className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 mb-4 border border-neutral-200 dark:border-neutral-700/30">
-                    <Text className="text-neutral-600 dark:text-neutral-400 font-bold mb-2">AI Analysis</Text>
-                    <Text className="text-slate-900 dark:text-white font-semibold mb-1">{aiResult.projectName ?? 'Unnamed Project'}</Text>
+                  <View style={{
+                    backgroundColor: isDark ? '#111111' : '#F5F5F5',
+                    borderRadius: 16, padding: 16, marginBottom: 16,
+                    borderWidth: 1, borderColor: border,
+                  }}>
+                    <Text style={{ color: '#888888', fontWeight: '700', marginBottom: 8 }}>AI Analysis</Text>
+                    <Text style={{ color: fg, fontWeight: '600', marginBottom: 4 }}>{aiResult.projectName ?? 'Unnamed Project'}</Text>
                     {aiResult.summary && (
-                      <Text className="text-slate-600 dark:text-slate-300 text-sm mb-3">{aiResult.summary}</Text>
+                      <Text style={{ color: isDark ? '#AAAAAA' : '#555555', fontSize: 14, marginBottom: 12 }}>{aiResult.summary}</Text>
                     )}
                     {aiResult.speakers?.length > 0 && (
-                      <Text className="text-slate-400 dark:text-slate-400 text-xs">
+                      <Text style={{ color: muted, fontSize: 12 }}>
                         Participants: {aiResult.speakers.join(', ')}
                       </Text>
                     )}
