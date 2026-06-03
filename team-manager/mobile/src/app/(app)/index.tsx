@@ -3,7 +3,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Video, ResizeMode } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
 import { trpc } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useTeamStore } from '@/store/teamStore';
@@ -38,6 +37,18 @@ const STAGE_COLORS: Record<string, 'primary' | 'warning' | 'success' | 'danger' 
   completed:   'success',
   archived:    'default',
 };
+
+function GradientFade({ isDark }: { isDark: boolean }) {
+  const bg = isDark ? '#000000' : '#fafafa';
+  const steps = [0, 0.12, 0.28, 0.48, 0.68, 0.84, 1];
+  return (
+    <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 90 }} pointerEvents="none">
+      {steps.map((opacity, i) => (
+        <View key={i} style={{ flex: 1, backgroundColor: bg, opacity }} />
+      ))}
+    </View>
+  );
+}
 
 function greeting() {
   const h = new Date().getHours();
@@ -208,10 +219,7 @@ export default function MyOfficeScreen() {
             isMuted
             shouldPlay
           />
-          <LinearGradient
-            colors={['transparent', isDark ? '#000000' : '#fafafa']}
-            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 90 }}
-          />
+          <GradientFade isDark={isDark} />
         </View>
 
         {/* ── Stats ── */}
