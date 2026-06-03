@@ -18,22 +18,25 @@ import { useThemeStore } from '@/store/themeStore';
 import { getSocket } from '@/lib/socket';
 import { formatDistanceToNow } from 'date-fns';
 
+const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
+function avatarColor(name?: string | null) {
+  return AVATAR_COLORS[((name ?? '?').charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+}
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function MemberAvatar({ name, size = 50, unread = 0 }: { name?: string | null; size?: number; unread?: number }) {
   const isDark = useThemeStore(state => state.isDark);
-  const avatarBg = isDark ? '#1A1A1A' : '#E8E8E8';
-  const avatarBorder = isDark ? '#2A2A2A' : '#D0D0D0';
-  const avatarText = isDark ? '#AAAAAA' : '#555555';
+  const color = avatarColor(name);
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <View style={{ position: 'relative' }}>
       <View style={{
         width: size, height: size, borderRadius: size / 2,
-        backgroundColor: avatarBg, borderWidth: 2, borderColor: avatarBorder,
+        backgroundColor: color + '28', borderWidth: 2, borderColor: color + '60',
         alignItems: 'center', justifyContent: 'center',
       }}>
-        <Text style={{ color: avatarText, fontSize: size * 0.36, fontWeight: '800' }}>{initials}</Text>
+        <Text style={{ color, fontSize: size * 0.36, fontWeight: '800' }}>{initials}</Text>
       </View>
       {unread > 0 && (
         <View style={{
@@ -144,7 +147,7 @@ export default function MessagesScreen() {
             <Ionicons name="chatbubble-ellipses-outline" size={32} color={isDark ? '#555555' : '#AAAAAA'} />
           </View>
           <Text className="text-slate-900 dark:text-white" style={{ fontSize: 17, fontWeight: '700', marginBottom: 6 }}>No conversations yet</Text>
-          <Text className="text-slate-500 dark:text-slate-400" style={{ fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
+          <Text className="text-slate-500 dark:text-neutral-400" style={{ fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
             Send a message to a team member to start chatting.
           </Text>
           <TouchableOpacity
@@ -192,10 +195,10 @@ export default function MessagesScreen() {
                     >
                       {item.partnerName ?? 'Team Member'}
                     </Text>
-                    <Text className="text-slate-400 dark:text-slate-500" style={{ fontSize: 11, marginLeft: 8 }}>{timeStr}</Text>
+                    <Text className="text-slate-400 dark:text-neutral-500" style={{ fontSize: 11, marginLeft: 8 }}>{timeStr}</Text>
                   </View>
                   <Text
-                    className="text-slate-500 dark:text-slate-400"
+                    className="text-slate-500 dark:text-neutral-400"
                     style={{ fontSize: 13, fontWeight: hasUnread ? '500' : '400', color: hasUnread ? undefined : (isDark ? '#555555' : '#AAAAAA') }}
                     numberOfLines={1}
                   >
@@ -240,7 +243,7 @@ export default function MessagesScreen() {
                     <View style={{ flex: 1 }}>
                       <Text className="text-slate-900 dark:text-white" style={{ fontSize: 14, fontWeight: '600' }}>{member.name}</Text>
                       {item.officeRole && (
-                        <Text className="text-slate-400 dark:text-slate-500" style={{ fontSize: 11, marginTop: 1 }}>
+                        <Text className="text-slate-400 dark:text-neutral-500" style={{ fontSize: 11, marginTop: 1 }}>
                           {item.officeRole.replace(/_/g, ' ')}
                         </Text>
                       )}

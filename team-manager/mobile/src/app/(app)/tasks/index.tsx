@@ -28,31 +28,32 @@ type Status = 'todo' | 'in_progress' | 'review' | 'done';
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 const STATUSES: { key: Status; label: string; icon: IconName; color: string }[] = [
-  { key: 'todo',        label: 'To Do',      icon: 'list-outline',             color: '#94a3b8' },
-  { key: 'in_progress', label: 'In Progress', icon: 'flash-outline',           color: '#888888' },
-  { key: 'review',      label: 'Review',     icon: 'eye-outline',              color: '#888888' },
-  { key: 'done',        label: 'Done',       icon: 'checkmark-circle-outline', color: '#888888' },
+  { key: 'todo',        label: 'To Do',       icon: 'list-outline',             color: '#94a3b8' },
+  { key: 'in_progress', label: 'In Progress', icon: 'flash-outline',            color: '#5B8DEF' },
+  { key: 'review',      label: 'Review',      icon: 'eye-outline',              color: '#F59E0B' },
+  { key: 'done',        label: 'Done',        icon: 'checkmark-circle-outline', color: '#10B981' },
 ];
 
 const PRIORITY_META: Record<Priority, { label: string; color: string; bg: string; icon: IconName }> = {
-  low:    { label: 'Low',    color: '#64748b', bg: '#64748b18', icon: 'remove-outline' },
-  medium: { label: 'Med',    color: '#888888', bg: '#88888818', icon: 'reorder-two-outline' },
-  high:   { label: 'High',   color: '#AAAAAA', bg: '#AAAAAA18', icon: 'arrow-up-outline' },
-  urgent: { label: 'Urgent', color: '#f87171', bg: '#f8717118', icon: 'warning-outline' },
+  low:    { label: 'Low',    color: '#10B981', bg: '#10B98118', icon: 'remove-outline' },
+  medium: { label: 'Med',    color: '#F59E0B', bg: '#F59E0B18', icon: 'reorder-two-outline' },
+  high:   { label: 'High',   color: '#F97316', bg: '#F9731618', icon: 'arrow-up-outline' },
+  urgent: { label: 'Urgent', color: '#EF4444', bg: '#EF444418', icon: 'warning-outline' },
 };
 
 const MOVE_TARGETS: Record<Status, { to: Status; label: string; color: string }[]> = {
-  todo:        [{ to: 'in_progress', label: 'Start',  color: '#888888' }],
-  in_progress: [{ to: 'review',      label: 'Review', color: '#888888' }, { to: 'done', label: 'Done', color: '#888888' }],
-  review:      [{ to: 'in_progress', label: 'Revise', color: '#AAAAAA' }, { to: 'done', label: 'Approve', color: '#888888' }],
-  done:        [{ to: 'todo',        label: 'Reopen', color: '#94a3b8' }],
+  todo:        [{ to: 'in_progress', label: 'Start',   color: '#5B8DEF' }],
+  in_progress: [{ to: 'review',      label: 'Review',  color: '#F59E0B' }, { to: 'done', label: 'Done', color: '#10B981' }],
+  review:      [{ to: 'in_progress', label: 'Revise',  color: '#5B8DEF' }, { to: 'done', label: 'Approve', color: '#10B981' }],
+  done:        [{ to: 'todo',        label: 'Reopen',  color: '#94a3b8' }],
 };
 
 // ─── Circular Progress Ring ────────────────────────────────────────────────────
-function ProgressRing({ pct = 0, size = 46, color = '#888888', track = '#1A1A1A' }: {
+function ProgressRing({ pct = 0, size = 46, color = '#888888', track }: {
   pct?: number; size?: number; color?: string; track?: string;
 }) {
   const isDark = useThemeStore(state => state.isDark);
+  const trackColor = track ?? (isDark ? '#1A1A1A' : '#E2E8F0');
   const filled = Math.min(Math.max(pct, 0), 100);
   const rightAngle = Math.min(filled * 3.6, 180);
   const leftAngle  = Math.max((filled - 50) * 3.6, 0);
@@ -63,7 +64,7 @@ function ProgressRing({ pct = 0, size = 46, color = '#888888', track = '#1A1A1A'
       {/* Track */}
       <View style={{
         position: 'absolute', width: size, height: size,
-        borderRadius: size / 2, backgroundColor: track,
+        borderRadius: size / 2, backgroundColor: trackColor,
       }} />
 
       {/* Right half fill (0–50%) */}
@@ -99,7 +100,7 @@ function ProgressRing({ pct = 0, size = 46, color = '#888888', track = '#1A1A1A'
         justifyContent: 'center',
       }}>
         {filled >= 100
-          ? <Ionicons name="checkmark" size={12} color="#888888" />
+          ? <Ionicons name="checkmark" size={12} />
           : <Text style={{ color, fontSize: 9, fontWeight: '800', lineHeight: 12 }}>{filled}%</Text>
         }
       </View>
@@ -107,13 +108,19 @@ function ProgressRing({ pct = 0, size = 46, color = '#888888', track = '#1A1A1A'
   );
 }
 
+const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
+function avatarColor(name?: string | null) {
+  return AVATAR_COLORS[((name ?? '?').charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+}
+
 // ─── Member Avatar ─────────────────────────────────────────────────────────────
-function MemberAvatar({ name, size = 24, color = '#888888' }: { name?: string | null; size?: number; color?: string }) {
+function MemberAvatar({ name, size = 24 }: { name?: string | null; size?: number }) {
+  const color = avatarColor(name);
   const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <View style={{
       width: size, height: size, borderRadius: size / 2,
-      backgroundColor: color + '30', borderWidth: 1.5, borderColor: color,
+      backgroundColor: color + '28', borderWidth: 1.5, borderColor: color + '80',
       alignItems: 'center', justifyContent: 'center',
     }}>
       <Text style={{ color, fontSize: size * 0.35, fontWeight: '800' }}>{initials}</Text>
@@ -199,7 +206,7 @@ function TaskCard({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {task.assignee && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <MemberAvatar name={task.assignee.name} size={18} color="#888888" />
+                    <MemberAvatar name={task.assignee.name} size={18} />
                     <Text style={{ color: isDark ? '#555555' : '#64748b', fontSize: 10 }} numberOfLines={1}>
                       {task.assignee.name?.split(' ')[0]}
                     </Text>
@@ -268,15 +275,15 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
   const statusMeta = STATUSES.find(s => s.key === task.status);
 
   return (
-    <View className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700 px-5 pt-6 pb-12" style={{ maxHeight: '88%' }}>
-      <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+    <View className="bg-white dark:bg-black rounded-t-3xl border-t border-slate-200 dark:border-neutral-800 px-5 pt-6 pb-12" style={{ maxHeight: '88%' }}>
+      <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="flex-row items-start justify-between mb-4">
           <View className="flex-1 pr-3">
             <Text className="text-slate-900 dark:text-white text-xl font-bold leading-tight">{task.title}</Text>
           </View>
-          <TouchableOpacity onPress={onClose} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center">
+          <TouchableOpacity onPress={onClose} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-neutral-900 items-center justify-center">
             <Ionicons name="close" size={16} color="#64748b" />
           </TouchableOpacity>
         </View>
@@ -292,8 +299,8 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <Text style={{ color: priority.color, fontSize: 11, fontWeight: '700' }}>⚑ {priority.label}</Text>
           </View>
           {task.completionPercentage != null && (
-            <View className="bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-1 flex-row items-center gap-1">
-              <Ionicons name="stats-chart-outline" size={11} color="#888888" />
+            <View className="bg-slate-100 dark:bg-neutral-900 rounded-xl px-3 py-1 flex-row items-center gap-1">
+              <Ionicons name="stats-chart-outline" size={11} />
               <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-bold">{task.completionPercentage}% done</Text>
             </View>
           )}
@@ -301,28 +308,28 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
 
         {/* Description */}
         {task.description && (
-          <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 mb-4 border border-slate-200 dark:border-slate-700">
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Description</Text>
-            <Text className="text-slate-700 dark:text-slate-300 text-sm leading-5">{task.description}</Text>
+          <View className="bg-slate-50 dark:bg-neutral-900 rounded-2xl p-4 mb-4 border border-slate-200 dark:border-neutral-800">
+            <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Description</Text>
+            <Text className="text-slate-700 dark:text-neutral-300 text-sm leading-5">{task.description}</Text>
           </View>
         )}
 
         {/* People */}
         <View className="flex-row gap-3 mb-4">
           {task.assignee && (
-            <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-2">Assigned To</Text>
+            <View className="flex-1 bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3 border border-slate-200 dark:border-neutral-800">
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Assigned To</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.assignee.name} size={28} color="#888888" />
+                <MemberAvatar name={task.assignee.name} size={28} />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.assignee.name}</Text>
               </View>
             </View>
           )}
           {task.creator && (
-            <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-2">Created By</Text>
+            <View className="flex-1 bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3 border border-slate-200 dark:border-neutral-800">
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Created By</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.creator.name} size={28} color="#888888" />
+                <MemberAvatar name={task.creator.name} size={28} />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.creator.name}</Text>
               </View>
             </View>
@@ -332,15 +339,15 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
         {/* Dates */}
         <View className="flex-row gap-3 mb-4">
           {task.createdAt && (
-            <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Created</Text>
-              <Text className="text-slate-700 dark:text-slate-300 text-sm">{format(new Date(task.createdAt), 'MMM d, yyyy')}</Text>
+            <View className="flex-1 bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3 border border-slate-200 dark:border-neutral-800">
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase mb-1">Created</Text>
+              <Text className="text-slate-700 dark:text-neutral-300 text-sm">{format(new Date(task.createdAt), 'MMM d, yyyy')}</Text>
             </View>
           )}
           {task.dueDate && (
-            <View className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 border border-slate-200 dark:border-slate-700">
-              <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Due Date</Text>
-              <Text className="text-slate-700 dark:text-slate-300 text-sm">{format(new Date(task.dueDate), 'MMM d, yyyy')}</Text>
+            <View className="flex-1 bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3 border border-slate-200 dark:border-neutral-800">
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase mb-1">Due Date</Text>
+              <Text className="text-slate-700 dark:text-neutral-300 text-sm">{format(new Date(task.dueDate), 'MMM d, yyyy')}</Text>
             </View>
           )}
         </View>
@@ -348,10 +355,10 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
         {/* Tags */}
         {tags.length > 0 && (
           <View className="mb-4">
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Tags</Text>
+            <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Tags</Text>
             <View className="flex-row flex-wrap gap-2">
               {tags.map((tag) => (
-                <View key={tag} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5">
+                <View key={tag} className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl px-3 py-1.5">
                   <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-semibold">#{tag}</Text>
                 </View>
               ))}
@@ -790,7 +797,7 @@ export default function TasksScreen() {
                   onPress={addTag}
                   style={{ backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' }}
                 >
-                  <Ionicons name="add" size={18} color="#888888" />
+                  <Ionicons name="add" size={18} />
                 </TouchableOpacity>
               </View>
               {tags.length > 0 && (

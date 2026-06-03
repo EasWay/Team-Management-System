@@ -1,5 +1,6 @@
 import '../global.css';
 import { useEffect, useRef } from 'react';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -46,6 +47,10 @@ const persister = createAsyncStoragePersister({
 const trpcClient = buildTRPCClient();
 
 export default function RootLayout() {
+  useFonts({
+    PlayfairDisplay_700Bold:    require('../../assets/fonts/PlayfairDisplay_700Bold.ttf'),
+    PlayfairDisplay_400Regular: require('../../assets/fonts/PlayfairDisplay_400Regular.ttf'),
+  });
   const { loadFromStorage, isAuthenticated } = useAuthStore();
   const { load: loadTheme, isDark } = useThemeStore();
   const { setColorScheme } = useColorScheme();

@@ -27,12 +27,12 @@ function StageChip({ label, variant }: { label: string; variant?: 'from' | 'to' 
   return (
     <View
       className={`rounded-xl px-3 py-1 ${
-        isTo ? 'bg-neutral-100 dark:bg-neutral-800' : 'bg-slate-100 dark:bg-slate-700'
+        isTo ? 'bg-neutral-100 dark:bg-neutral-800' : 'bg-slate-100 dark:bg-neutral-800'
       }`}
     >
       <Text
         className={`text-xs font-semibold capitalize ${
-          isTo ? 'text-neutral-700 dark:text-neutral-300' : 'text-slate-500 dark:text-slate-400'
+          isTo ? 'text-neutral-700 dark:text-neutral-300' : 'text-slate-500 dark:text-neutral-400'
         }`}
       >
         {label}
@@ -96,19 +96,19 @@ export default function ConferenceRoomScreen() {
   if (approvalsQuery.isLoading && !approvalsQuery.data) return <LoadingScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
 
       {/* Header */}
       <View className="px-5 pt-5 pb-4 flex-row items-center gap-3">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-800 items-center justify-center"
+          className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
         >
           <Ionicons name="arrow-back" size={18} color="#64748b" />
         </TouchableOpacity>
         <View className="flex-1">
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">Approvals</Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Stage gate decisions</Text>
+          <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">Stage gate decisions</Text>
         </View>
       </View>
 
@@ -150,7 +150,7 @@ export default function ConferenceRoomScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => setSelectedApproval(item)}
-            className="bg-white dark:bg-slate-800 rounded-2xl p-4 mb-3 border border-slate-200 dark:border-slate-700"
+            className="bg-white dark:bg-neutral-900 rounded-2xl p-4 mb-3 border border-slate-200 dark:border-neutral-800"
             style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3 }}
           >
             <View className="flex-row items-start justify-between gap-2 mb-3">
@@ -163,7 +163,7 @@ export default function ConferenceRoomScreen() {
             </View>
 
             {item.description && (
-              <Text className="text-slate-500 dark:text-slate-400 text-sm mb-3 leading-5" numberOfLines={2}>
+              <Text className="text-slate-500 dark:text-neutral-400 text-sm mb-3 leading-5" numberOfLines={2}>
                 {item.description}
               </Text>
             )}
@@ -175,7 +175,7 @@ export default function ConferenceRoomScreen() {
               )}
               {item.toStage && <StageChip label={item.toStage} variant="to" />}
               {item.createdAt && (
-                <Text className="text-slate-400 dark:text-slate-500 text-xs ml-auto">
+                <Text className="text-slate-400 dark:text-neutral-500 text-xs ml-auto">
                   {format(new Date(item.createdAt), 'MMM d')}
                 </Text>
               )}
@@ -188,11 +188,11 @@ export default function ConferenceRoomScreen() {
       <Modal visible={!!selectedApproval} animationType="slide" transparent>
         <View className="flex-1 bg-black/50 justify-end">
           <View
-            className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-slate-700"
+            className="bg-white dark:bg-black rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800"
             style={{ maxHeight: '88%' }}
           >
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+              <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
 
               {/* Title row */}
               <View className="flex-row justify-between items-start mb-4">
@@ -201,22 +201,22 @@ export default function ConferenceRoomScreen() {
                 </Text>
                 <TouchableOpacity
                   onPress={() => setSelectedApproval(null)}
-                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-neutral-900 items-center justify-center"
                 >
                   <Ionicons name="close" size={16} color="#64748b" />
                 </TouchableOpacity>
               </View>
 
               {selectedApproval?.description && (
-                <Text className="text-slate-600 dark:text-slate-300 text-sm leading-6 mb-5">
+                <Text className="text-slate-600 dark:text-neutral-300 text-sm leading-6 mb-5">
                   {selectedApproval.description}
                 </Text>
               )}
 
               {/* Stage transition card */}
               {(selectedApproval?.fromStage || selectedApproval?.toStage) && (
-                <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 mb-5 border border-slate-100 dark:border-slate-700">
-                  <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">
+                <View className="bg-slate-50 dark:bg-neutral-900 rounded-2xl p-4 mb-5 border border-slate-100 dark:border-neutral-800">
+                  <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-3">
                     Stage Transition
                   </Text>
                   <View className="flex-row items-center gap-3">
@@ -236,12 +236,12 @@ export default function ConferenceRoomScreen() {
                   {selectedApproval.deliverables.map((d: any, idx: number) => (
                     <View
                       key={d.id ?? idx}
-                      className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-3.5 mb-2 flex-row items-center gap-3 border border-slate-100 dark:border-slate-700"
+                      className="bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3.5 mb-2 flex-row items-center gap-3 border border-slate-100 dark:border-neutral-800"
                     >
                       <View className="w-8 h-8 rounded-xl bg-neutral-50 dark:bg-neutral-800 items-center justify-center">
                         <Ionicons name="document-outline" size={15} color="#888888" />
                       </View>
-                      <Text className="text-slate-700 dark:text-slate-200 flex-1 text-sm">{d.title ?? d.name}</Text>
+                      <Text className="text-slate-700 dark:text-neutral-200 flex-1 text-sm">{d.title ?? d.name}</Text>
                       {d.url && (
                         <TouchableOpacity onPress={() => Linking.openURL(d.url)}>
                           <Text className="text-neutral-600 dark:text-neutral-400 text-sm font-semibold">View</Text>
@@ -256,8 +256,8 @@ export default function ConferenceRoomScreen() {
               {selectedApproval?.notes && (
                 <View className="mb-5">
                   <Text className="text-slate-900 dark:text-white font-semibold text-sm mb-3">Handoff Notes</Text>
-                  <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700">
-                    <Text className="text-slate-600 dark:text-slate-300 text-sm leading-6">{selectedApproval.notes}</Text>
+                  <View className="bg-slate-50 dark:bg-neutral-900 rounded-2xl p-4 border border-slate-100 dark:border-neutral-800">
+                    <Text className="text-slate-600 dark:text-neutral-300 text-sm leading-6">{selectedApproval.notes}</Text>
                   </View>
                 </View>
               )}

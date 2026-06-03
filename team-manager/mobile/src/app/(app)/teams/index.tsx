@@ -21,12 +21,14 @@ import { EmptyState } from '@/components/EmptyState';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 
+const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
+
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
-  admin:     { color: '#555555', bg: '#55555520' },
-  owner:     { color: '#333333', bg: '#33333320' },
-  team_lead: { color: '#444444', bg: '#44444420' },
-  developer: { color: '#666666', bg: '#66666620' },
-  viewer:    { color: '#888888', bg: '#88888820' },
+  admin:     { color: '#5B8DEF', bg: '#5B8DEF20' },
+  owner:     { color: '#EC4899', bg: '#EC489920' },
+  team_lead: { color: '#8B5CF6', bg: '#8B5CF620' },
+  developer: { color: '#10B981', bg: '#10B98120' },
+  viewer:    { color: '#94a3b8', bg: '#94a3b820' },
 };
 
 function getRoleStyle(role: string) {
@@ -89,13 +91,13 @@ export default function TeamsScreen() {
   if (teamsQuery.isLoading && !teamsQuery.data) return <LoadingScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
 
       {/* Header */}
       <View className="px-5 pt-5 pb-4 flex-row justify-between items-center">
         <View>
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">Teams</Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Your memberships</Text>
+          <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">Your memberships</Text>
         </View>
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
@@ -200,7 +202,7 @@ export default function TeamsScreen() {
                   <View className="flex-1 min-w-0">
                     <Text className="text-slate-900 dark:text-white font-semibold text-base" numberOfLines={1}>{item.name}</Text>
                     {item.description ? (
-                      <Text className="text-slate-400 dark:text-slate-500 text-xs mt-0.5" numberOfLines={1}>{item.description}</Text>
+                      <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5" numberOfLines={1}>{item.description}</Text>
                     ) : null}
                   </View>
                 </View>
@@ -225,7 +227,7 @@ export default function TeamsScreen() {
                 {item.memberCount != null && (
                   <View className="flex-row items-center gap-1">
                     <Ionicons name="people-outline" size={11} color="#94a3b8" />
-                    <Text className="text-slate-400 dark:text-slate-500 text-xs">{item.memberCount} members</Text>
+                    <Text className="text-slate-400 dark:text-neutral-500 text-xs">{item.memberCount} members</Text>
                   </View>
                 )}
               </View>
@@ -237,20 +239,20 @@ export default function TeamsScreen() {
       {/* Create Team Modal */}
       <Modal visible={showCreate} animationType="slide" transparent>
         <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-slate-700">
-            <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+          <View className="bg-white dark:bg-black rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800">
+            <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
             <Text className="text-xl font-bold text-slate-900 dark:text-white mb-5">Create Team</Text>
 
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Team Name *</Text>
+            <Text className="text-slate-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-2">Team Name *</Text>
             <TextInput
               value={teamName}
               onChangeText={setTeamName}
               placeholder="e.g. Design Team"
               placeholderTextColor="#94a3b8"
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
+              className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
             />
 
-            <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Description</Text>
+            <Text className="text-slate-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-2">Description</Text>
             <TextInput
               value={teamDescription}
               onChangeText={setTeamDescription}
@@ -258,7 +260,7 @@ export default function TeamsScreen() {
               placeholderTextColor="#94a3b8"
               multiline
               numberOfLines={3}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-6"
+              className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-6"
               style={{ minHeight: 80, textAlignVertical: 'top' }}
             />
 
@@ -274,18 +276,18 @@ export default function TeamsScreen() {
       <Modal visible={showMembers} animationType="slide" transparent>
         <View className="flex-1 bg-black/50 justify-end">
           <View
-            className="bg-white dark:bg-slate-900 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-slate-700"
+            className="bg-white dark:bg-black rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800"
             style={{ maxHeight: '80%' }}
           >
-            <View className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full self-center mb-5" />
+            <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
             <View className="flex-row justify-between items-center mb-5">
               <View>
                 <Text className="text-xl font-bold text-slate-900 dark:text-white">{activeTeam?.name}</Text>
-                <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Team members</Text>
+                <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">Team members</Text>
               </View>
               <TouchableOpacity
                 onPress={() => setShowMembers(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-neutral-900 items-center justify-center"
               >
                 <Ionicons name="close" size={16} color="#64748b" />
               </TouchableOpacity>
@@ -300,7 +302,7 @@ export default function TeamsScreen() {
                 placeholderTextColor="#94a3b8"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl px-4 py-3 text-slate-900 dark:text-white flex-1"
+                className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3 text-slate-900 dark:text-white flex-1"
               />
               <TouchableOpacity
                 onPress={handleInvite}
@@ -316,25 +318,30 @@ export default function TeamsScreen() {
             {/* Members list */}
             <ScrollView showsVerticalScrollIndicator={false}>
               {membersQuery.isLoading ? (
-                <Text className="text-slate-400 dark:text-slate-500 text-center py-6">Loading members…</Text>
+                <Text className="text-slate-400 dark:text-neutral-500 text-center py-6">Loading members…</Text>
               ) : (membersQuery.data as any[] ?? []).length === 0 ? (
-                <Text className="text-slate-400 dark:text-slate-500 text-center py-6">No members yet</Text>
+                <Text className="text-slate-400 dark:text-neutral-500 text-center py-6">No members yet</Text>
               ) : (
                 (membersQuery.data as any[] ?? []).map((member: any) => {
                   const displayName = member.member?.name || member.member?.email || 'Unknown';
                   const displayEmail = member.member?.email || '';
                   const rStyle = getRoleStyle(member.role);
                   return (
-                    <View key={member.id} className="flex-row items-center py-3.5 border-b border-slate-100 dark:border-slate-800">
-                      <View className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-800 items-center justify-center mr-3">
-                        <Text className="text-neutral-700 dark:text-neutral-300 font-bold text-base">
-                          {displayName[0].toUpperCase()}
-                        </Text>
-                      </View>
+                    <View key={member.id} className="flex-row items-center py-3.5 border-b border-slate-100 dark:border-neutral-800">
+                      {(() => {
+                        const ac = AVATAR_COLORS[(displayName.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+                        return (
+                          <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: ac + '28', borderWidth: 1.5, borderColor: ac + '70' }}>
+                            <Text style={{ color: ac }} className="font-bold text-base">
+                              {displayName[0].toUpperCase()}
+                            </Text>
+                          </View>
+                        );
+                      })()}
                       <View className="flex-1">
                         <Text className="text-slate-900 dark:text-white font-medium text-sm">{displayName}</Text>
                         {displayEmail ? (
-                          <Text className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">{displayEmail}</Text>
+                          <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5">{displayEmail}</Text>
                         ) : null}
                       </View>
                       <View

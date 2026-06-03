@@ -83,14 +83,38 @@ export default function LoginScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
       <View style={{ flex: 1, paddingHorizontal: 28, justifyContent: 'center', alignItems: 'center' }}>
 
+        {/* Brand logo */}
+        <View style={{ alignItems: 'center', marginBottom: 8, marginTop: -12 }}>
+          <Text style={{
+            fontFamily: 'PlayfairDisplay_700Bold',
+            fontSize: 42,
+            letterSpacing: 2,
+            color: fg,
+            lineHeight: 48,
+          }}>
+            Alpha
+          </Text>
+          <Text style={{
+            fontFamily: 'PlayfairDisplay_400Regular',
+            fontSize: 11,
+            letterSpacing: 9,
+            color: fg,
+            opacity: 0.55,
+            textTransform: 'uppercase',
+            marginTop: 2,
+          }}>
+            Group
+          </Text>
+        </View>
+
         {/* Hero illustration */}
         <Image
           source={heroImage}
           style={{
-            width: SCREEN_WIDTH * 0.82,
-            height: SCREEN_WIDTH * 0.74,
+            width: SCREEN_WIDTH * 1.05,
+            height: SCREEN_WIDTH * 0.95,
             resizeMode: 'contain',
-            marginBottom: 36,
+            marginBottom: 16,
           }}
         />
 
