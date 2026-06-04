@@ -3,7 +3,7 @@ import { View, Text, Image } from 'react-native';
 const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
 
 export function getAvatarColor(name?: string | null): string {
-  return AVATAR_COLORS[((name ?? '?').charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+  return AVATAR_COLORS[(name ?? '?').charCodeAt(0) % AVATAR_COLORS.length];
 }
 
 interface AvatarProps {
@@ -23,7 +23,7 @@ export function Avatar({ name, avatarUrl, size = 40, color }: AvatarProps) {
   const accent = color ?? getAvatarColor(name);
   const initials = (name ?? '?')
     .split(' ')
-    .map((w) => w[0])
+    .map((w) => w[0] ?? '')
     .join('')
     .slice(0, 2)
     .toUpperCase();
