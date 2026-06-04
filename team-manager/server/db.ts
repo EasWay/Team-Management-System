@@ -489,6 +489,22 @@ export async function updateUserLastSignedIn(userId: number): Promise<typeof use
   return result[0];
 }
 
+export async function updateUserProfile(
+  userId: number,
+  updates: { name?: string; username?: string; avatarUrl?: string }
+): Promise<typeof users.$inferSelect> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.update(users)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+
+  if (!result[0]) throw new Error("User not found");
+  return result[0];
+}
+
 // Team member queries
 export async function createTeamMember(member: InsertTeamMember): Promise<TeamMember> {
   const db = await getDb();
@@ -775,7 +791,7 @@ export async function deleteTeam(teamId: number, userId: number): Promise<boolea
  */
 export async function getCollaborativeTeamMembers(
   teamId: number
-): Promise<(TeamMemberCollaborative & { member: typeof teamMembers.$inferSelect })[]> {
+): Promise<(TeamMemberCollaborative & { member: typeof teamMembers.$inferSelect; userAvatarUrl: string | null })[]> {
   const db = await getDb();
   if (!db) {
     return [];
@@ -791,9 +807,11 @@ export async function getCollaborativeTeamMembers(
       officeRole: teamMembersCollaborative.officeRole,
       joinedAt: teamMembersCollaborative.joinedAt,
       member: teamMembers,
+      userAvatarUrl: users.avatarUrl,
     })
     .from(teamMembersCollaborative)
     .innerJoin(teamMembers, eq(teamMembersCollaborative.memberId, teamMembers.id))
+    .leftJoin(users, eq(teamMembers.email, users.email))
     .where(eq(teamMembersCollaborative.teamId, teamId));
 
   return result;
@@ -4453,6 +4471,7 @@ export async function getChatConversations(
 ): Promise<{
   partnerId: number;
   partnerName: string | null;
+  partnerAvatarUrl: string | null;
   lastMessage: string;
   lastMessageAt: Date | null;
   unreadCount: number;
@@ -4509,16 +4528,18 @@ export async function getChatConversations(
           )
         );
 
-      // Get partner name
+      // Get partner name and avatar (via users table linked by email)
       const [partner] = await db
-        .select({ id: teamMembers.id, name: teamMembers.name })
+        .select({ id: teamMembers.id, name: teamMembers.name, avatarUrl: users.avatarUrl })
         .from(teamMembers)
+        .leftJoin(users, eq(teamMembers.email, users.email))
         .where(eq(teamMembers.id, partnerId))
         .limit(1);
 
       return {
         partnerId,
         partnerName: partner?.name ?? null,
+        partnerAvatarUrl: partner?.avatarUrl ?? null,
         lastMessage: lastMsg?.content ?? '',
         lastMessageAt: lastMsg?.createdAt ?? null,
         unreadCount: Number(unreadRow?.count ?? 0),

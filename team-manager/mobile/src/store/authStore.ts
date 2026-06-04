@@ -6,6 +6,7 @@ export interface MobileUser {
   id: number;
   email: string;
   name: string;
+  username?: string;
   avatarUrl?: string;
   role?: string;
 }
@@ -17,6 +18,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   setAuth: (user: MobileUser, accessToken: string, refreshToken: string) => Promise<void>;
+  updateUser: (updates: Partial<Pick<MobileUser, 'name' | 'username' | 'avatarUrl'>>) => Promise<void>;
   logout: () => Promise<void>;
   loadFromStorage: () => Promise<void>;
 }
@@ -75,6 +77,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStorage.set(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     await SecureStorage.set(STORAGE_KEYS.USER, JSON.stringify(user));
     set({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
+  },
+
+  updateUser: async (updates) => {
+    set((state) => {
+      if (!state.user) return state;
+      const updated = { ...state.user, ...updates };
+      SecureStorage.set(STORAGE_KEYS.USER, JSON.stringify(updated)).catch(() => {});
+      return { user: updated };
+    });
   },
 
   logout: async () => {
