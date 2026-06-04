@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
@@ -115,6 +115,8 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
 
 export default function AnalyticsScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : (router.canGoBack() ? router.back() : router.navigate('/(app)/profile' as any));
   const { activeTeam } = useTeamStore();
   const isDark = useThemeStore(state => state.isDark);
 
@@ -154,7 +156,7 @@ export default function AnalyticsScreen() {
         {/* Header */}
         <View className="px-5 pt-5 pb-4 flex-row items-center gap-3">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={goBack}
             className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
           >
             <Ionicons name="arrow-back" size={18} color="#64748b" />

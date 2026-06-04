@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Calendar } from 'react-native-calendars';
 import { useColorScheme } from 'nativewind';
@@ -37,6 +37,8 @@ function getEventType(type: string) {
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : (router.canGoBack() ? router.back() : router.navigate('/(app)' as any));
   const { activeTeam } = useTeamStore();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -170,7 +172,7 @@ export default function CalendarScreen() {
         {/* Header */}
         <View className="px-5 pt-5 pb-4 flex-row items-center gap-3">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={goBack}
             className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
           >
             <Ionicons name="arrow-back" size={18} color="#64748b" />

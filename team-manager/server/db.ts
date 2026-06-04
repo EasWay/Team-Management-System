@@ -489,6 +489,22 @@ export async function updateUserLastSignedIn(userId: number): Promise<typeof use
   return result[0];
 }
 
+export async function updateUserProfile(
+  userId: number,
+  updates: { name?: string; username?: string; avatarUrl?: string }
+): Promise<typeof users.$inferSelect> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.update(users)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
+
+  if (!result[0]) throw new Error("User not found");
+  return result[0];
+}
+
 // Team member queries
 export async function createTeamMember(member: InsertTeamMember): Promise<TeamMember> {
   const db = await getDb();

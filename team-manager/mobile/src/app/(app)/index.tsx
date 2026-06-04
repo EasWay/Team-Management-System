@@ -1,5 +1,7 @@
 import { ScrollView, View, Text, TouchableOpacity, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
@@ -8,6 +10,7 @@ import { useTeamStore } from '@/store/teamStore';
 import { useThemeStore } from '@/store/themeStore';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/Badge';
+import { Avatar } from '@/components/Avatar';
 import {
   StatRowSkeleton,
   MetricsRowSkeleton,
@@ -44,19 +47,8 @@ function greeting() {
   return 'Good evening';
 }
 
-function MemberAvatar({ name, size = 38 }: { name?: string; size?: number }) {
-  const safeName = name ?? '?';
-  const color = AVATAR_COLORS[(safeName.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
-  return (
-    <View
-      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color }}
-      className="items-center justify-center"
-    >
-      <Text style={{ fontSize: size * 0.38, color: '#fff', fontWeight: '700' }}>
-        {safeName[0].toUpperCase()}
-      </Text>
-    </View>
-  );
+function MemberAvatar({ name, avatarUrl, size = 38 }: { name?: string; avatarUrl?: string | null; size?: number }) {
+  return <Avatar name={name} avatarUrl={avatarUrl} size={size} />;
 }
 
 function StatCard({
@@ -196,6 +188,26 @@ export default function MyOfficeScreen() {
           )}
         </View>
 
+        {/* ── Hero Video ── */}
+        <View style={{ marginTop: 12, height: 186, overflow: 'hidden' }}>
+          <Video
+            source={isDark
+              ? require('../../../assets/mobile dash hero.mp4')
+              : require('../../../assets/Mobile dash hero vid white theme.mp4')}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode={ResizeMode.COVER}
+            isLooping
+            isMuted
+            shouldPlay
+          />
+          {isDark && (
+            <LinearGradient
+              colors={['transparent', '#000000']}
+              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 90 }}
+            />
+          )}
+        </View>
+
         {/* ── Stats ── */}
         {dashboardQuery.isLoading && !dashData ? (
           <StatRowSkeleton />
@@ -280,7 +292,8 @@ export default function MyOfficeScreen() {
               contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
             >
               {members.slice(0, 12).map((m: any) => {
-                const memberName = m.member?.name ?? m.member?.email ?? '?';
+                const memberName = m.member?.username ?? m.member?.name ?? m.member?.email ?? '?';
+                const memberAvatar = m.member?.avatarUrl ?? null;
                 const firstName  = memberName.split(' ')[0];
                 return (
                   <TouchableOpacity
@@ -291,7 +304,7 @@ export default function MyOfficeScreen() {
                     style={{ width: 60 }}
                   >
                     <View className="relative">
-                      <MemberAvatar name={memberName} size={48} />
+                      <MemberAvatar name={memberName} avatarUrl={memberAvatar} size={48} />
                       {(m.role === 'admin' || m.role === 'owner') ? (
                         <View
                           className="absolute -bottom-0.5 -right-0.5 bg-neutral-800 rounded-full items-center justify-center"
