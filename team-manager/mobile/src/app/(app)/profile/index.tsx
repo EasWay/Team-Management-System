@@ -182,10 +182,9 @@ export default function ProfileScreen() {
     const asset = result.assets[0];
     setUploadingAvatar(true);
     try {
-      const token = useAuthStore.getState().accessToken;
       const formData = new FormData();
-      formData.append('file', { uri: asset.uri, name: 'avatar.jpg', type: 'image/jpeg' } as any);
-      const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+      formData.append('file', { uri: asset.uri, name: asset.fileName ?? 'avatar.jpg', type: asset.mimeType ?? 'image/jpeg' } as any);
+      const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: formData });
       const uploadJson = await uploadRes.json();
       if (!uploadJson.url) throw new Error(uploadJson.error ?? 'Upload failed');
       const fullUrl = uploadJson.url.startsWith('http') ? uploadJson.url : `${API_BASE_URL}${uploadJson.url}`;

@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => {
       if (!state.user) return state;
       const updated = { ...state.user, ...updates };
-      SecureStorage.set(STORAGE_KEYS.USER, JSON.stringify(updated)).catch(() => {});
+      SecureStorage.set(STORAGE_KEYS.USER, JSON.stringify(updated)).catch((e) => console.warn('[authStore] failed to persist user update', e));
       return { user: updated };
     });
   },
