@@ -6,7 +6,11 @@ import {
   TouchableOpacity,
   Switch,
   ActivityIndicator,
+  TextInput,
+  Modal,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Alert } from '@/components/CustomAlert';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
@@ -154,9 +158,58 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const displayName = user?.name ?? user?.email ?? 'User';
-  const initials = displayName.split(' ').map((n: string) => n[0] ?? '').slice(0, 2).join('').toUpperCase();
-  const avatarAccent = AVATAR_COLORS[(displayName.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editName, setEditName]         = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const { updateUser } = useAuthStore();
+  const updateProfileMutation = trpc.auth.updateProfile.useMutation({
+    onSuccess: (data) => {
+      updateUser({ name: data.name ?? undefined, username: data.username ?? undefined, avatarUrl: data.avatarUrl ?? undefined });
+      setSavingProfile(false);
+      setShowEditProfile(false);
+    },
+    onError: (e: any) => { setSavingProfile(false); Alert.alert('Error', e.message); },
+  });
+
+  const handlePickAvatar = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { Alert.alert('Permission needed', 'Allow photo library access to upload a profile picture.'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setUploadingAvatar(true);
+    try {
+      const token = useAuthStore.getState().accessToken;
+      const formData = new FormData();
+      formData.append('file', { uri: asset.uri, name: 'avatar.jpg', type: 'image/jpeg' } as any);
+      const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const uploadJson = await uploadRes.json();
+      if (!uploadJson.url) throw new Error(uploadJson.error ?? 'Upload failed');
+      const fullUrl = uploadJson.url.startsWith('http') ? uploadJson.url : `${API_BASE_URL}${uploadJson.url}`;
+      await updateProfileMutation.mutateAsync({ avatarUrl: fullUrl });
+    } catch (e: any) { Alert.alert('Upload failed', e.message); }
+    finally { setUploadingAvatar(false); }
+  };
+
+  const openEditProfile = () => {
+    setEditName(user?.name ?? '');
+    setEditUsername(user?.username ?? '');
+    setShowEditProfile(true);
+  };
+
+  const saveProfile = () => {
+    if (!editName.trim()) { Alert.alert('Required', 'Name cannot be empty.'); return; }
+    setSavingProfile(true);
+    updateProfileMutation.mutate({ name: editName.trim(), username: editUsername.trim() || undefined });
+  };
+
+  const displayName = user?.username ?? user?.name ?? user?.email ?? 'User';
+  const displayLabel = user?.name ?? user?.email ?? 'User';
+  const initials = displayLabel.split(' ').map((n: string) => n[0] ?? '').slice(0, 2).join('').toUpperCase();
+  const avatarAccent = AVATAR_COLORS[(displayLabel.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
@@ -180,15 +233,30 @@ export default function ProfileScreen() {
 
         {/* Avatar card */}
         <View className="mx-5 mt-4 mb-6 bg-white dark:bg-neutral-900 rounded-3xl p-6 border border-slate-200 dark:border-neutral-800 items-center">
-          {/* Avatar with ring */}
-          <View className="mb-4">
-            <View className="w-24 h-24 rounded-full items-center justify-center" style={{ backgroundColor: avatarAccent + '28', borderWidth: 3, borderColor: avatarAccent + '70', shadowColor: avatarAccent, shadowRadius: 12, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 } }}>
-              <Text style={{ color: avatarAccent }} className="text-3xl font-bold">{initials}</Text>
+          {/* Avatar — tappable to upload */}
+          <TouchableOpacity onPress={handlePickAvatar} className="mb-4 relative" activeOpacity={0.8}>
+            {user?.avatarUrl ? (
+              <View className="w-24 h-24 rounded-full overflow-hidden" style={{ borderWidth: 3, borderColor: avatarAccent + '70' }}>
+                <Image source={{ uri: user.avatarUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              </View>
+            ) : (
+              <View className="w-24 h-24 rounded-full items-center justify-center" style={{ backgroundColor: avatarAccent + '28', borderWidth: 3, borderColor: avatarAccent + '70', shadowColor: avatarAccent, shadowRadius: 12, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 } }}>
+                <Text style={{ color: avatarAccent }} className="text-3xl font-bold">{initials}</Text>
+              </View>
+            )}
+            <View className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-black dark:bg-white items-center justify-center" style={{ borderWidth: 2, borderColor: 'white' }}>
+              {uploadingAvatar ? <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} /> : <Ionicons name="camera" size={13} color={isDark ? '#000000' : '#ffffff'} />}
             </View>
-          </View>
+          </TouchableOpacity>
 
           <Text className="text-slate-900 dark:text-white text-xl font-bold">{displayName}</Text>
+          {user?.username && <Text className="text-slate-400 dark:text-neutral-500 text-sm mt-0.5">@{user.username}</Text>}
           <Text className="text-slate-500 dark:text-neutral-400 text-sm mt-1">{user?.email}</Text>
+
+          <TouchableOpacity onPress={openEditProfile} className="mt-3 flex-row items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-2">
+            <Ionicons name="pencil-outline" size={13} color={isDark ? '#aaa' : '#555'} />
+            <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">Edit Profile</Text>
+          </TouchableOpacity>
 
           {activeTeam && (
             <View className="mt-3 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-1.5 flex-row items-center gap-2">
@@ -197,6 +265,49 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* Edit Profile Modal */}
+        <Modal visible={showEditProfile} animationType="slide" transparent>
+          <View className="flex-1 bg-black/50 justify-end">
+            <View className="bg-white dark:bg-neutral-950 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800">
+              <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
+              <View className="flex-row justify-between items-center mb-5">
+                <Text className="text-xl font-bold text-slate-900 dark:text-white">Edit Profile</Text>
+                <TouchableOpacity onPress={() => setShowEditProfile(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-neutral-900 items-center justify-center">
+                  <Ionicons name="close" size={16} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Display Name</Text>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Your name"
+                placeholderTextColor="#94a3b8"
+                className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
+              />
+              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Username</Text>
+              <View className="flex-row items-center bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 mb-6">
+                <Text className="text-slate-400 dark:text-neutral-500 text-base mr-1">@</Text>
+                <TextInput
+                  value={editUsername}
+                  onChangeText={(t) => setEditUsername(t.replace(/[^a-zA-Z0-9_]/g, ''))}
+                  placeholder="username"
+                  placeholderTextColor="#94a3b8"
+                  autoCapitalize="none"
+                  className="flex-1 text-slate-900 dark:text-white py-3.5"
+                />
+              </View>
+              <View className="flex-row gap-3">
+                <TouchableOpacity onPress={() => setShowEditProfile(false)} className="flex-1 bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl py-4 items-center">
+                  <Text className="text-slate-600 dark:text-neutral-300 font-semibold">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={saveProfile} disabled={savingProfile} className="flex-1 bg-black dark:bg-white rounded-2xl py-4 items-center">
+                  {savingProfile ? <ActivityIndicator color={isDark ? '#000' : '#fff'} /> : <Text className="text-white dark:text-black font-bold">Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Appearance */}
         <View className="mx-5 mb-6">
@@ -233,7 +344,7 @@ export default function ProfileScreen() {
             {QUICK_LINKS.map((item, idx) => (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(item.route as any); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: item.route as any, params: { from: 'profile' } }); }}
                 className={`flex-row items-center px-5 py-4 gap-3 ${
                   idx > 0 ? 'border-t border-slate-100 dark:border-neutral-800' : ''
                 }`}

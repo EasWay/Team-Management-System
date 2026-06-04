@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   passwordHash: text("password_hash"),
   name: text("name"),
+  username: text("username").unique(),
+  avatarUrl: text("avatar_url"),
   loginMethod: text("login_method"),
   role: text("role").default("user"),
   lastSignedIn: timestamp("last_signed_in"),

@@ -15,29 +15,16 @@ import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
+import { Avatar } from '@/components/Avatar';
 import { getSocket } from '@/lib/socket';
 import { formatDistanceToNow } from 'date-fns';
 
-const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
-function avatarColor(name?: string | null) {
-  return AVATAR_COLORS[((name ?? '?').charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
-}
-
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-function MemberAvatar({ name, size = 50, unread = 0 }: { name?: string | null; size?: number; unread?: number }) {
+function MemberAvatar({ name, avatarUrl, size = 50, unread = 0 }: { name?: string | null; avatarUrl?: string | null; size?: number; unread?: number }) {
   const isDark = useThemeStore(state => state.isDark);
-  const color = avatarColor(name);
-  const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
   return (
     <View style={{ position: 'relative' }}>
-      <View style={{
-        width: size, height: size, borderRadius: size / 2,
-        backgroundColor: color + '28', borderWidth: 2, borderColor: color + '60',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Text style={{ color, fontSize: size * 0.36, fontWeight: '800' }}>{initials}</Text>
-      </View>
+      <Avatar name={name} avatarUrl={avatarUrl} size={size} />
       {unread > 0 && (
         <View style={{
           position: 'absolute', top: -2, right: -2,
@@ -185,7 +172,7 @@ export default function MessagesScreen() {
                   backgroundColor: hasUnread ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)') : 'transparent',
                 }}
               >
-                <MemberAvatar name={item.partnerName} size={50} unread={item.unreadCount} />
+                <MemberAvatar name={item.partnerName} avatarUrl={item.partnerAvatarUrl} size={50} unread={item.unreadCount} />
                 <View style={{ flex: 1, marginLeft: 14 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <Text
@@ -239,7 +226,7 @@ export default function MessagesScreen() {
                     }}
                     style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 14 }}
                   >
-                    <MemberAvatar name={member.name} size={44} />
+                    <MemberAvatar name={member.name} avatarUrl={(item as any).userAvatarUrl ?? member.avatarUrl} size={44} />
                     <View style={{ flex: 1 }}>
                       <Text className="text-slate-900 dark:text-white" style={{ fontSize: 14, fontWeight: '600' }}>{member.name}</Text>
                       {item.officeRole && (

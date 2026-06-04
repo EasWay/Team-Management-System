@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
@@ -837,6 +837,8 @@ function getRoleMeta(role?: string | null) {
 export default function FilesScreen() {
   const isDark = useThemeStore(state => state.isDark);
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : (router.canGoBack() ? router.back() : router.navigate('/(app)/profile' as any));
   const { activeTeam } = useTeamStore();
   const { user } = useAuthStore();
 
@@ -952,7 +954,7 @@ export default function FilesScreen() {
         <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={goBack}
               style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDark ? '#0D0D0D' : '#E8E8E8', alignItems: 'center', justifyContent: 'center' }}
             >
               <Ionicons name="arrow-back" size={18} color={isDark ? '#6B6B6B' : '#888888'} />
