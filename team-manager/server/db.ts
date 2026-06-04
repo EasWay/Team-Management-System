@@ -141,6 +141,20 @@ export async function ensureMissingTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "chat_messages_team_idx" ON "chat_messages" ("team_id");
     `);
     console.log("[Database] Ensured google_drive_connections, google_drive_files_cache, and chat_messages tables exist.");
+
+    // Add username and avatar_url columns to users table (added in PR #15)
+    await _pool.query(`
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "username" text;
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatar_url" text;
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'users_username_unique'
+        ) THEN
+          ALTER TABLE "users" ADD CONSTRAINT "users_username_unique" UNIQUE ("username");
+        END IF;
+      END $$;
+    `);
+    console.log("[Database] Ensured users.username and users.avatar_url columns exist.");
   } catch (err) {
     console.warn("[Database] ensureMissingTables error:", err);
   }
