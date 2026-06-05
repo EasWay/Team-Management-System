@@ -44,7 +44,11 @@ function StageChip({ label, variant }: { label: string; variant?: 'from' | 'to' 
 export default function ConferenceRoomScreen() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : (router.canGoBack() ? router.back() : router.navigate('/(app)' as any));
+  const goBack = () => {
+    if (from === 'profile') { router.navigate('/(app)/profile' as any); return; }
+    if (from === 'home')    { router.navigate('/(app)' as any);         return; }
+    router.canGoBack() ? router.back() : router.navigate('/(app)' as any);
+  };
   const { user } = useAuthStore();
   const isDark = useThemeStore(state => state.isDark);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);

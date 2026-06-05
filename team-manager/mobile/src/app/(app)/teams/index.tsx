@@ -13,6 +13,7 @@ import {
 import { Alert } from '@/components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
@@ -20,8 +21,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { EmptyState } from '@/components/EmptyState';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-
-const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
+import { getAvatarColor } from '@/components/Avatar';
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
   admin:     { color: '#5B8DEF', bg: '#5B8DEF20' },
@@ -36,6 +36,12 @@ function getRoleStyle(role: string) {
 }
 
 export default function TeamsScreen() {
+  const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => {
+    if (from === 'home') { router.navigate('/(app)' as any); return; }
+    router.canGoBack() ? router.back() : router.navigate('/(app)' as any);
+  };
   const { activeTeam, setActiveTeam } = useTeamStore();
   const { user } = useAuthStore();
   const [showCreate, setShowCreate] = useState(false);
@@ -95,9 +101,19 @@ export default function TeamsScreen() {
 
       {/* Header */}
       <View className="px-5 pt-5 pb-4 flex-row justify-between items-center">
-        <View>
-          <Text className="text-2xl font-bold text-slate-900 dark:text-white">Teams</Text>
-          <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">Your memberships</Text>
+        <View className="flex-row items-center gap-3">
+          {from === 'home' && (
+            <TouchableOpacity
+              onPress={goBack}
+              className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
+            >
+              <Ionicons name="arrow-back" size={18} color="#64748b" />
+            </TouchableOpacity>
+          )}
+          <View>
+            <Text className="text-2xl font-bold text-slate-900 dark:text-white">Teams</Text>
+            <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">Your memberships</Text>
+          </View>
         </View>
         <TouchableOpacity
           onPress={() => setShowCreate(true)}
@@ -329,7 +345,7 @@ export default function TeamsScreen() {
                   return (
                     <View key={member.id} className="flex-row items-center py-3.5 border-b border-slate-100 dark:border-neutral-800">
                       {(() => {
-                        const ac = AVATAR_COLORS[(displayName.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+                        const ac = getAvatarColor(displayName);
                         return (
                           <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: ac + '28', borderWidth: 1.5, borderColor: ac + '70' }}>
                             <Text style={{ color: ac }} className="font-bold text-base">

@@ -25,10 +25,9 @@ import { useThemeStore } from '@/store/themeStore';
 import { disconnectSocket } from '@/lib/socket';
 import { Button } from '@/components/Button';
 import { API_BASE_URL } from '@/lib/constants';
+import { getAvatarColor } from '@/components/Avatar';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
 
 const QUICK_LINKS: { label: string; icon: IconName; color: string; route: string; desc: string }[] = [
   { label: 'Files',          icon: 'folder-outline',    color: '#8B5CF6', route: '/(app)/files',      desc: 'Team assets & uploads' },
@@ -208,7 +207,7 @@ export default function ProfileScreen() {
   const displayName = user?.username ?? user?.name ?? user?.email ?? 'User';
   const displayLabel = user?.name ?? user?.email ?? 'User';
   const initials = displayLabel.split(' ').map((n: string) => n[0] ?? '').slice(0, 2).join('').toUpperCase();
-  const avatarAccent = AVATAR_COLORS[(displayLabel.charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+  const avatarAccent = getAvatarColor(displayLabel);
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
