@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from '@/components/CustomAlert';
@@ -266,8 +268,11 @@ export default function ProfileScreen() {
         </View>
 
         {/* Edit Profile Modal */}
-        <Modal visible={showEditProfile} animationType="slide" transparent>
-          <View className="flex-1 bg-black/50 justify-end">
+        <Modal visible={showEditProfile} animationType="slide" transparent statusBarTranslucent>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
+          >
             <View className="bg-white dark:bg-neutral-950 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800">
               <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
               <View className="flex-row justify-between items-center mb-5">
@@ -305,7 +310,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Appearance */}

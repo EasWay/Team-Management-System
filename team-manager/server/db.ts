@@ -1466,7 +1466,7 @@ export async function getTasksByTeam(
     /** When set, returns only tasks where assignedTo=viewerMemberId OR createdBy=viewerMemberId */
     viewerMemberId?: number;
   }
-): Promise<(Task & { assignee?: { id: number; name: string | null } | null; creator?: { id: number; name: string | null } | null })[]> {
+): Promise<(Task & { assignee?: { id: number; name: string | null; avatarUrl?: string | null } | null; creator?: { id: number; name: string | null; avatarUrl?: string | null } | null })[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -1494,38 +1494,54 @@ export async function getTasksByTeam(
     );
   }
 
-  const assigneeTm = { id: teamMembers.id, name: teamMembers.name };
-
   const rows = await db
     .select({
       task: tasks,
       assigneeName: teamMembers.name,
       assigneeId: teamMembers.id,
+      assigneeEmail: teamMembers.email,
     })
     .from(tasks)
     .leftJoin(teamMembers, eq(tasks.assignedTo, teamMembers.id))
     .where(and(...conditions))
     .orderBy(desc(tasks.createdAt));
 
-  // Enrich with creator names in a second query for simplicity
+  // Enrich with creator names + avatar URLs via users table
   const allCreatorIds = Array.from(new Set(rows.map(r => r.task.createdBy).filter(Boolean))) as number[];
-  let creatorMap: Record<number, string | null> = {};
+  const assigneeEmails = Array.from(new Set(rows.map(r => r.assigneeEmail).filter(Boolean))) as string[];
+  let creatorMap: Record<number, { name: string | null; avatarUrl: string | null }> = {};
+  let avatarByEmail: Record<string, string | null> = {};
+
   if (allCreatorIds.length > 0) {
     const creators = await db
-      .select({ id: teamMembers.id, name: teamMembers.name })
+      .select({ id: teamMembers.id, name: teamMembers.name, email: teamMembers.email })
       .from(teamMembers)
       .where(
         allCreatorIds.length === 1
           ? eq(teamMembers.id, allCreatorIds[0])
           : or(...allCreatorIds.map(id => eq(teamMembers.id, id)))!
       );
-    creatorMap = Object.fromEntries(creators.map(c => [c.id, c.name]));
+    const allEmails = [...assigneeEmails, ...creators.map(c => c.email).filter(Boolean)] as string[];
+    if (allEmails.length > 0) {
+      const userRows = await db
+        .select({ email: users.email, avatarUrl: users.avatarUrl })
+        .from(users)
+        .where(allEmails.length === 1 ? eq(users.email, allEmails[0]) : or(...allEmails.map(e => eq(users.email, e)))!);
+      avatarByEmail = Object.fromEntries(userRows.map(u => [u.email, u.avatarUrl]));
+    }
+    creatorMap = Object.fromEntries(creators.map(c => [c.id, { name: c.name, avatarUrl: avatarByEmail[c.email ?? ''] ?? null }]));
+  } else if (assigneeEmails.length > 0) {
+    const userRows = await db
+      .select({ email: users.email, avatarUrl: users.avatarUrl })
+      .from(users)
+      .where(assigneeEmails.length === 1 ? eq(users.email, assigneeEmails[0]) : or(...assigneeEmails.map(e => eq(users.email, e)))!);
+    avatarByEmail = Object.fromEntries(userRows.map(u => [u.email, u.avatarUrl]));
   }
 
   return rows.map(r => ({
     ...r.task,
-    assignee: r.assigneeId ? { id: r.assigneeId, name: r.assigneeName } : null,
-    creator: r.task.createdBy ? { id: r.task.createdBy, name: creatorMap[r.task.createdBy] ?? null } : null,
+    assignee: r.assigneeId ? { id: r.assigneeId, name: r.assigneeName, avatarUrl: avatarByEmail[r.assigneeEmail ?? ''] ?? null } : null,
+    creator: r.task.createdBy ? { id: r.task.createdBy, name: creatorMap[r.task.createdBy]?.name ?? null, avatarUrl: creatorMap[r.task.createdBy]?.avatarUrl ?? null } : null,
   }));
 }
 

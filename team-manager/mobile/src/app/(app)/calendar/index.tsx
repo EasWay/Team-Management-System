@@ -38,7 +38,7 @@ function getEventType(type: string) {
 export default function CalendarScreen() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : (router.canGoBack() ? router.back() : router.navigate('/(app)' as any));
+  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : router.navigate('/(app)' as any);
   const { activeTeam } = useTeamStore();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';

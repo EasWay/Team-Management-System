@@ -413,7 +413,7 @@ export default function ChatScreen() {
         }}>
           {/* Back */}
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.canGoBack() ? router.back() : router.navigate('/(app)/messages' as any); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.navigate('/(app)/messages' as any); }}
             style={{ padding: 6, borderRadius: 10 }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >

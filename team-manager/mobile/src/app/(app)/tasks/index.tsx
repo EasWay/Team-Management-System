@@ -21,6 +21,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { getSocket, joinTeamRoom, leaveTeamRoom } from '@/lib/socket';
 import { Button } from '@/components/Button';
+import { Avatar } from '@/components/Avatar';
 import { format, isAfter } from 'date-fns';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -108,24 +109,9 @@ function ProgressRing({ pct = 0, size = 46, color = '#888888', track }: {
   );
 }
 
-const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
-function avatarColor(name?: string | null) {
-  return AVATAR_COLORS[((name ?? '?').charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
-}
-
 // ─── Member Avatar ─────────────────────────────────────────────────────────────
-function MemberAvatar({ name, size = 24 }: { name?: string | null; size?: number }) {
-  const color = avatarColor(name);
-  const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-  return (
-    <View style={{
-      width: size, height: size, borderRadius: size / 2,
-      backgroundColor: color + '28', borderWidth: 1.5, borderColor: color + '80',
-      alignItems: 'center', justifyContent: 'center',
-    }}>
-      <Text style={{ color, fontSize: size * 0.35, fontWeight: '800' }}>{initials}</Text>
-    </View>
-  );
+function MemberAvatar({ name, avatarUrl, size = 24, color }: { name?: string | null; avatarUrl?: string | null; size?: number; color?: string }) {
+  return <Avatar name={name} avatarUrl={avatarUrl} size={size} color={color} />;
 }
 
 // ─── Task Card ─────────────────────────────────────────────────────────────────
@@ -206,7 +192,7 @@ function TaskCard({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 {task.assignee && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <MemberAvatar name={task.assignee.name} size={18} />
+                    <MemberAvatar name={task.assignee.name} avatarUrl={(task.assignee as any).avatarUrl} size={18} />
                     <Text style={{ color: isDark ? '#555555' : '#64748b', fontSize: 10 }} numberOfLines={1}>
                       {task.assignee.name?.split(' ')[0]}
                     </Text>
@@ -320,7 +306,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-1 bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3 border border-slate-200 dark:border-neutral-800">
               <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Assigned To</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.assignee.name} size={28} />
+                <MemberAvatar name={task.assignee.name} avatarUrl={(task.assignee as any).avatarUrl} size={28} />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.assignee.name}</Text>
               </View>
             </View>
@@ -329,7 +315,7 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
             <View className="flex-1 bg-slate-50 dark:bg-neutral-900 rounded-2xl p-3 border border-slate-200 dark:border-neutral-800">
               <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase mb-2">Created By</Text>
               <View className="flex-row items-center gap-2">
-                <MemberAvatar name={task.creator.name} size={28} />
+                <MemberAvatar name={task.creator.name} avatarUrl={(task.creator as any).avatarUrl} size={28} />
                 <Text className="text-slate-900 dark:text-white text-sm font-semibold" numberOfLines={1}>{task.creator.name}</Text>
               </View>
             </View>
