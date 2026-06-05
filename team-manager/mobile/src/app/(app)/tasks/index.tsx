@@ -21,6 +21,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { getSocket, joinTeamRoom, leaveTeamRoom } from '@/lib/socket';
 import { Button } from '@/components/Button';
+import { getAvatarColor } from '@/components/Avatar';
 import { format, isAfter } from 'date-fns';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -108,9 +109,8 @@ function ProgressRing({ pct = 0, size = 46, color = '#888888', track }: {
   );
 }
 
-const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
 function avatarColor(name?: string | null) {
-  return AVATAR_COLORS[((name ?? '?').charCodeAt(0) ?? 63) % AVATAR_COLORS.length];
+  return getAvatarColor(name);
 }
 
 // ─── Member Avatar ─────────────────────────────────────────────────────────────

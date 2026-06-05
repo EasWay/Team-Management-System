@@ -116,7 +116,11 @@ function BurndownChart({ data }: { data: Array<{ day: string; actual: number; id
 export default function AnalyticsScreen() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : (router.canGoBack() ? router.back() : router.navigate('/(app)' as any));
+  const goBack = () => {
+    if (from === 'profile') { router.navigate('/(app)/profile' as any); return; }
+    if (from === 'home')    { router.navigate('/(app)' as any);         return; }
+    router.canGoBack() ? router.back() : router.navigate('/(app)' as any);
+  };
   const { activeTeam } = useTeamStore();
   const isDark = useThemeStore(state => state.isDark);
 

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Text, Image } from 'react-native';
 
 const AVATAR_COLORS = ['#5B8DEF', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#F97316', '#06B6D4', '#EF4444'];
@@ -14,12 +15,8 @@ interface AvatarProps {
   color?: string;
 }
 
-/**
- * Shared avatar component used everywhere in the app.
- * Shows the real profile picture when `avatarUrl` is set,
- * otherwise shows coloured initials derived from `name`.
- */
 export function Avatar({ name, avatarUrl, size = 40, color }: AvatarProps) {
+  const [imgError, setImgError] = useState(false);
   const accent = color ?? getAvatarColor(name);
   const initials = (name ?? '?')
     .split(' ')
@@ -28,7 +25,7 @@ export function Avatar({ name, avatarUrl, size = 40, color }: AvatarProps) {
     .slice(0, 2)
     .toUpperCase();
 
-  if (avatarUrl) {
+  if (avatarUrl && !imgError) {
     return (
       <View
         style={{
@@ -44,6 +41,7 @@ export function Avatar({ name, avatarUrl, size = 40, color }: AvatarProps) {
           source={{ uri: avatarUrl }}
           style={{ width: '100%', height: '100%' }}
           resizeMode="cover"
+          onError={() => setImgError(true)}
         />
       </View>
     );
