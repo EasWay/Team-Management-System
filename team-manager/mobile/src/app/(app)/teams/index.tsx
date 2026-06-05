@@ -13,6 +13,7 @@ import {
 import { Alert } from '@/components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { trpc } from '@/lib/api';
 import { useTeamStore } from '@/store/teamStore';
 import { useAuthStore } from '@/store/authStore';
@@ -36,6 +37,9 @@ function getRoleStyle(role: string) {
 }
 
 export default function TeamsScreen() {
+  const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => from === 'profile' ? router.navigate('/(app)/profile' as any) : router.navigate('/(app)' as any);
   const { activeTeam, setActiveTeam } = useTeamStore();
   const { user } = useAuthStore();
   const [showCreate, setShowCreate] = useState(false);
@@ -94,8 +98,14 @@ export default function TeamsScreen() {
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
 
       {/* Header */}
-      <View className="px-5 pt-5 pb-4 flex-row justify-between items-center">
-        <View>
+      <View className="px-5 pt-5 pb-4 flex-row items-center gap-3">
+        <TouchableOpacity
+          onPress={goBack}
+          className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-neutral-900 items-center justify-center"
+        >
+          <Ionicons name="arrow-back" size={18} color="#64748b" />
+        </TouchableOpacity>
+        <View className="flex-1">
           <Text className="text-2xl font-bold text-slate-900 dark:text-white">Teams</Text>
           <Text className="text-slate-500 dark:text-neutral-400 text-xs mt-0.5">Your memberships</Text>
         </View>

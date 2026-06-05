@@ -191,7 +191,7 @@ export default function MyOfficeScreen() {
           </View>
           {activeTeam && (
             <TouchableOpacity
-              onPress={() => router.push('/(app)/teams' as any)}
+              onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })}
               className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-1.5 ml-3"
             >
               <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">{activeTeam.name}</Text>
@@ -221,8 +221,8 @@ export default function MyOfficeScreen() {
           <View className="flex-row gap-2.5 px-5 mt-4">
             <StatCard icon="checkmark-circle" label="Open Tasks" value={openTasks}      color="#10B981" onPress={() => router.push('/(app)/tasks' as any)} />
             <StatCard icon="folder"           label="Projects"   value={projects.length} color="#8B5CF6" onPress={() => router.push('/(app)/projects' as any)} />
-            <StatCard icon="people"           label="Members"    value={members.length}  color="#5B8DEF" onPress={() => router.push('/(app)/teams' as any)} />
-            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#EC4899" onPress={() => router.push('/(app)/teams' as any)} />
+            <StatCard icon="people"           label="Members"    value={members.length}  color="#5B8DEF" onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })} />
+            <StatCard icon="logo-github"      label="Repos"      value={repos.length}    color="#EC4899" onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })} />
           </View>
         )}
 
@@ -259,7 +259,7 @@ export default function MyOfficeScreen() {
             {QUICK_ACTIONS.map((item) => (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => router.push(item.route as any)}
+                onPress={() => router.push({ pathname: item.route as any, params: { from: 'home' } })}
                 activeOpacity={0.75}
                 className="bg-white dark:bg-neutral-900 rounded-2xl p-4 border border-slate-200 dark:border-neutral-800 flex-row items-center gap-3"
                 style={{ width: '47%' }}
@@ -288,7 +288,7 @@ export default function MyOfficeScreen() {
           <View className="mt-6">
             <View className="flex-row justify-between items-center px-5 mb-3">
               <Text className="text-slate-900 dark:text-white font-bold text-lg">Team Members</Text>
-              <TouchableOpacity onPress={() => router.push('/(app)/teams' as any)}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })}>
                 <Text className="text-neutral-500 text-sm font-medium">See all</Text>
               </TouchableOpacity>
             </View>
@@ -304,7 +304,7 @@ export default function MyOfficeScreen() {
                 return (
                   <TouchableOpacity
                     key={m.id}
-                    onPress={() => router.push('/(app)/teams' as any)}
+                    onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })}
                     activeOpacity={0.75}
                     className="items-center gap-1.5"
                     style={{ width: 60 }}
@@ -579,7 +579,7 @@ export default function MyOfficeScreen() {
               <Ionicons name="people-outline" size={40} color="#94a3b8" />
               <Text className="text-slate-500 dark:text-neutral-400 font-medium mt-3">No active team</Text>
               <TouchableOpacity
-                onPress={() => router.push('/(app)/teams' as any)}
+                onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })}
                 className="mt-3 bg-neutral-100 dark:bg-neutral-800 rounded-xl px-4 py-2"
               >
                 <Text className="text-neutral-700 dark:text-neutral-300 text-sm font-semibold">Select a team</Text>
