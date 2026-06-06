@@ -74,13 +74,14 @@ export default function MessagesScreen() {
     return () => cleanup?.();
   }, [currentMemberId]);
 
-  const openChat = (partnerId: number, partnerName: string) => {
+  const openChat = (partnerId: number, partnerName: string, partnerAvatarUrl?: string | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push({
       pathname: '/(app)/chat/[userId]' as any,
       params: {
         userId: String(partnerId),
         name: partnerName,
+        avatarUrl: partnerAvatarUrl ?? '',
         memberId: String(currentMemberId),
         teamId: String(activeTeam?.id),
       },
@@ -163,7 +164,7 @@ export default function MessagesScreen() {
               : '';
             return (
               <TouchableOpacity
-                onPress={() => openChat(item.partnerId, item.partnerName ?? 'Member')}
+                onPress={() => openChat(item.partnerId, item.partnerName ?? 'Member', item.partnerAvatarUrl)}
                 activeOpacity={0.75}
                 style={{
                   flexDirection: 'row', alignItems: 'center',
@@ -222,7 +223,7 @@ export default function MessagesScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       setShowPicker(false);
-                      openChat(member.id, member.name ?? 'Member');
+                      openChat(member.id, member.name ?? 'Member', (item as any).userAvatarUrl ?? member.avatarUrl);
                     }}
                     style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, gap: 14 }}
                   >

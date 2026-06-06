@@ -17,6 +17,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { trpc } from '@/lib/api';
 import { useThemeStore } from '@/store/themeStore';
+import { useAuthStore } from '@/store/authStore';
+import { Avatar as SharedAvatar } from '@/components/Avatar';
 import { getSocket } from '@/lib/socket';
 import { format, isToday, isYesterday } from 'date-fns';
 import * as Haptics from 'expo-haptics';
@@ -45,21 +47,8 @@ function groupByDate(messages: any[]): Grouped[] {
   return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-function Avatar({ name, size = 36, isDark }: { name?: string | null; size?: number; isDark: boolean }) {
-  const initials = (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-  return (
-    <View style={{
-      width: size, height: size, borderRadius: size / 2,
-      backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0',
-      borderWidth: 1.5, borderColor: isDark ? '#2A2A2A' : '#D0D0D0',
-      alignItems: 'center', justifyContent: 'center',
-    }}>
-      <Text style={{ color: isDark ? '#AAAAAA' : '#555555', fontSize: size * 0.36, fontWeight: '800' }}>
-        {initials}
-      </Text>
-    </View>
-  );
+function Avatar({ name, avatarUrl, size = 36 }: { name?: string | null; avatarUrl?: string | null; size?: number }) {
+  return <SharedAvatar name={name} avatarUrl={avatarUrl} size={size} />;
 }
 
 // ─── Typing dots ─────────────────────────────────────────────────────────────
@@ -111,11 +100,14 @@ function DateSeparator({ label, isDark }: { label: string; isDark: boolean }) {
 
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 function MessageBubble({
-  msg, isMine, partnerName, isDark, isLastInCluster, onLongPress,
+  msg, isMine, partnerName, partnerAvatarUrl, myName, myAvatarUrl, isDark, isLastInCluster, onLongPress,
 }: {
   msg: any;
   isMine: boolean;
   partnerName: string;
+  partnerAvatarUrl?: string | null;
+  myName?: string | null;
+  myAvatarUrl?: string | null;
   isDark: boolean;
   isLastInCluster: boolean;
   onLongPress: (msg: any) => void;
@@ -139,10 +131,13 @@ function MessageBubble({
       paddingHorizontal: 10,
       gap: 5,
     }}>
-      {/* Partner avatar placeholder — keeps layout stable */}
-      <View style={{ width: 30, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 0 }}>
+      {/* Avatar slot — partner on left, own on right */}
+      <View style={{ width: 30, alignItems: 'center', justifyContent: 'flex-end' }}>
         {!isMine && isLastInCluster && (
-          <Avatar name={partnerName} size={28} isDark={isDark} />
+          <Avatar name={partnerName} avatarUrl={partnerAvatarUrl} size={28} />
+        )}
+        {isMine && isLastInCluster && (
+          <Avatar name={myName} avatarUrl={myAvatarUrl} size={28} />
         )}
       </View>
 
@@ -280,14 +275,19 @@ export default function ChatScreen() {
   const params = useLocalSearchParams<{
     userId: string;
     name: string;
+    avatarUrl: string;
     memberId: string;
     teamId: string;
   }>();
+  const { user } = useAuthStore();
 
-  const partnerId   = Number(params.userId);
-  const partnerName = params.name ?? 'Member';
-  const myMemberId  = Number(params.memberId);
-  const teamId      = Number(params.teamId);
+  const partnerId        = Number(params.userId);
+  const partnerName      = params.name ?? 'Member';
+  const partnerAvatarUrl = params.avatarUrl || null;
+  const myMemberId       = Number(params.memberId);
+  const teamId           = Number(params.teamId);
+  const myAvatarUrl      = user?.avatarUrl ?? null;
+  const myName           = user?.name ?? user?.email ?? null;
 
   const [message, setMessage]       = useState('');
   const [sending, setSending]       = useState(false);
@@ -413,7 +413,7 @@ export default function ChatScreen() {
         }}>
           {/* Back */}
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.canGoBack() ? router.back() : router.navigate('/(app)/messages' as any); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.navigate('/(app)/messages' as any); }}
             style={{ padding: 6, borderRadius: 10 }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
@@ -426,7 +426,7 @@ export default function ChatScreen() {
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
           >
             <View style={{ position: 'relative' }}>
-              <Avatar name={partnerName} size={40} isDark={isDark} />
+              <Avatar name={partnerName} avatarUrl={partnerAvatarUrl} size={40} />
               {/* Online dot */}
               <View style={{
                 position: 'absolute', bottom: 0, right: 0,
@@ -480,7 +480,7 @@ export default function ChatScreen() {
               borderWidth: 1, borderColor: isDark ? '#2A2A2A' : '#E0E0E0',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Avatar name={partnerName} size={56} isDark={isDark} />
+              <Avatar name={partnerName} avatarUrl={partnerAvatarUrl} size={56} />
             </View>
             <Text style={{ color: fg, fontSize: 17, fontWeight: '700' }}>{partnerName}</Text>
             <Text style={{ color: muted, fontSize: 13, textAlign: 'center', lineHeight: 20 }}>
@@ -513,6 +513,9 @@ export default function ChatScreen() {
                   msg={item.msg}
                   isMine={item.msg.fromMemberId === myMemberId}
                   partnerName={partnerName}
+                  partnerAvatarUrl={partnerAvatarUrl}
+                  myName={myName}
+                  myAvatarUrl={myAvatarUrl}
                   isDark={isDark}
                   isLastInCluster={item.isLastInCluster}
                   onLongPress={setContextMsg}

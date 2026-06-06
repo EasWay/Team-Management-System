@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from '@/components/CustomAlert';
@@ -265,46 +267,54 @@ export default function ProfileScreen() {
         </View>
 
         {/* Edit Profile Modal */}
-        <Modal visible={showEditProfile} animationType="slide" transparent>
-          <View className="flex-1 bg-black/50 justify-end">
-            <View className="bg-white dark:bg-neutral-950 rounded-t-3xl px-5 pt-6 pb-12 border-t border-slate-200 dark:border-neutral-800">
-              <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
-              <View className="flex-row justify-between items-center mb-5">
-                <Text className="text-xl font-bold text-slate-900 dark:text-white">Edit Profile</Text>
-                <TouchableOpacity onPress={() => setShowEditProfile(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-neutral-900 items-center justify-center">
-                  <Ionicons name="close" size={16} color="#64748b" />
-                </TouchableOpacity>
-              </View>
-              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Display Name</Text>
-              <TextInput
-                value={editName}
-                onChangeText={setEditName}
-                placeholder="Your name"
-                placeholderTextColor="#94a3b8"
-                className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
-              />
-              <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Username</Text>
-              <View className="flex-row items-center bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 mb-6">
-                <Text className="text-slate-400 dark:text-neutral-500 text-base mr-1">@</Text>
+        <Modal visible={showEditProfile} animationType="slide" transparent onRequestClose={() => setShowEditProfile(false)}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <View className="flex-1 bg-black/50 justify-end">
+              <View className="bg-white dark:bg-neutral-950 rounded-t-3xl px-5 pt-6 pb-10 border-t border-slate-200 dark:border-neutral-800">
+                <View className="w-10 h-1 bg-slate-300 dark:bg-neutral-700 rounded-full self-center mb-5" />
+                <View className="flex-row justify-between items-center mb-5">
+                  <Text className="text-xl font-bold text-slate-900 dark:text-white">Edit Profile</Text>
+                  <TouchableOpacity onPress={() => setShowEditProfile(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-neutral-900 items-center justify-center">
+                    <Ionicons name="close" size={16} color="#64748b" />
+                  </TouchableOpacity>
+                </View>
+                <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Display Name</Text>
                 <TextInput
-                  value={editUsername}
-                  onChangeText={(t) => setEditUsername(t.replace(/[^a-zA-Z0-9_]/g, ''))}
-                  placeholder="username"
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Your name"
                   placeholderTextColor="#94a3b8"
-                  autoCapitalize="none"
-                  className="flex-1 text-slate-900 dark:text-white py-3.5"
+                  returnKeyType="next"
+                  className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 py-3.5 text-slate-900 dark:text-white mb-4"
                 />
-              </View>
-              <View className="flex-row gap-3">
-                <TouchableOpacity onPress={() => setShowEditProfile(false)} className="flex-1 bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl py-4 items-center">
-                  <Text className="text-slate-600 dark:text-neutral-300 font-semibold">Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={saveProfile} disabled={savingProfile} className="flex-1 bg-black dark:bg-white rounded-2xl py-4 items-center">
-                  {savingProfile ? <ActivityIndicator color={isDark ? '#000' : '#fff'} /> : <Text className="text-white dark:text-black font-bold">Save</Text>}
-                </TouchableOpacity>
+                <Text className="text-slate-500 dark:text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">Username</Text>
+                <View className="flex-row items-center bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl px-4 mb-6">
+                  <Text className="text-slate-400 dark:text-neutral-500 text-base mr-1">@</Text>
+                  <TextInput
+                    value={editUsername}
+                    onChangeText={(t) => setEditUsername(t.replace(/[^a-zA-Z0-9_]/g, ''))}
+                    placeholder="username"
+                    placeholderTextColor="#94a3b8"
+                    autoCapitalize="none"
+                    returnKeyType="done"
+                    onSubmitEditing={saveProfile}
+                    className="flex-1 text-slate-900 dark:text-white py-3.5"
+                  />
+                </View>
+                <View className="flex-row gap-3">
+                  <TouchableOpacity onPress={() => setShowEditProfile(false)} className="flex-1 bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl py-4 items-center">
+                    <Text className="text-slate-600 dark:text-neutral-300 font-semibold">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={saveProfile} disabled={savingProfile} className="flex-1 bg-black dark:bg-white rounded-2xl py-4 items-center">
+                    {savingProfile ? <ActivityIndicator color={isDark ? '#000' : '#fff'} /> : <Text className="text-white dark:text-black font-bold">Save</Text>}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Appearance */}
