@@ -21,7 +21,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { EmptyState } from '@/components/EmptyState';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { getAvatarColor } from '@/components/Avatar';
+import { Avatar, getAvatarColor } from '@/components/Avatar';
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
   admin:     { color: '#5B8DEF', bg: '#5B8DEF20' },
@@ -344,16 +344,9 @@ export default function TeamsScreen() {
                   const rStyle = getRoleStyle(member.role);
                   return (
                     <View key={member.id} className="flex-row items-center py-3.5 border-b border-slate-100 dark:border-neutral-800">
-                      {(() => {
-                        const ac = getAvatarColor(displayName);
-                        return (
-                          <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: ac + '28', borderWidth: 1.5, borderColor: ac + '70' }}>
-                            <Text style={{ color: ac }} className="font-bold text-base">
-                              {displayName[0].toUpperCase()}
-                            </Text>
-                          </View>
-                        );
-                      })()}
+                      <View className="mr-3">
+                        <Avatar name={displayName} avatarUrl={member.userAvatarUrl ?? null} size={40} />
+                      </View>
                       <View className="flex-1">
                         <Text className="text-slate-900 dark:text-white font-medium text-sm">{displayName}</Text>
                         {displayEmail ? (
