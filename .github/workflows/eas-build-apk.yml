@@ -46,6 +46,7 @@ jobs:
             --platform android \
             --profile ${{ github.event.inputs.profile || 'preview' }} \
             --non-interactive \
+            --clear-cache \
             --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
