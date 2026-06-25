@@ -9,7 +9,7 @@ import type { Request, Response } from 'express';
 import axios from 'axios';
 import { getProvider, type OAuthProviderConfig } from './oauth-providers';
 import { storeOAuthToken, deleteAllOAuthTokens } from './oauth-token-service';
-import { getDb, upsertUser, getUserByOpenId } from './db';
+import { getDb, upsertUser, getUserByOpenId, automaticallyAssignTeams } from './db';
 import { users, teamMembers } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { authService } from './_core/auth';
@@ -269,6 +269,9 @@ export async function handleGitHubCallback(req: Request, res: Response): Promise
       position: 'Member',
     }).onConflictDoNothing({ target: teamMembers.id });
 
+    // Automatically assign user to all teams
+    await automaticallyAssignTeams(user.id);
+
     // Store OAuth token
     console.log('[OAuth] Storing OAuth token...');
     const expiresAt = tokenResponse.expires_in
@@ -397,6 +400,9 @@ export async function handleGoogleCallback(req: Request, res: Response): Promise
       position: 'Member',
     }).onConflictDoNothing({ target: teamMembers.id });
 
+    // Automatically assign user to all teams
+    await automaticallyAssignTeams(user.id);
+
     const expiresAt = tokenResponse.expires_in
       ? new Date(Date.now() + tokenResponse.expires_in * 1000)
       : undefined;
@@ -501,6 +507,9 @@ export async function handleGitHubMobileCallback(req: Request, res: Response): P
       email: user.email,
       position: 'Member',
     }).onConflictDoNothing({ target: teamMembers.id });
+
+    // Automatically assign user to all teams
+    await automaticallyAssignTeams(user.id);
 
     const expiresAt = tokenResponse.expires_in
       ? new Date(Date.now() + tokenResponse.expires_in * 1000)

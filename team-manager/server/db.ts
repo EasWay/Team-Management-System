@@ -489,6 +489,21 @@ export async function createUserWithPassword(userData: {
   });
 }
 
+export async function automaticallyAssignTeams(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const existingTeams = await db.select({ id: teams.id }).from(teams);
+  if (existingTeams.length > 0) {
+    const membershipsToInsert = existingTeams.map(t => ({
+      teamId: t.id,
+      memberId: userId,
+      role: 'developer',
+      status: 'active'
+    }));
+    await db.insert(teamMembersCollaborative).values(membershipsToInsert).onConflictDoNothing();
+  }
+}
+
 export async function updateUserLastSignedIn(userId: number): Promise<typeof users.$inferSelect> {
   const db = await getDb();
   if (!db) {

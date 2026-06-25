@@ -700,11 +700,9 @@ export async function getNotificationStatistics(userId: number, teamId: number) 
       throw new Error('Database not available');
     }
 
-    const stats = await db.select({
+    const [totalStats] = await db.select({
       total: sql<number>`count(*)`,
       unread: sql<number>`count(*) FILTER (WHERE ${notifications.isRead} = false)`,
-      byType: sql<any>`json_object_agg(${notifications.type}, count(*))`,
-      byPriority: sql<any>`json_object_agg(${notifications.priority}, count(*))`,
     })
     .from(notifications)
     .where(
@@ -714,7 +712,48 @@ export async function getNotificationStatistics(userId: number, teamId: number) 
       )
     );
 
-    return stats[0];
+    const byTypeStats = await db.select({
+      type: notifications.type,
+      count: sql<number>`count(*)`,
+    })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.teamId, teamId)
+      )
+    )
+    .groupBy(notifications.type);
+
+    const byPriorityStats = await db.select({
+      priority: notifications.priority,
+      count: sql<number>`count(*)`,
+    })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.teamId, teamId)
+      )
+    )
+    .groupBy(notifications.priority);
+
+    const byType = byTypeStats.reduce((acc: any, curr) => {
+      acc[curr.type] = Number(curr.count);
+      return acc;
+    }, {});
+
+    const byPriority = byPriorityStats.reduce((acc: any, curr) => {
+      acc[curr.priority || 'normal'] = Number(curr.count);
+      return acc;
+    }, {});
+
+    return {
+      total: Number(totalStats?.total || 0),
+      unread: Number(totalStats?.unread || 0),
+      byType,
+      byPriority,
+    };
   } catch (error) {
     console.error('Error getting notification statistics:', error);
     throw new Error('Failed to get notification statistics');
