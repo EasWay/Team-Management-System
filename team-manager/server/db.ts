@@ -108,6 +108,24 @@ export async function getDb() {
           );
 
           ALTER TABLE users ADD COLUMN IF NOT EXISTS username text UNIQUE;
+
+          -- Automatically assign all existing users to all teams
+          INSERT INTO "team_members" ("id", "name", "email", "position")
+          SELECT u.id, COALESCE(u.name, split_part(u.email, '@', 1), 'Unknown User'), u.email, 'Member'
+          FROM "users" u
+          WHERE NOT EXISTS (
+              SELECT 1 FROM "team_members" tm 
+              WHERE tm.id = u.id
+          );
+
+          INSERT INTO "team_members_collaborative" ("team_id", "member_id", "role", "status")
+          SELECT t.id, u.id, 'developer', 'active'
+          FROM "teams" t
+          CROSS JOIN "users" u
+          WHERE NOT EXISTS (
+              SELECT 1 FROM "team_members_collaborative" tmc 
+              WHERE tmc.team_id = t.id AND tmc.member_id = u.id
+          );
         `);
         console.log("[Database] Auto-migration applied successfully.");
       } catch (err) {
