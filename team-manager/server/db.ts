@@ -236,9 +236,9 @@ export async function sendNotification(params: {
   projectId?: number;
   actionUrl?: string;
   actionLabel?: string;
-}) {
+}, dbClient?: any) {
   try {
-    const db = await getDb();
+    const db = dbClient || await getDb();
     if (!db) return;
     const [notif] = await db
       .insert(notifications)
@@ -1587,7 +1587,7 @@ export async function createTask(
         taskId: created.id,
         actionUrl: `/tasks`,
         actionLabel: 'View Task',
-      });
+      }, db);
     }
 
     return created;
@@ -1812,7 +1812,7 @@ export async function updateTask(
         taskId: existingTask.id,
         actionUrl: `/tasks`,
         actionLabel: 'View Task',
-      });
+      }, db);
     }
     // Notify creator when assignee updates status
     if (updates.status && existingTask.createdBy && existingTask.createdBy !== updatedBy) {
@@ -1826,7 +1826,7 @@ export async function updateTask(
         taskId: existingTask.id,
         actionUrl: `/tasks`,
         actionLabel: 'View Task',
-      });
+      }, db);
     }
 
     return updated;
@@ -1981,7 +1981,7 @@ export async function moveTask(
         taskId: existingTask.id,
         actionUrl: `/tasks`,
         actionLabel: 'View Task',
-      });
+      }, db);
     }
 
     return updated;
@@ -2054,7 +2054,7 @@ export async function reopenTask(
         taskId: existingTask.id,
         actionUrl: `/tasks`,
         actionLabel: 'View Task',
-      });
+      }, db);
     }
 
     return updated;
