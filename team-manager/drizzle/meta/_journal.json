@@ -1,111 +1,125 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1771685057808,
-      "tag": "0000_eager_toad",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1771685395837,
-      "tag": "0001_silly_spyke",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1771686516702,
-      "tag": "0002_ambitious_blue_blade",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772742540632,
-      "tag": "0003_tranquil_ted_forrester",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1772840979191,
-      "tag": "0004_robust_rumiko_fujikawa",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1772845184141,
-      "tag": "0005_add_clients_and_projects",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1772845619874,
-      "tag": "0006_add_project_definition",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1772847308219,
-      "tag": "0007_dizzy_malcolm_colcord",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1772851425636,
-      "tag": "0008_burly_wind_dancer",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1772982475480,
-      "tag": "0009_empty_katie_power",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1773441577677,
-      "tag": "0010_robust_firebrand",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1779719584134,
-      "tag": "0011_slimy_phalanx",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1779805665681,
-      "tag": "0012_jittery_domino",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1780000000000,
-      "tag": "0013_chat_and_drive_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1780100000000,
-      "tag": "0014_add_task_completion_tags",
-      "breakpoints": true
-    }
-  ]
+    "version":  "7",
+    "dialect":  "postgresql",
+    "entries":  [
+                    {
+                        "idx":  0,
+                        "version":  "7",
+                        "when":  1771685057808,
+                        "tag":  "0000_eager_toad",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  1,
+                        "version":  "7",
+                        "when":  1771685395837,
+                        "tag":  "0001_silly_spyke",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  2,
+                        "version":  "7",
+                        "when":  1771686516702,
+                        "tag":  "0002_ambitious_blue_blade",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  3,
+                        "version":  "7",
+                        "when":  1772742540632,
+                        "tag":  "0003_tranquil_ted_forrester",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  4,
+                        "version":  "7",
+                        "when":  1772840979191,
+                        "tag":  "0004_robust_rumiko_fujikawa",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  5,
+                        "version":  "7",
+                        "when":  1772845184141,
+                        "tag":  "0005_add_clients_and_projects",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  6,
+                        "version":  "7",
+                        "when":  1772845619874,
+                        "tag":  "0006_add_project_definition",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  7,
+                        "version":  "7",
+                        "when":  1772847308219,
+                        "tag":  "0007_dizzy_malcolm_colcord",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  8,
+                        "version":  "7",
+                        "when":  1772851425636,
+                        "tag":  "0008_burly_wind_dancer",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  9,
+                        "version":  "7",
+                        "when":  1772982475480,
+                        "tag":  "0009_empty_katie_power",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  10,
+                        "version":  "7",
+                        "when":  1773441577677,
+                        "tag":  "0010_robust_firebrand",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  11,
+                        "version":  "7",
+                        "when":  1779719584134,
+                        "tag":  "0011_slimy_phalanx",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  12,
+                        "version":  "7",
+                        "when":  1779805665681,
+                        "tag":  "0012_jittery_domino",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  13,
+                        "version":  "7",
+                        "when":  1780000000000,
+                        "tag":  "0013_chat_and_drive_tables",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  14,
+                        "version":  "7",
+                        "when":  1780100000000,
+                        "tag":  "0014_add_task_completion_tags",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  15,
+                        "breakpoints":  true,
+                        "when":  1780200000000,
+                        "version":  "7",
+                        "tag":  "0015_add_username_avatar_to_users"
+                    },
+                    {
+                        "idx":  16,
+                        "breakpoints":  true,
+                        "when":  1780300000000,
+                        "version":  "7",
+                        "tag":  "0016_notifications_columns"
+                    }
+                ]
 }
