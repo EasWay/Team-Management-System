@@ -1,8 +1,8 @@
-import { eq, and, or, isNull, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, or, isNull, desc, gte, lte, sql, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 const { Pool } = pg;
-import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage, notifications } from "../drizzle/schema";
+import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs, InsertAuditLog, teams, InsertTeam, Team, teamMembersCollaborative, InsertTeamMemberCollaborative, TeamMemberCollaborative, teamInvitations, InsertTeamInvitation, TeamInvitation, tasks, InsertTask, Task, clients, InsertClient, Client, projects, InsertProject, Project, projectFiles, InsertProjectFile, ProjectFile, activities, InsertActivity, Activity, repositories, InsertRepository, Repository, messages, Message, InsertMessage, approvals, InsertApproval, Approval, chatMessages, InsertChatMessage, ChatMessage, notifications, userPushTokens } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
 import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted, broadcastToMember } from './socket-server';
@@ -258,6 +258,54 @@ export async function sendNotification(params: {
       })
       .returning();
     broadcastToMember(params.userId, 'notification', notif);
+
+    // Send Expo push notification
+    const pushRecords = await db
+      .select({ pushToken: userPushTokens.pushToken })
+      .from(userPushTokens)
+      .where(eq(userPushTokens.userId, params.userId));
+
+    if (pushRecords.length > 0) {
+      const messages = pushRecords.map(record => ({
+        to: record.pushToken,
+        sound: 'default',
+        title: params.title,
+        body: params.message,
+        data: {
+          actionUrl: params.actionUrl,
+          taskId: params.taskId,
+          projectId: params.projectId,
+        },
+      }));
+
+      fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messages),
+      }).then(async (res) => {
+        if (res.ok) {
+          const response = await res.json();
+          const tokensToDelete: string[] = [];
+          if (response.data && Array.isArray(response.data)) {
+            response.data.forEach((ticket: any, index: number) => {
+              if (ticket.status === 'error' && ticket.details && (ticket.details.error === 'DeviceNotRegistered' || ticket.details.error === 'InvalidCredentials')) {
+                tokensToDelete.push(messages[index].to);
+              }
+            });
+          }
+          if (tokensToDelete.length > 0) {
+            await db.delete(userPushTokens).where(inArray(userPushTokens.pushToken, tokensToDelete));
+          }
+        }
+      }).catch(err => {
+        console.error('[Notification] Failed to send push notification via Expo:', err);
+      });
+    }
+
     return notif;
   } catch (err) {
     console.error('[Notification] Failed to send notification:', err);
@@ -974,6 +1022,20 @@ export async function addMemberToTeam(teamId: number, memberId: number, role: Te
     role,
     status: 'active'
   }).onConflictDoNothing();
+}
+
+/**
+ * Remove a member from a team (for admins)
+ */
+export async function removeMemberFromTeam(teamId: number, memberId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(teamMembersCollaborative)
+    .where(and(
+      eq(teamMembersCollaborative.teamId, teamId),
+      eq(teamMembersCollaborative.memberId, memberId)
+    ));
 }
 
 /**
@@ -4726,13 +4788,7 @@ export async function setUserSystemRole(userId: number, role: 'admin' | 'user') 
 }
 
 export async function removeUserFromSystem(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database unavailable');
-
-  // Remove from team memberships first (cascade should handle, but be explicit)
-  await db.delete(teamMembersCollaborative).where(eq(teamMembersCollaborative.memberId, userId));
-  await db.delete(teamMembers).where(eq(teamMembers.id, userId));
-  await db.delete(users).where(eq(users.id, userId));
+  await permanentlyDeleteUser(userId);
 }
 
 export async function addUserToSystem(params: {
@@ -4788,4 +4844,72 @@ export async function addUserToSystem(params: {
   });
 
   return newUser;
+}
+
+export async function getAllSystemUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(users).orderBy(desc(users.createdAt));
+}
+
+export async function permanentlyDeleteUser(targetUserId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.transaction(async (tx) => {
+    // Reassign NOT NULL fields to a fallback admin
+    const adminRes = await tx.execute(sql`SELECT id FROM users WHERE role = 'admin' AND id != ${targetUserId} LIMIT 1`);
+    const fallbackAdminId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
+    
+    if (fallbackAdminId) {
+      await tx.execute(sql`UPDATE file_folders SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE events SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE calls SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE resource_permissions SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE office_access_control SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE ip_blocklist SET added_by = ${fallbackAdminId} WHERE added_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE permission_roles SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE user_role_assignments SET assigned_by = ${fallbackAdminId} WHERE assigned_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE google_drive_connections SET connected_by = ${fallbackAdminId} WHERE connected_by = ${targetUserId}`);
+    } else {
+      // Very rare fallback if no other admin exists: just delete to avoid constraint failures
+      await tx.execute(sql`DELETE FROM file_folders WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM events WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM calls WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM resource_permissions WHERE granted_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM office_access_control WHERE granted_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM ip_blocklist WHERE added_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM permission_roles WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM user_role_assignments WHERE assigned_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM google_drive_connections WHERE connected_by = ${targetUserId}`);
+    }
+
+    // Set nullable references to NULL
+    await tx.execute(sql`UPDATE teams SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await tx.execute(sql`UPDATE teams SET boss_user_id = NULL WHERE boss_user_id = ${targetUserId}`);
+    await tx.execute(sql`UPDATE teams SET pm_user_id = NULL WHERE pm_user_id = ${targetUserId}`);
+    await tx.execute(sql`UPDATE projects SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await tx.execute(sql`UPDATE approvals SET approver_user_id = NULL WHERE approver_user_id = ${targetUserId}`);
+    await tx.execute(sql`UPDATE files SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await tx.execute(sql`UPDATE tasks SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await tx.execute(sql`UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ${targetUserId}`);
+
+    // Delete records strictly bound to the user
+    await tx.execute(sql`DELETE FROM security_audit_trail WHERE user_id = ${targetUserId}`);
+    await tx.execute(sql`DELETE FROM user_push_tokens WHERE user_id = ${targetUserId}`);
+    await tx.execute(sql`DELETE FROM user_sessions WHERE user_id = ${targetUserId}`);
+    await tx.execute(sql`DELETE FROM call_participants WHERE user_id = ${targetUserId}`);
+    await tx.execute(sql`DELETE FROM user_availability WHERE user_id = ${targetUserId}`);
+
+    // Delete from child tables that reference the user
+    await tx.delete(oauthTokens).where(eq(oauthTokens.userId, targetUserId));
+    await tx.delete(teamMembersCollaborative).where(eq(teamMembersCollaborative.memberId, targetUserId));
+    await tx.delete(notifications).where(eq(notifications.userId, targetUserId));
+    await tx.delete(activities).where(eq(activities.userId, targetUserId));
+    await tx.delete(auditLogs).where(eq(auditLogs.userId, targetUserId));
+    
+    // Delete from users and teamMembers
+    await tx.delete(users).where(eq(users.id, targetUserId));
+    await tx.delete(teamMembers).where(eq(teamMembers.id, targetUserId));
+  });
 }

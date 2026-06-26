@@ -79,6 +79,14 @@ export default function TeamsScreen() {
     onError: (err: any) => Alert.alert('Error', err.message),
   });
 
+  const removeMemberMutation = trpc.teams.removeMember.useMutation({
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      membersQuery.refetch();
+    },
+    onError: (err: any) => Alert.alert('Error', err.message),
+  });
+
   const handleCreate = () => {
     if (!teamName.trim()) {
       Alert.alert('Required', 'Team name is required.');
@@ -341,7 +349,12 @@ export default function TeamsScreen() {
                 (membersQuery.data as any[] ?? []).map((member: any) => {
                   const displayName = member.member?.name || member.member?.email || 'Unknown';
                   const displayEmail = member.member?.email || '';
-                  const rStyle = getRoleStyle(member.role);
+                  const memberRole = member.role || 'member';
+                  const rStyle = getRoleStyle(memberRole);
+                  const isMe = member.member?.email === user?.email;
+                  const currentUserRole = activeTeam?.memberRole || activeTeam?.role;
+                  const canRemove = !isMe && (currentUserRole === 'admin' || currentUserRole === 'team_lead' || currentUserRole === 'owner');
+
                   return (
                     <View key={member.id} className="flex-row items-center py-3.5 border-b border-slate-100 dark:border-neutral-800">
                       <View className="mr-3">
@@ -353,13 +366,41 @@ export default function TeamsScreen() {
                           <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5">{displayEmail}</Text>
                         ) : null}
                       </View>
-                      <View
-                        className="rounded-xl px-2.5 py-1"
-                        style={{ backgroundColor: rStyle.bg }}
-                      >
-                        <Text className="text-xs font-semibold capitalize" style={{ color: rStyle.color }}>
-                          {member.role || 'member'}
-                        </Text>
+                      <View className="flex-row items-center gap-2">
+                        <View
+                          className="rounded-xl px-2.5 py-1"
+                          style={{ backgroundColor: rStyle.bg }}
+                        >
+                          <Text className="text-xs font-semibold capitalize" style={{ color: rStyle.color }}>
+                            {memberRole}
+                          </Text>
+                        </View>
+                        {canRemove && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              Alert.alert(
+                                'Remove Member',
+                                `Are you sure you want to remove ${displayName}?`,
+                                [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  { 
+                                    text: 'Remove', 
+                                    style: 'destructive',
+                                    onPress: () => {
+                                      if (activeTeam && member.member?.id) {
+                                        removeMemberMutation.mutate({ teamId: activeTeam.id, userId: member.member.id });
+                                      }
+                                    }
+                                  }
+                                ]
+                              );
+                            }}
+                            disabled={removeMemberMutation.isPending}
+                            className="p-2"
+                          >
+                            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   );

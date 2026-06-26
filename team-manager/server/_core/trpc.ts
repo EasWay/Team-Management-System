@@ -7,8 +7,21 @@ const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
 });
 
+const loggerMiddleware = t.middleware(async ({ path, type, next }) => {
+  const start = Date.now();
+  console.log(`[TRPC] 🚀 ${type} ${path} - Start`);
+  const result = await next();
+  const durationMs = Date.now() - start;
+  if (result.ok) {
+    console.log(`[TRPC] ✅ ${type} ${path} - Success in ${durationMs}ms`);
+  } else {
+    console.error(`[TRPC] ❌ ${type} ${path} - Failed in ${durationMs}ms`, result.error);
+  }
+  return result;
+});
+
 export const router = t.router;
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(loggerMiddleware);
 
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;

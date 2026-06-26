@@ -83,7 +83,10 @@ export async function registerPushToken(): Promise<string | null> {
   }
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    const tokenData = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined
+    );
     const pushToken = tokenData.data;
     await SecureStorage.set(STORAGE_KEYS.PUSH_TOKEN, pushToken);
     await syncTokenWithServer(pushToken);

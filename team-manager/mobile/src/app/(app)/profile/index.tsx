@@ -370,6 +370,23 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={15} color="#94a3b8" />
               </TouchableOpacity>
             ))}
+            {(user as any)?.role === 'admin' && (
+              <TouchableOpacity
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/(app)/admin' as any }); }}
+                className={`flex-row items-center px-5 py-4 gap-3 border-t border-slate-100 dark:border-neutral-800`}
+              >
+                <View
+                  className="w-9 h-9 rounded-xl items-center justify-center bg-red-500/10"
+                >
+                  <Ionicons name="shield-outline" size={18} color="#ef4444" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-slate-800 dark:text-neutral-100 font-medium text-sm">Admin Panel</Text>
+                  <Text className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5">System configuration</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={15} color="#94a3b8" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 

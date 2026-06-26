@@ -89,6 +89,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    try {
+      const pushToken = await SecureStorage.get(STORAGE_KEYS.PUSH_TOKEN);
+      if (pushToken) {
+        await fetch(`${API_BASE_URL}/api/trpc/auth.logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ json: { pushToken } }),
+        });
+      }
+    } catch (err) {
+      console.warn('[authStore] push token logout failed', err);
+    }
     await SecureStorage.clearAuth();
     set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false, isLoading: false });
   },

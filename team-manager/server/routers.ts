@@ -192,13 +192,21 @@ export const appRouter = router({
           refreshToken,
         };
       }),
-    logout: publicProcedure.mutation(() => {
-      // With token-based auth, logout is handled client-side by removing the token
-      // Server doesn't need to do anything
-      return {
-        success: true,
-      } as const;
-    }),
+    logout: publicProcedure
+      .input(z.object({ pushToken: z.string().optional() }).optional())
+      .mutation(async ({ input }) => {
+        if (input?.pushToken) {
+          const db = await getDb();
+          if (db) {
+            const { userPushTokens } = await import('../drizzle/schema');
+            const { eq } = await import('drizzle-orm');
+            await db.delete(userPushTokens).where(eq(userPushTokens.pushToken, input.pushToken));
+          }
+        }
+        return {
+          success: true,
+        } as const;
+      }),
     refreshToken: publicProcedure
       .input(z.object({ refreshToken: z.string() }))
       .mutation(async ({ input }) => {
@@ -3296,10 +3304,11 @@ export const appRouter = router({
 
     // Get dashboard
     getDashboard: publicProcedure
-      .input(z.object({ clientId: z.number() }))
+      .input(z.object({ token: z.string() }))
       .query(async ({ input }) => {
         try {
-          return await getClientDashboard(input.clientId);
+          const access = await verifyClientToken(input.token);
+          return await getClientDashboard(access.clientId);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get dashboard');
         }
@@ -3307,10 +3316,11 @@ export const appRouter = router({
 
     // Get projects
     getProjects: publicProcedure
-      .input(z.object({ clientId: z.number() }))
+      .input(z.object({ token: z.string() }))
       .query(async ({ input }) => {
         try {
-          return await getClientProjects(input.clientId);
+          const access = await verifyClientToken(input.token);
+          return await getClientProjects(access.clientId);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get projects');
         }
@@ -3319,12 +3329,13 @@ export const appRouter = router({
     // Get project details
     getProjectDetails: publicProcedure
       .input(z.object({
-        clientId: z.number(),
+        token: z.string(),
         projectId: z.number(),
       }))
       .query(async ({ input }) => {
         try {
-          return await getClientProjectDetails(input.clientId, input.projectId);
+          const access = await verifyClientToken(input.token);
+          return await getClientProjectDetails(access.clientId, input.projectId);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get project details');
         }
@@ -3333,7 +3344,7 @@ export const appRouter = router({
     // Submit feedback
     submitFeedback: publicProcedure
       .input(z.object({
-        clientId: z.number(),
+        token: z.string(),
         projectId: z.number(),
         teamId: z.number(),
         feedbackType: z.enum(['general', 'deliverable', 'milestone', 'approval']),
@@ -3346,7 +3357,9 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         try {
-          return await createClientFeedback(input);
+          const access = await verifyClientToken(input.token);
+          const { token, ...rest } = input;
+          return await createClientFeedback({ ...rest, clientId: access.clientId });
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to submit feedback');
         }
@@ -3355,13 +3368,14 @@ export const appRouter = router({
     // Get feedback
     getFeedback: publicProcedure
       .input(z.object({
-        clientId: z.number(),
+        token: z.string(),
         projectId: z.number().optional(),
         status: z.string().optional(),
       }))
       .query(async ({ input }) => {
         try {
-          return await getClientFeedback(input.clientId, {
+          const access = await verifyClientToken(input.token);
+          return await getClientFeedback(access.clientId, {
             projectId: input.projectId,
             status: input.status,
           });
@@ -3373,12 +3387,13 @@ export const appRouter = router({
     // Get activity log
     getActivityLog: publicProcedure
       .input(z.object({
-        clientId: z.number(),
+        token: z.string(),
         limit: z.number().optional(),
       }))
       .query(async ({ input }) => {
         try {
-          return await getClientActivityLog(input.clientId, input.limit);
+          const access = await verifyClientToken(input.token);
+          return await getClientActivityLog(access.clientId, input.limit);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to get activity log');
         }
@@ -3387,13 +3402,14 @@ export const appRouter = router({
     // Change password
     changePassword: publicProcedure
       .input(z.object({
-        clientId: z.number(),
+        token: z.string(),
         oldPassword: z.string(),
         newPassword: z.string(),
       }))
       .mutation(async ({ input }) => {
         try {
-          return await changeClientPassword(input.clientId, input.oldPassword, input.newPassword);
+          const access = await verifyClientToken(input.token);
+          return await changeClientPassword(access.clientId, input.oldPassword, input.newPassword);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to change password');
         }

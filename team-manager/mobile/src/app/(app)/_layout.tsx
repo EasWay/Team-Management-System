@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useColorScheme } from 'nativewind';
 import { useAuthStore } from '@/store/authStore';
 import { trpc } from '@/lib/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTeamStore } from '@/store/teamStore';
 import {
   setBadgeCount,
@@ -21,6 +22,7 @@ export default function AppLayout() {
   const { isAuthenticated, isLoading, user } = useAuthStore();
   const { setTeams, restoreActiveTeam, activeTeam } = useTeamStore();
   const { colorScheme } = useColorScheme();
+  const insets = useSafeAreaInsets();
   const isDark = colorScheme === 'dark';
 
   // ─── Core queries ────────────────────────────────────────────────────────────
@@ -149,8 +151,8 @@ export default function AppLayout() {
           backgroundColor: tabBg,
           borderTopColor: tabBorder,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          height: Platform.OS === 'ios' ? 68 + Math.max(insets.bottom, 20) : 68,
+          paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 8,
           paddingTop: 8,
         },
         tabBarActiveTintColor: isDark ? '#FFFFFF' : '#0A0A0A', // overridden per-tab below
