@@ -70,6 +70,10 @@ export const teamMembersCollaborative = pgTable("team_members_collaborative", {
   officeRole: text("office_role"), // 'project_manager', 'lead_researcher', 'systems_architect', 'backend_engineer', 'fullstack_engineer', 'ai_engineer', 'qa_tester', 'designer'
   status: text("status").default("active"), // 'active', 'pending'
   joinedAt: timestamp("joined_at").defaultNow(),
+}, (table) => {
+  return {
+    uniqueTeamMember: unique("unique_team_member").on(table.teamId, table.memberId),
+  };
 });
 
 // Team Invitations table
