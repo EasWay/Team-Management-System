@@ -229,6 +229,7 @@ export default function AppLayout() {
       <Tabs.Screen name="conference/index" options={{ href: null }} />
       <Tabs.Screen name="teams/index"      options={{ href: null }} />
       <Tabs.Screen name="chat/[userId]"    options={{ href: null }} />
+      <Tabs.Screen name="admin/index"      options={{ href: null }} />
     </Tabs>
   );
 }

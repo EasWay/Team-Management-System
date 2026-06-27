@@ -41,7 +41,7 @@ export default function AdminScreen() {
   if ((user as any)?.role !== 'admin') {
     return (
       <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black items-center justify-center p-5">
-        <Ionicons name="shield-alert-outline" size={48} color="#ef4444" />
+        <Ionicons name="shield-outline" size={48} color="#ef4444" />
         <Text className="text-slate-900 dark:text-white text-xl font-bold mt-4">Access Denied</Text>
         <Text className="text-slate-500 dark:text-neutral-400 text-center mt-2 mb-6">
           You need administrator privileges to access this page.
