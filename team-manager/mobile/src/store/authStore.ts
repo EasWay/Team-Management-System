@@ -33,7 +33,27 @@ async function validateAndRefreshToken(
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (meResp.ok) return; // Token still valid, nothing to do
+  if (meResp.ok) {
+    try {
+      const userJson = await meResp.json();
+      const userData = userJson?.result?.data?.json ?? userJson?.result?.data;
+      if (userData) {
+        const updatedUser = {
+          id: userData.id ?? 0,
+          email: userData.email ?? '',
+          name: userData.name ?? userData.email ?? 'User',
+          username: userData.username,
+          avatarUrl: userData.avatarUrl,
+          role: userData.role,
+        };
+        set({ user: updatedUser });
+        SecureStorage.set(STORAGE_KEYS.USER, JSON.stringify(updatedUser)).catch(() => {});
+      }
+    } catch (e) {
+      console.warn('[authStore] silent refresh parsing failed', e);
+    }
+    return;
+  }
 
   // 401 → access token expired, try refresh token
   if (meResp.status === 401 && refresh) {
