@@ -97,11 +97,15 @@ export async function registerPushToken(): Promise<string | null> {
   }
 }
 
-async function syncTokenWithServer(pushToken: string): Promise<void> {
+export async function syncTokenWithServer(pushToken: string): Promise<void> {
   const accessToken = await SecureStorage.get(STORAGE_KEYS.ACCESS_TOKEN);
-  if (!accessToken) return;
+  if (!accessToken) {
+    console.log('[Notifications] No access token found, skipping syncTokenWithServer');
+    return;
+  }
   try {
-    await fetch(`${API_BASE_URL}/api/trpc/notifications.registerPushToken`, {
+    console.log('[Notifications] Syncing push token with server...');
+    const res = await fetch(`${API_BASE_URL}/api/trpc/registerPushToken`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -109,8 +113,12 @@ async function syncTokenWithServer(pushToken: string): Promise<void> {
       },
       body: JSON.stringify({ json: { pushToken, platform: Platform.OS } }),
     });
+    console.log('[Notifications] Sync push token response status:', res.status);
+    if (!res.ok) {
+      console.warn('[Notifications] Failed to sync push token, server returned:', await res.text());
+    }
   } catch (err) {
-    console.warn('[Notifications] Failed to sync push token:', err);
+    console.warn('[Notifications] Network error syncing push token:', err);
   }
 }
 
