@@ -54,8 +54,20 @@ export default function DashboardLayout({
   const currentTeamName = currentTeam?.name || 'NO ACTIVE TEAM';
 
   const allMenuItems = selectedTeamId ? workspaceMenuItems : globalMenuItems;
+  
+  // Verbose logging for admin link debugging
+  console.log('[DashboardLayout Debug] Current User:', user);
+  console.log('[DashboardLayout Debug] User Role:', (user as any)?.role);
+  console.log('[DashboardLayout Debug] Selected Team ID:', selectedTeamId);
+  
   const menuItems = allMenuItems.filter(
-    (item) => !(item as any).adminOnly || (user as any)?.role === 'admin'
+    (item) => {
+      const passed = !(item as any).adminOnly || (user as any)?.role === 'admin';
+      if ((item as any).adminOnly) {
+        console.log(`[DashboardLayout Debug] Evaluating admin link: adminOnly=${(item as any).adminOnly}, userRole=${(user as any)?.role}, showingLink=${passed}`);
+      }
+      return passed;
+    }
   );
 
   if (loading) {

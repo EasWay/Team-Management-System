@@ -237,9 +237,15 @@ export async function sendNotification(params: {
   actionUrl?: string;
   actionLabel?: string;
 }, dbClient?: any) {
+  console.log('[NotificationSystem] Entering sendNotification with params:', JSON.stringify(params, null, 2));
   try {
     const db = dbClient || await getDb();
-    if (!db) return;
+    if (!db) {
+      console.error('[NotificationSystem] Failed: db connection not available');
+      return;
+    }
+    
+    console.log('[NotificationSystem] Attempting to insert notification into database...');
     const [notif] = await db
       .insert(notifications)
       .values({
@@ -257,13 +263,21 @@ export async function sendNotification(params: {
         sentInApp: true,
       })
       .returning();
+      
+    console.log('[NotificationSystem] DB Insert successful. Notification record:', JSON.stringify(notif, null, 2));
+
+    console.log('[NotificationSystem] Calling broadcastToMember for userId:', params.userId);
     broadcastToMember(params.userId, 'notification', notif);
+    console.log('[NotificationSystem] broadcastToMember completed.');
 
     // Send Expo push notification
+    console.log('[NotificationSystem] Querying for Expo push tokens for userId:', params.userId);
     const pushRecords = await db
       .select({ pushToken: userPushTokens.pushToken })
       .from(userPushTokens)
       .where(eq(userPushTokens.userId, params.userId));
+      
+    console.log(`[NotificationSystem] Found ${pushRecords.length} push tokens for user.`);
 
     if (pushRecords.length > 0) {
       const messages = pushRecords.map(record => ({
@@ -278,6 +292,8 @@ export async function sendNotification(params: {
         },
       }));
 
+      console.log('[NotificationSystem] Sending to Expo push API:', JSON.stringify(messages, null, 2));
+
       fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
         headers: {
@@ -287,28 +303,35 @@ export async function sendNotification(params: {
         },
         body: JSON.stringify(messages),
       }).then(async (res) => {
+        console.log('[NotificationSystem] Expo push API responded with status:', res.status);
         if (res.ok) {
           const response = await res.json();
+          console.log('[NotificationSystem] Expo response data:', JSON.stringify(response, null, 2));
           const tokensToDelete: string[] = [];
           if (response.data && Array.isArray(response.data)) {
             response.data.forEach((ticket: any, index: number) => {
               if (ticket.status === 'error' && ticket.details && (ticket.details.error === 'DeviceNotRegistered' || ticket.details.error === 'InvalidCredentials')) {
+                console.warn(`[NotificationSystem] Invalid token detected: ${messages[index].to}, error: ${ticket.details.error}`);
                 tokensToDelete.push(messages[index].to);
               }
             });
           }
           if (tokensToDelete.length > 0) {
+            console.log(`[NotificationSystem] Deleting ${tokensToDelete.length} invalid tokens from database.`);
             await db.delete(userPushTokens).where(inArray(userPushTokens.pushToken, tokensToDelete));
           }
+        } else {
+          const errText = await res.text();
+          console.error('[NotificationSystem] Expo API error response:', errText);
         }
       }).catch(err => {
-        console.error('[Notification] Failed to send push notification via Expo:', err);
+        console.error('[NotificationSystem] Failed to send push notification via Expo:', err);
       });
     }
 
     return notif;
   } catch (err) {
-    console.error('[Notification] Failed to send notification:', err);
+    console.error('[NotificationSystem] CRITICAL ERROR in sendNotification:', err);
   }
 }
 
