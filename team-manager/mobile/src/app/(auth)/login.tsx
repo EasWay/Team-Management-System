@@ -59,6 +59,7 @@ export default function LoginScreen() {
             email: userData?.email ?? '',
             name: userData?.name ?? userData?.email ?? 'User',
             avatarUrl: userData?.avatarUrl,
+            role: userData?.role,
           },
           accessToken,
           refreshToken ?? ''

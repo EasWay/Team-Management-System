@@ -62,6 +62,7 @@ export default function OAuthCallbackScreen() {
             email: data?.email ?? '',
             name: data?.name ?? data?.email ?? 'User',
             avatarUrl: data?.avatarUrl,
+            role: data?.role,
           },
           accessToken,
           refreshToken ?? '',
