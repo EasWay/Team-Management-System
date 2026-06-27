@@ -36,7 +36,8 @@ const workspaceMenuItems = [
 
 
 const globalMenuItems = [
-  { label: "Teams", path: "/teams" }
+  { label: "Teams", path: "/teams" },
+  { label: "⚙️ Admin", path: "/admin", adminOnly: true },
 ];
 
 export default function DashboardLayout({
