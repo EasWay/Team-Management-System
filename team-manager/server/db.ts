@@ -4909,7 +4909,7 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
     if (fallbackAdminId) {
       await tx.execute(sql`UPDATE file_folders SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE calendar_events SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE video_calls SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE video_calls SET host_id = ${fallbackAdminId} WHERE host_id = ${targetUserId}`);
       await tx.execute(sql`UPDATE resource_permissions SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE office_access_control SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE ip_whitelist SET added_by = ${fallbackAdminId} WHERE added_by = ${targetUserId}`);
@@ -4920,7 +4920,7 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
       // Very rare fallback if no other admin exists: just delete to avoid constraint failures
       await tx.execute(sql`DELETE FROM file_folders WHERE created_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM calendar_events WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM video_calls WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM video_calls WHERE host_id = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM resource_permissions WHERE granted_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM office_access_control WHERE granted_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM ip_whitelist WHERE added_by = ${targetUserId}`);
