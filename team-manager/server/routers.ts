@@ -39,6 +39,36 @@ function handleDatabaseError(error: unknown): never {
 
 export const appRouter = router({
   system: systemRouter,
+  
+  registerPushToken: protectedProcedure
+    .input(z.object({
+      pushToken: z.string(),
+      platform: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await import('./db.js').then(m => m.getDb());
+      if (!db) throw new Error('DB unavailable');
+      const { userPushTokens } = await import('../drizzle/schema.js');
+      const { eq, and } = await import('drizzle-orm');
+      
+      // Check if token already exists for this user
+      const existing = await db.select().from(userPushTokens).where(
+        and(
+          eq(userPushTokens.userId, ctx.user.id),
+          eq(userPushTokens.pushToken, input.pushToken)
+        )
+      ).limit(1);
+      
+      if (!existing || existing.length === 0) {
+        await db.insert(userPushTokens).values({
+          userId: ctx.user.id,
+          pushToken: input.pushToken,
+          platform: input.platform || null,
+        });
+      }
+      
+      return { success: true };
+    }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     
