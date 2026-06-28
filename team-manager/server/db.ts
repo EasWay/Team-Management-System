@@ -4940,21 +4940,21 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
     }
 
     // Set nullable references to NULL
-    await tx.execute(sql`UPDATE teams SET created_by = NULL WHERE created_by = ${targetUserId}`);
-    await tx.execute(sql`UPDATE teams SET boss_user_id = NULL WHERE boss_user_id = ${targetUserId}`);
-    await tx.execute(sql`UPDATE teams SET pm_user_id = NULL WHERE pm_user_id = ${targetUserId}`);
-    await tx.execute(sql`UPDATE projects SET created_by = NULL WHERE created_by = ${targetUserId}`);
-    await tx.execute(sql`UPDATE approvals SET approver_user_id = NULL WHERE approver_user_id = ${targetUserId}`);
-    await tx.execute(sql`UPDATE files SET created_by = NULL WHERE created_by = ${targetUserId}`);
-    await tx.execute(sql`UPDATE tasks SET created_by = NULL WHERE created_by = ${targetUserId}`);
-    await tx.execute(sql`UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ${targetUserId}`);
+    await runSafe(sql`UPDATE teams SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE teams SET boss_user_id = NULL WHERE boss_user_id = ${targetUserId}`);
+    await runSafe(sql`UPDATE teams SET pm_user_id = NULL WHERE pm_user_id = ${targetUserId}`);
+    await runSafe(sql`UPDATE projects SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE approvals SET approver_user_id = NULL WHERE approver_user_id = ${targetUserId}`);
+    await runSafe(sql`UPDATE files SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE tasks SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ${targetUserId}`);
 
     // Delete records strictly bound to the user
-    await tx.execute(sql`DELETE FROM security_audit_trail WHERE user_id = ${targetUserId}`);
-    await tx.execute(sql`DELETE FROM user_push_tokens WHERE user_id = ${targetUserId}`);
-    await tx.execute(sql`DELETE FROM user_sessions WHERE user_id = ${targetUserId}`);
-    await tx.execute(sql`DELETE FROM call_participants WHERE user_id = ${targetUserId}`);
-    await tx.execute(sql`DELETE FROM user_availability WHERE user_id = ${targetUserId}`);
+    await runSafe(sql`DELETE FROM security_audit_trail WHERE user_id = ${targetUserId}`);
+    await runSafe(sql`DELETE FROM user_push_tokens WHERE user_id = ${targetUserId}`);
+    await runSafe(sql`DELETE FROM user_sessions WHERE user_id = ${targetUserId}`);
+    await runSafe(sql`DELETE FROM call_participants WHERE user_id = ${targetUserId}`);
+    await runSafe(sql`DELETE FROM user_availability WHERE user_id = ${targetUserId}`);
 
     // Delete from child tables that reference the user
     await tx.delete(oauthTokens).where(eq(oauthTokens.userId, targetUserId));
