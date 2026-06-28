@@ -43,8 +43,11 @@ export default function Admin() {
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [deleteUserName, setDeleteUserName] = useState<string>("");
 
+  const userRole = ((user as any)?.role || '').toLowerCase().trim();
+  const isAdmin = ['admin', 'owner', 'superadmin'].includes(userRole);
+
   const { data: allUsers, isLoading, refetch } = trpc.admin.listUsers.useQuery(undefined, {
-    enabled: (user as any)?.role === 'admin',
+    enabled: isAdmin,
     retry: false,
   });
 
@@ -97,7 +100,7 @@ export default function Admin() {
   };
 
   // If not admin, show access denied
-  if ((user as any)?.role !== 'admin') {
+  if (!isAdmin) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center flex-1 gap-4 p-8">

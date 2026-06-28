@@ -603,12 +603,15 @@ export async function createUserWithPassword(userData: {
   }
 
   return await db.transaction(async (tx) => {
+    const [existing] = await tx.select({ id: users.id }).from(users).limit(1);
+    const role = existing ? 'user' : 'admin';
+
     const result = await tx.insert(users).values({
       email: userData.email,
       passwordHash: userData.passwordHash,
       name: userData.name,
       loginMethod: 'email',
-      role: 'user',
+      role,
       lastSignedIn: new Date(),
     }).returning();
 

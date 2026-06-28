@@ -198,8 +198,9 @@ export default function MyOfficeScreen() {
         </View>
 
         {/* ── Hero Video ── */}
-        <View style={{ marginTop: 12, height: 186, overflow: 'hidden' }}>
+        <View style={{ marginTop: 12, marginHorizontal: 20, height: 186, overflow: 'hidden', borderRadius: 16 }}>
           <Video
+            key={isDark ? 'dark' : 'light'}
             source={isDark
               ? require('../../../assets/mobile dash hero.mp4')
               : require('../../../assets/home hero vid white theme.mp4')}
@@ -208,6 +209,7 @@ export default function MyOfficeScreen() {
             isLooping
             isMuted
             shouldPlay
+            useNativeControls={false}
           />
           {isDark && <GradientFade isDark={isDark} />}
         </View>

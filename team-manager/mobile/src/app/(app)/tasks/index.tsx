@@ -71,21 +71,23 @@ function ProgressRing({ pct = 0, size = 46, color = '#888888', track }: {
       {/* Right half fill (0–50%) */}
       <View style={{ position: 'absolute', width: size / 2, height: size, right: 0, overflow: 'hidden' }}>
         <View style={{
-          width: size, height: size, borderRadius: size / 2,
-          backgroundColor: color,
-          position: 'absolute', right: 0,
-          transform: [{ rotate: `${rightAngle - 180}deg` }],
-        }} />
+          width: size, height: size, borderRadius: size / 2, overflow: 'hidden',
+          position: 'absolute', left: -size / 2,
+          transform: [{ rotate: `${rightAngle}deg` }],
+        }}>
+          <View style={{ width: size / 2, height: size, backgroundColor: color, position: 'absolute', left: 0 }} />
+        </View>
       </View>
 
       {/* Left half fill (50–100%) */}
       <View style={{ position: 'absolute', width: size / 2, height: size, left: 0, overflow: 'hidden' }}>
         <View style={{
-          width: size, height: size, borderRadius: size / 2,
-          backgroundColor: filled >= 50 ? color : 'transparent',
+          width: size, height: size, borderRadius: size / 2, overflow: 'hidden',
           position: 'absolute', left: 0,
-          transform: [{ rotate: `${leftAngle - 180}deg` }],
-        }} />
+          transform: [{ rotate: `${leftAngle}deg` }],
+        }}>
+          <View style={{ width: size / 2, height: size, backgroundColor: color, position: 'absolute', right: 0 }} />
+        </View>
       </View>
 
       {/* Inner hole */}

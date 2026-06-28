@@ -252,6 +252,7 @@ export default function ProfileScreen() {
           <Text className="text-slate-900 dark:text-white text-xl font-bold">{displayName}</Text>
           {user?.username && <Text className="text-slate-400 dark:text-neutral-500 text-sm mt-0.5">@{user.username}</Text>}
           <Text className="text-slate-500 dark:text-neutral-400 text-sm mt-1">{user?.email}</Text>
+          <Text className="text-red-500 text-xs mt-1">System Role: {(user as any)?.role || 'undefined'}</Text>
 
           <TouchableOpacity onPress={openEditProfile} className="mt-3 flex-row items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-2">
             <Ionicons name="pencil-outline" size={13} color={isDark ? '#aaa' : '#555'} />
@@ -370,7 +371,7 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={15} color="#94a3b8" />
               </TouchableOpacity>
             ))}
-            {(user as any)?.role === 'admin' && (
+            {['admin', 'owner', 'superadmin'].includes(((user as any)?.role || '').toLowerCase().trim()) && (
               <TouchableOpacity
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/(app)/admin' as any }); }}
                 className={`flex-row items-center px-5 py-4 gap-3 border-t border-slate-100 dark:border-neutral-800`}

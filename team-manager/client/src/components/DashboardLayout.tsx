@@ -62,7 +62,9 @@ export default function DashboardLayout({
   
   const menuItems = allMenuItems.filter(
     (item) => {
-      const passed = !(item as any).adminOnly || (user as any)?.role === 'admin';
+      const userRole = ((user as any)?.role || '').toLowerCase().trim();
+      const isAdmin = ['admin', 'owner', 'superadmin'].includes(userRole);
+      const passed = !(item as any).adminOnly || isAdmin;
       if ((item as any).adminOnly) {
         console.log(`[DashboardLayout Debug] Evaluating admin link: adminOnly=${(item as any).adminOnly}, userRole=${(user as any)?.role}, showingLink=${passed}`);
       }
@@ -208,6 +210,7 @@ export default function DashboardLayout({
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-bold text-foreground">{user.name || "Member"}</span>
+              <span className="text-[10px] opacity-50">System Role: {(user as any)?.role || 'undefined'}</span>
             </div>
           </div>
         </div>
