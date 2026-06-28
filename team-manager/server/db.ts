@@ -1410,51 +1410,70 @@ export async function updateTeamMemberOfficeRole(
  * Requirement 2.5: Member removal with access revocation
  */
 export async function removeTeamMember(
-  teamId: number,
-  targetMemberId: number,
-  removedBy: number
-): Promise<boolean> {
-  return await withTransaction(async (db) => {
-    // Check remover has permission
-    const [removerMembership] = await db
-      .select()
-      .from(teamMembersCollaborative)
-      .where(
-        and(
-          eq(teamMembersCollaborative.teamId, teamId),
-          eq(teamMembersCollaborative.memberId, removedBy)
+    teamId: number,
+    targetMemberId: number,
+    removedBy: number
+  ): Promise<boolean> {
+    let shouldDeleteCompletely = false;
+    
+    await withTransaction(async (db) => {
+      // Check remover has permission
+      const [removerMembership] = await db
+        .select()
+        .from(teamMembersCollaborative)
+        .where(
+          and(
+            eq(teamMembersCollaborative.teamId, teamId),
+            eq(teamMembersCollaborative.memberId, removedBy)
+          )
         )
-      )
-      .limit(1);
-
-    if (!removerMembership || !hasPermission(removerMembership.role as TeamRole, 'remove_member')) {
-      throw new ValidationError('Insufficient permissions to remove member');
+        .limit(1);
+  
+      if (!removerMembership || !hasPermission(removerMembership.role as TeamRole, 'remove_member')) {
+        throw new ValidationError('Insufficient permissions to remove member');
+      }
+  
+      // Cannot remove team creator
+      const [team] = await db
+        .select()
+        .from(teams)
+        .where(eq(teams.id, teamId))
+        .limit(1);
+  
+      if (team && team.createdBy === targetMemberId) {
+        throw new ValidationError('Cannot remove team creator');
+      }
+  
+      // Remove member
+      await db
+        .delete(teamMembersCollaborative)
+        .where(
+          and(
+            eq(teamMembersCollaborative.teamId, teamId),
+            eq(teamMembersCollaborative.memberId, targetMemberId)
+          )
+        );
+        
+      // Check if they have any other team memberships
+      const remaining = await db
+        .select({ id: teamMembersCollaborative.id })
+        .from(teamMembersCollaborative)
+        .where(eq(teamMembersCollaborative.memberId, targetMemberId))
+        .limit(1);
+        
+      if (remaining.length === 0) {
+        shouldDeleteCompletely = true;
+      }
+  
+      return true;
+    });
+    
+    if (shouldDeleteCompletely) {
+      await permanentlyDeleteUser(targetMemberId);
     }
-
-    // Cannot remove team creator
-    const [team] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.id, teamId))
-      .limit(1);
-
-    if (team && team.createdBy === targetMemberId) {
-      throw new ValidationError('Cannot remove team creator');
-    }
-
-    // Remove member
-    await db
-      .delete(teamMembersCollaborative)
-      .where(
-        and(
-          eq(teamMembersCollaborative.teamId, teamId),
-          eq(teamMembersCollaborative.memberId, targetMemberId)
-        )
-      );
-
+    
     return true;
-  });
-}
+  }
 
 /**
  * Check if a user has a specific permission for a team
