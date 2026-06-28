@@ -154,35 +154,68 @@ export async function syncTokenWithServer(pushToken: string): Promise<void> {
 
 export function handleNotificationNavigation(data: Record<string, unknown>) {
   const type = data.type as string | undefined;
+  const actionUrl = data.actionUrl as string | undefined;
+  
+  console.log('[Notifications] Routing with type:', type, 'actionUrl:', actionUrl);
+
+  // 1. If we have an actionUrl from the backend, map it to our mobile routes
+  if (actionUrl) {
+    if (actionUrl.includes('/chat') || actionUrl.includes('/messages')) {
+      router.push('/(app)/messages' as any);
+      return;
+    }
+    if (actionUrl.includes('/tasks')) {
+      router.push(data.taskId ? `/(app)/tasks?taskId=${data.taskId}` : '/(app)/tasks' as any);
+      return;
+    }
+    if (actionUrl.includes('/projects')) {
+      router.push(data.projectId ? `/(app)/projects?projectId=${data.projectId}` : '/(app)/projects' as any);
+      return;
+    }
+    if (actionUrl.includes('/files') || actionUrl.includes('/drive')) {
+      router.push('/(app)/files' as any);
+      return;
+    }
+    if (actionUrl.includes('/teams')) {
+      router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } });
+      return;
+    }
+    if (actionUrl.includes('/calendar')) {
+      router.push('/(app)/calendar' as any);
+      return;
+    }
+  }
+
+  // 2. Fallback routing based on type if actionUrl didn't match
   switch (type) {
     case 'task_assignment':
     case 'task_assigned':
     case 'deadline_approaching':
-    case 'mention':
-      router.push(data.taskId ? `/(app)/tasks?taskId=${data.taskId}` : '/(app)/tasks');
+      router.push(data.taskId ? `/(app)/tasks?taskId=${data.taskId}` : '/(app)/tasks' as any);
       break;
     case 'approval_request':
     case 'approval_requested':
-      router.push('/(app)/conference');
+      router.push('/(app)/conference' as any);
       break;
     case 'folder_alert':
     case 'folder_handoff':
     case 'file_uploaded':
-      router.push('/(app)/files');
+      router.push('/(app)/files' as any);
       break;
     case 'project_update':
     case 'evaluation_complete':
-      router.push(data.projectId ? `/(app)/projects?projectId=${data.projectId}` : '/(app)/projects');
+      router.push(data.projectId ? `/(app)/projects?projectId=${data.projectId}` : '/(app)/projects' as any);
       break;
     case 'team_message':
     case 'message':
-      router.push('/(app)/messages');
+    case 'mention': // Used for direct chat messages in db.ts
+      router.push('/(app)/messages' as any);
       break;
     case 'calendar_reminder':
-      router.push('/(app)/calendar');
+      router.push('/(app)/calendar' as any);
       break;
     default:
-      router.push('/(app)');
+      router.push('/(app)' as any);
   }
 }
 
