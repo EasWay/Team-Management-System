@@ -309,13 +309,40 @@ export async function sendNotification(params: {
           console.log('[NotificationSystem] Expo response data:', JSON.stringify(response, null, 2));
           const tokensToDelete: string[] = [];
           if (response.data && Array.isArray(response.data)) {
+            const ticketIds: string[] = [];
             response.data.forEach((ticket: any, index: number) => {
+              if (ticket.status === 'ok' && ticket.id) {
+                ticketIds.push(ticket.id);
+              }
               if (ticket.status === 'error' && ticket.details && (ticket.details.error === 'DeviceNotRegistered' || ticket.details.error === 'InvalidCredentials')) {
                 console.warn(`[NotificationSystem] Invalid token detected: ${messages[index].to}, error: ${ticket.details.error}`);
                 tokensToDelete.push(messages[index].to);
               }
             });
+            
+            // Query receipts for debugging
+            if (ticketIds.length > 0) {
+              console.log(`[NotificationSystem] Querying receipts for ${ticketIds.length} tickets in 3 seconds...`);
+              setTimeout(async () => {
+                try {
+                  const receiptRes = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: ticketIds })
+                  });
+                  if (receiptRes.ok) {
+                    const receiptData = await receiptRes.json();
+                    console.log('[NotificationSystem] Expo receipt data:', JSON.stringify(receiptData, null, 2));
+                  } else {
+                    console.error('[NotificationSystem] Failed to fetch receipts, status:', receiptRes.status);
+                  }
+                } catch (e) {
+                  console.error('[NotificationSystem] Error fetching receipts:', e);
+                }
+              }, 3000);
+            }
           }
+          
           if (tokensToDelete.length > 0) {
             console.log(`[NotificationSystem] Deleting ${tokensToDelete.length} invalid tokens from database.`);
             await db.delete(userPushTokens).where(inArray(userPushTokens.pushToken, tokensToDelete));
