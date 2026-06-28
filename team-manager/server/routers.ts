@@ -3093,40 +3093,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    notifyDriveUpload: protectedProcedure
-      .input(z.object({
-        teamId: z.number(),
-        fileName: z.string(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const db = await import('./db.js').then(m => m.getDb());
-        if (!db) throw new Error('DB unavailable');
-        const { teamMembers, users } = await import('../drizzle/schema.js');
-        const { sendNotification } = await import('./db.js');
-        const { eq, and } = await import('drizzle-orm');
-        
-        // Fetch all members of the team except the uploader
-        const members = await db
-          .select({ userId: teamMembers.userId })
-          .from(teamMembers)
-          .where(and(eq(teamMembers.teamId, input.teamId), eq(teamMembers.status, 'active')));
-          
-        for (const member of members) {
-          if (member.userId !== ctx.user.id) {
-            await sendNotification({
-              userId: member.userId,
-              teamId: input.teamId,
-              type: 'folder_alert',
-              title: 'New File in Drive',
-              message: `A new file "${input.fileName}" was uploaded to your team folder.`,
-              priority: 'low',
-              actionUrl: `/files`,
-              actionLabel: 'Open Drive'
-            } as any, db);
-          }
-        }
-        return { success: true, notified: members.length - 1 };
-      }),
+    // notifyDriveUpload removed (logic moved directly to driveUploadFile)
   }),
 
   // Notification Preferences Router
@@ -4158,13 +4125,52 @@ export const appRouter = router({
         const { uploadDriveFile } = await import('./google-drive-service');
         const { getValidOAuthToken } = await import('./oauth-token-service');
         const googleToken = await getValidOAuthToken(ctx.user.id, 'google');
-        return await uploadDriveFile({
+        const result = await uploadDriveFile({
           folderId: input.folderId,
           fileName: input.fileName,
           mimeType: input.mimeType,
           content: input.content,
           userAccessToken: googleToken?.accessToken,
         });
+
+        // Send notifications to the team
+        try {
+          const db = await import('./db.js').then(m => m.getDb());
+          if (db) {
+            const { teamMembersCollaborative } = await import('../drizzle/schema.js');
+            const { sendNotification } = await import('./db.js');
+            const { eq, and } = await import('drizzle-orm');
+
+            const members = await db
+              .select({ memberId: teamMembersCollaborative.memberId })
+              .from(teamMembersCollaborative)
+              .where(
+                and(
+                  eq(teamMembersCollaborative.teamId, input.teamId),
+                  eq(teamMembersCollaborative.status, 'active')
+                )
+              );
+
+            for (const member of members) {
+              if (member.memberId !== ctx.user.id) {
+                await sendNotification({
+                  userId: member.memberId,
+                  teamId: input.teamId,
+                  type: 'folder_alert',
+                  title: 'New File in Drive',
+                  message: `A new file "${input.fileName}" was uploaded to your team folder.`,
+                  priority: 'low',
+                  actionUrl: `/files`,
+                  actionLabel: 'Open Drive'
+                }, db);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[driveUploadFile] Failed to send drive upload notification:', err);
+        }
+
+        return result;
       }),
 
     /** Delete a file from Google Drive */
