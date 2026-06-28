@@ -1119,17 +1119,41 @@ export async function addMemberToTeam(teamId: number, memberId: number, role: Te
   try {
     const { teams, users } = await import('../drizzle/schema.js');
     const [team] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, teamId)).limit(1);
+    const [addedUser] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, memberId)).limit(1);
+    
     const teamName = team?.name || 'a team';
-    await sendNotification({
-      userId: memberId,
-      teamId,
-      type: 'team_messages',
-      title: 'Welcome to the team!',
-      message: `You have been added to ${teamName} as a ${role}.`,
-      priority: 'high',
-      actionUrl: '/teams',
-      actionLabel: 'View Team'
-    }, db);
+    const memberName = addedUser?.name || addedUser?.email || 'A new member';
+    
+    const allMembers = await db
+      .select({ userId: teamMembersCollaborative.memberId })
+      .from(teamMembersCollaborative)
+      .where(and(eq(teamMembersCollaborative.teamId, teamId), eq(teamMembersCollaborative.status, 'active')));
+
+    for (const member of allMembers) {
+      if (member.userId === memberId) {
+        await sendNotification({
+          userId: member.userId,
+          teamId,
+          type: 'team_messages',
+          title: 'Welcome to the team!',
+          message: `You have been added to ${teamName} as a ${role}.`,
+          priority: 'high',
+          actionUrl: '/teams',
+          actionLabel: 'View Team'
+        }, db);
+      } else {
+        await sendNotification({
+          userId: member.userId,
+          teamId,
+          type: 'team_messages',
+          title: 'New Team Member',
+          message: `${memberName} has joined ${teamName}.`,
+          priority: 'low',
+          actionUrl: '/teams',
+          actionLabel: 'View Team'
+        }, db);
+      }
+    }
   } catch (err) {
     console.error('Failed to send add member notification:', err);
   }
@@ -1552,9 +1576,14 @@ export async function removeTeamMember(
   
       // Send notification
       try {
-        const { teams } = await import('../drizzle/schema.js');
+        const { teams, users } = await import('../drizzle/schema.js');
         const [team] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, teamId)).limit(1);
+        const [removedUser] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, targetMemberId)).limit(1);
+        
         const teamName = team?.name || 'a team';
+        const memberName = removedUser?.name || removedUser?.email || 'A member';
+        
+        // Notify the removed member
         await sendNotification({
           userId: targetMemberId,
           teamId,
@@ -1565,6 +1594,27 @@ export async function removeTeamMember(
           actionUrl: '/',
           actionLabel: 'View Dashboard'
         }, db);
+        
+        // Notify the rest of the team
+        const allMembers = await db
+          .select({ userId: teamMembersCollaborative.memberId })
+          .from(teamMembersCollaborative)
+          .where(and(eq(teamMembersCollaborative.teamId, teamId), eq(teamMembersCollaborative.status, 'active')));
+          
+        for (const member of allMembers) {
+          if (member.userId !== removedBy) {
+            await sendNotification({
+              userId: member.userId,
+              teamId,
+              type: 'team_messages',
+              title: 'Member Removed',
+              message: `${memberName} was removed from the team.`,
+              priority: 'low',
+              actionUrl: '/teams',
+              actionLabel: 'View Team'
+            }, db);
+          }
+        }
       } catch (err) {
         console.error('Failed to send remove member notification:', err);
       }
