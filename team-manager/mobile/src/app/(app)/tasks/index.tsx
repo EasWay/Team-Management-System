@@ -145,7 +145,7 @@ function TaskCard({
   canEdit: boolean;
 }) {
   const isDark = useThemeStore(state => state.isDark);
-  const pct     = task.completionPercentage ?? 0;
+  const pct     = task.status === 'done' ? 100 : (task.completionPercentage ?? 0);
   const priority = PRIORITY_META[task.priority as Priority] ?? PRIORITY_META.medium;
   const moves    = canEdit ? (MOVE_TARGETS[task.status as Status] ?? []) : [];
   const tags: string[] = Array.isArray(task.tags) ? task.tags : [];
@@ -300,10 +300,12 @@ function TaskDetailSheet({ task, onClose }: { task: any; onClose: () => void }) 
           <View style={{ backgroundColor: priority.bg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 }}>
             <Text style={{ color: priority.color, fontSize: 11, fontWeight: '700' }}>⚑ {priority.label}</Text>
           </View>
-          {task.completionPercentage != null && (
+          {(task.completionPercentage != null || task.status === 'done') && (
             <View className="bg-slate-100 dark:bg-neutral-900 rounded-xl px-3 py-1 flex-row items-center gap-1">
               <Ionicons name="stats-chart-outline" size={11} />
-              <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-bold">{task.completionPercentage}% done</Text>
+              <Text className="text-neutral-700 dark:text-neutral-400 text-xs font-bold">
+                {task.status === 'done' ? 100 : task.completionPercentage}% done
+              </Text>
             </View>
           )}
         </View>
