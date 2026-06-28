@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "795836364698",
+    "project_id": "team-manager-7d5d0",
+    "storage_bucket": "team-manager-7d5d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795836364698:android:582df0e08f39c5a86fac23",
+        "android_client_info": {
+          "package_name": "com.alphagroup.teammanagement"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRre9PYcHwR1QUEUjcuVr9uMIiwPGj1RM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

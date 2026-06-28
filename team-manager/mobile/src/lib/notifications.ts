@@ -11,10 +11,14 @@ let Notifications: any = null;
 
 if (!isExpoGo) {
   try {
+    console.log('[Notifications] Attempting to require expo-notifications (not in Expo Go)');
     Notifications = require('expo-notifications');
+    console.log('[Notifications] expo-notifications loaded successfully');
   } catch (err) {
-    console.warn('[Notifications] Failed to require expo-notifications:', err);
+    console.error('[Notifications] Failed to require expo-notifications:', err);
   }
+} else {
+  console.log('[Notifications] Running in Expo Go, skipping expo-notifications require');
 }
 
 if (Notifications) {
@@ -30,17 +34,35 @@ if (Notifications) {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (!Notifications) return false;
+  console.log('[Notifications] Requesting notification permission...');
+  if (!Notifications) {
+    console.warn('[Notifications] Notifications module not available, cannot request permissions');
+    return false;
+  }
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  if (existingStatus === 'granted') return true;
+  console.log('[Notifications] Existing permission status:', existingStatus);
+  if (existingStatus === 'granted') {
+    console.log('[Notifications] Permission already granted');
+    return true;
+  }
+  console.log('[Notifications] Asking user for permissions...');
   const { status } = await Notifications.requestPermissionsAsync();
+  console.log('[Notifications] New permission status after request:', status);
   return status === 'granted';
 }
 
 export async function registerPushToken(): Promise<string | null> {
-  if (!Notifications) return null;
+  console.log('[Notifications] Starting registerPushToken() process...');
+  if (!Notifications) {
+    console.warn('[Notifications] Notifications module not available, skipping token registration');
+    return null;
+  }
   const granted = await requestNotificationPermission();
-  if (!granted) return null;
+  if (!granted) {
+    console.warn('[Notifications] Notification permission not granted, cannot register push token');
+    return null;
+  }
+  console.log('[Notifications] Permission verified, proceeding to set up channels (if Android) and fetch token');
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -84,27 +106,33 @@ export async function registerPushToken(): Promise<string | null> {
 
   try {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    console.log('[Notifications] Fetching push token for projectId:', projectId);
     const tokenData = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
     const pushToken = tokenData.data;
+    console.log('[Notifications] Successfully fetched Expo Push Token:', pushToken);
+    
     await SecureStorage.set(STORAGE_KEYS.PUSH_TOKEN, pushToken);
+    console.log('[Notifications] Push token saved to SecureStorage successfully');
+    
     await syncTokenWithServer(pushToken);
     return pushToken;
   } catch (err) {
-    console.warn('[Notifications] Could not get push token:', err);
+    console.error('[Notifications] Could not get push token. Error details:', err);
     return null;
   }
 }
 
 export async function syncTokenWithServer(pushToken: string): Promise<void> {
+  console.log('[Notifications] syncTokenWithServer() called with token:', pushToken);
   const accessToken = await SecureStorage.get(STORAGE_KEYS.ACCESS_TOKEN);
   if (!accessToken) {
-    console.log('[Notifications] No access token found, skipping syncTokenWithServer');
+    console.warn('[Notifications] No access token found, skipping syncTokenWithServer');
     return;
   }
   try {
-    console.log('[Notifications] Syncing push token with server...');
+    console.log('[Notifications] Syncing push token with server (API request)...');
     const res = await fetch(`${API_BASE_URL}/api/trpc/registerPushToken`, {
       method: 'POST',
       headers: {
@@ -115,10 +143,12 @@ export async function syncTokenWithServer(pushToken: string): Promise<void> {
     });
     console.log('[Notifications] Sync push token response status:', res.status);
     if (!res.ok) {
-      console.warn('[Notifications] Failed to sync push token, server returned:', await res.text());
+      console.error('[Notifications] Failed to sync push token, server returned:', await res.text());
+    } else {
+      console.log('[Notifications] Push token successfully synced with server!');
     }
   } catch (err) {
-    console.warn('[Notifications] Network error syncing push token:', err);
+    console.error('[Notifications] Network error syncing push token:', err);
   }
 }
 
@@ -157,30 +187,54 @@ export function handleNotificationNavigation(data: Record<string, unknown>) {
 }
 
 export function setupNotificationResponseListener() {
-  if (!Notifications) return { remove: () => {} };
+  console.log('[Notifications] setupNotificationResponseListener() called');
+  if (!Notifications) {
+    console.warn('[Notifications] Notifications module not available, cannot setup response listener');
+    return { remove: () => {} };
+  }
   const subscription = Notifications.addNotificationResponseReceivedListener((response: any) => {
+    console.log('[Notifications] Notification response received!', response);
     const data = response.notification.request.content.data as Record<string, unknown>;
+    console.log('[Notifications] Navigating based on notification data:', data);
     handleNotificationNavigation(data);
   });
+  console.log('[Notifications] Response listener setup successfully');
   return subscription;
 }
 
 export function setupNotificationReceivedListener(onReceived: (notification: any) => void) {
-  if (!Notifications) return { remove: () => {} };
-  const subscription = Notifications.addNotificationReceivedListener(onReceived);
+  console.log('[Notifications] setupNotificationReceivedListener() called');
+  if (!Notifications) {
+    console.warn('[Notifications] Notifications module not available, cannot setup received listener');
+    return { remove: () => {} };
+  }
+  const subscription = Notifications.addNotificationReceivedListener((notification: any) => {
+    console.log('[Notifications] Foreground notification received!', notification);
+    onReceived(notification);
+  });
+  console.log('[Notifications] Received listener setup successfully');
   return subscription;
 }
 
 export async function handleInitialNotification(): Promise<void> {
-  if (!Notifications) return;
+  console.log('[Notifications] handleInitialNotification() called');
+  if (!Notifications) {
+    console.warn('[Notifications] Notifications module not available, skipping initial notification check');
+    return;
+  }
   try {
+    console.log('[Notifications] Checking for initial notification response...');
     const response = await Notifications.getLastNotificationResponseAsync();
     if (response) {
+      console.log('[Notifications] Found initial notification response:', response);
       const data = response.notification.request.content.data as Record<string, unknown>;
+      console.log('[Notifications] Scheduling navigation from initial notification data:', data);
       setTimeout(() => handleNotificationNavigation(data), 500);
+    } else {
+      console.log('[Notifications] No initial notification response found');
     }
   } catch (err) {
-    console.warn('[Notifications] Failed to check initial notification:', err);
+    console.error('[Notifications] Failed to check initial notification:', err);
   }
 }
 
