@@ -4817,15 +4817,17 @@ export async function sendChatMessage(
 
   // Send a mention/team_messages notification to the recipient
   try {
-    const { users, teamMembers } = await import('../drizzle/schema.js');
-    const sender = await db.select({ name: users.name }).from(teamMembers).innerJoin(users, eq(teamMembers.userId, users.id)).where(eq(teamMembers.id, fromMemberId)).limit(1);
+    const { teamMembers } = await import('../drizzle/schema.js');
+    console.log(`[sendChatMessage] Fetching sender details for fromMemberId=${fromMemberId}`);
+    const sender = await db.select({ name: teamMembers.name }).from(teamMembers).where(eq(teamMembers.id, fromMemberId)).limit(1);
     const senderName = sender[0]?.name || 'A teammate';
     
-    // We notify the toMemberId user
-    const recipient = await db.select({ userId: teamMembers.userId }).from(teamMembers).where(eq(teamMembers.id, toMemberId)).limit(1);
+    console.log(`[sendChatMessage] Fetching recipient details for toMemberId=${toMemberId}`);
+    const recipient = await db.select({ id: teamMembers.id }).from(teamMembers).where(eq(teamMembers.id, toMemberId)).limit(1);
     if (recipient[0]) {
+      console.log(`[sendChatMessage] Sending notification to userId=${recipient[0].id}`);
       await sendNotification({
-        userId: recipient[0].userId,
+        userId: recipient[0].id,
         teamId: teamId,
         type: 'mention', // using mention for direct messages
         title: 'New Message',
@@ -4834,9 +4836,11 @@ export async function sendChatMessage(
         actionUrl: '/chat',
         actionLabel: 'View Message'
       }, db);
+    } else {
+      console.warn(`[sendChatMessage] Recipient toMemberId=${toMemberId} not found, skipping notification`);
     }
   } catch (err) {
-    console.error('Failed to send chat notification:', err);
+    console.error('[sendChatMessage] Failed to send chat notification:', err);
   }
 
   return msg;
