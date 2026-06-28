@@ -4889,22 +4889,22 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
     
     if (fallbackAdminId) {
       await tx.execute(sql`UPDATE file_folders SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE events SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE calls SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE calendar_events SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE video_calls SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE resource_permissions SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE office_access_control SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE ip_blocklist SET added_by = ${fallbackAdminId} WHERE added_by = ${targetUserId}`);
+      await tx.execute(sql`UPDATE ip_whitelist SET added_by = ${fallbackAdminId} WHERE added_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE permission_roles SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE user_role_assignments SET assigned_by = ${fallbackAdminId} WHERE assigned_by = ${targetUserId}`);
       await tx.execute(sql`UPDATE google_drive_connections SET connected_by = ${fallbackAdminId} WHERE connected_by = ${targetUserId}`);
     } else {
       // Very rare fallback if no other admin exists: just delete to avoid constraint failures
       await tx.execute(sql`DELETE FROM file_folders WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM events WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM calls WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM calendar_events WHERE created_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM video_calls WHERE created_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM resource_permissions WHERE granted_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM office_access_control WHERE granted_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM ip_blocklist WHERE added_by = ${targetUserId}`);
+      await tx.execute(sql`DELETE FROM ip_whitelist WHERE added_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM permission_roles WHERE created_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM user_role_assignments WHERE assigned_by = ${targetUserId}`);
       await tx.execute(sql`DELETE FROM google_drive_connections WHERE connected_by = ${targetUserId}`);
