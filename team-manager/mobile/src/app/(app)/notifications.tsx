@@ -73,7 +73,43 @@ export default function NotificationsScreen() {
       markReadMutation.mutate({ notificationId: item.id });
     }
     if (item.actionUrl) {
-      router.push(item.actionUrl as any);
+      const url = item.actionUrl;
+      if (url.includes('/chat') || url.includes('/messages')) {
+        router.push('/(app)/messages' as any);
+      } else if (url.includes('/tasks')) {
+        router.push(item.taskId ? `/(app)/tasks?taskId=${item.taskId}` : '/(app)/tasks' as any);
+      } else if (url.includes('/projects')) {
+        router.push(item.projectId ? `/(app)/projects?projectId=${item.projectId}` : '/(app)/projects' as any);
+      } else if (url.includes('/files') || url.includes('/drive')) {
+        router.push('/(app)/files' as any);
+      } else if (url.includes('/teams')) {
+        router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } });
+      } else if (url.includes('/calendar')) {
+        router.push('/(app)/calendar' as any);
+      } else {
+        router.push(url as any);
+      }
+    } else if (item.type) {
+      // Fallback based on type if no actionUrl
+      switch (item.type) {
+        case 'team_message':
+        case 'message':
+        case 'mention':
+          router.push('/(app)/messages' as any);
+          break;
+        case 'task_assignment':
+        case 'task_assigned':
+        case 'deadline_approaching':
+          router.push(item.taskId ? `/(app)/tasks?taskId=${item.taskId}` : '/(app)/tasks' as any);
+          break;
+        case 'folder_alert':
+        case 'file_uploaded':
+          router.push('/(app)/files' as any);
+          break;
+        case 'project_update':
+          router.push(item.projectId ? `/(app)/projects?projectId=${item.projectId}` : '/(app)/projects' as any);
+          break;
+      }
     }
   };
 
