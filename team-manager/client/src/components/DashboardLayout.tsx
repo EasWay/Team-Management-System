@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { Button } from "./ui/button";
 import { useLocation } from "wouter";
