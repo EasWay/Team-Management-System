@@ -189,10 +189,13 @@ export default function MyOfficeScreen() {
           </View>
           {activeTeam && (
             <TouchableOpacity
-              onPress={() => router.push({ pathname: '/(app)/teams' as any, params: { from: 'home' } })}
-              className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-1.5 ml-3"
+              onPress={() => router.push('/(app)/notifications' as any)}
+              className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-full w-10 h-10 items-center justify-center ml-3 relative"
             >
-              <Text className="text-neutral-700 dark:text-neutral-300 text-xs font-semibold">{activeTeam.name}</Text>
+              <Ionicons name="notifications-outline" size={20} color={isDark ? '#FFF' : '#000'} />
+              {(dashData?.unreadNotifications > 0) && (
+                <View className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500 border border-white dark:border-neutral-800" />
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -516,67 +519,8 @@ export default function MyOfficeScreen() {
           </View>
         )}
 
-        {/* ── Activity Feed ── */}
-        {activeTeam?.id ? (
-          <View className="px-5 mt-6 mb-10">
-            <View className="flex-row justify-between items-center mb-3">
-              <View className="flex-row items-center gap-2">
-                <Text className="text-slate-900 dark:text-white font-bold text-lg">Live Activity</Text>
-                {dashboardQuery.isFetching && <ActivityIndicator size="small" color="#64748b" />}
-              </View>
-              <View className="w-2 h-2 rounded-full bg-neutral-400" />
-            </View>
-
-            <View className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
-              {dashboardQuery.isLoading && !dashData ? (
-                <ListRowSkeleton count={4} />
-              ) : activities.length === 0 ? (
-                <View className="p-6 items-center">
-                  <Ionicons name="radio-outline" size={32} color="#94a3b8" />
-                  <Text className="text-slate-400 dark:text-neutral-500 text-sm mt-2">No recent activity</Text>
-                </View>
-              ) : (
-                activities.map((activity: any, index: number) => {
-                  const { icon, color } = activityIcon(activity.type ?? '');
-                  const isLast = index === activities.length - 1;
-                  return (
-                    <View
-                      key={activity.id}
-                      className={`flex-row items-start gap-3 px-4 py-3.5 ${
-                        !isLast ? 'border-b border-slate-100 dark:border-neutral-800/60' : ''
-                      }`}
-                    >
-                      <View
-                        className="rounded-full items-center justify-center mt-0.5"
-                        style={{
-                          width: 32, height: 32,
-                          backgroundColor: color + '22',
-                          borderWidth: 1,
-                          borderColor: color + '44',
-                        }}
-                      >
-                        <Ionicons name={icon} size={15} color={color} />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-slate-700 dark:text-neutral-200 text-sm" numberOfLines={2}>
-                          {activity.userName ? (
-                            <Text className="text-slate-900 dark:text-white font-semibold">{activity.userName} </Text>
-                          ) : null}
-                          {activity.description}
-                        </Text>
-                        <Text className="text-slate-400 dark:text-neutral-600 text-xs mt-0.5">
-                          {activity.createdAt
-                            ? formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })
-                            : ''}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
-            </View>
-          </View>
-        ) : (
+        {/* ── Removed Activity Feed (Now in Notifications Screen) ── */}
+        {!activeTeam?.id && (
           <View className="px-5 mt-6 mb-10">
             <View className="bg-white dark:bg-neutral-900/50 rounded-2xl p-8 items-center border border-dashed border-slate-200 dark:border-neutral-800/50">
               <Ionicons name="people-outline" size={40} color="#94a3b8" />

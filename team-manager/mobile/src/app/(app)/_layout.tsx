@@ -223,6 +223,7 @@ export default function AppLayout() {
       />
 
       {/* Hidden screens — navigated via router.push */}
+      <Tabs.Screen name="notifications"    options={{ href: null }} />
       <Tabs.Screen name="files/index"      options={{ href: null }} />
       <Tabs.Screen name="calendar/index"   options={{ href: null }} />
       <Tabs.Screen name="analytics/index"  options={{ href: null }} />

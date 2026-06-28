@@ -38,6 +38,10 @@ async function startServer() {
   // Ensure newer tables that may be missing from older deployments exist
   await ensureMissingTables();
 
+  // Initialize the smart deadline tracker
+  const { scheduleNextDeadline } = await import('../deadline-tracker.js');
+  scheduleNextDeadline();
+
   const app = express();
   const server = createServer(app);
 

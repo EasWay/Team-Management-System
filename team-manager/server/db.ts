@@ -6,6 +6,8 @@ import { InsertUser, users, teamMembers, InsertTeamMember, TeamMember, auditLogs
 import { ENV } from './_core/env';
 import { randomBytes } from 'crypto';
 import { broadcastTaskCreated, broadcastTaskUpdated, broadcastTaskMoved, broadcastTaskDeleted, broadcastToMember } from './socket-server';
+import { checkTeamLimit, checkProjectLimit, checkStorageLimit } from './meta.js';
+import { notifyTaskChanged } from './deadline-tracker.js';
 import { encrypt, decrypt, generateToken } from './crypto';
 import { GitHubService, parseGitHubUrl } from './github-service';
 
@@ -271,6 +273,44 @@ export async function sendNotification(params: {
     console.log('[NotificationSystem] broadcastToMember completed.');
 
     // Send Expo push notification
+    console.log('[NotificationSystem] Checking notification preferences for userId:', params.userId);
+    const { notificationPreferences } = await import('../drizzle/schema.js');
+    const [prefs] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, params.userId));
+    
+    // Default to true if no preferences are found (opt-in by default)
+    let shouldSendPush = true;
+    if (prefs) {
+      if (!prefs.pushEnabled) {
+        shouldSendPush = false;
+        console.log('[NotificationSystem] Push notifications disabled globally by user.');
+      } else {
+        // Map notification type to preference column
+        switch (params.type) {
+          case 'task_assignment':
+            shouldSendPush = prefs.taskAssignments !== false;
+            break;
+          case 'task_deadline':
+            shouldSendPush = prefs.taskDeadlines !== false;
+            break;
+          case 'mention':
+          case 'team_messages':
+            shouldSendPush = prefs.mentions !== false;
+            break;
+          case 'approval_request':
+            shouldSendPush = prefs.approvalRequests !== false;
+            break;
+          case 'folder_alert':
+            shouldSendPush = prefs.folderAlerts !== false;
+            break;
+        }
+      }
+    }
+
+    if (!shouldSendPush) {
+      console.log(`[NotificationSystem] Push notification skipped based on user preference for type: ${params.type}`);
+      return notif;
+    }
+
     console.log('[NotificationSystem] Querying for Expo push tokens for userId:', params.userId);
     const pushRecords = await db
       .select({ pushToken: userPushTokens.pushToken })
@@ -1075,6 +1115,24 @@ export async function addMemberToTeam(teamId: number, memberId: number, role: Te
     role,
     status: 'active'
   }).onConflictDoNothing();
+
+  try {
+    const { teams, users } = await import('../drizzle/schema.js');
+    const [team] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, teamId)).limit(1);
+    const teamName = team?.name || 'a team';
+    await sendNotification({
+      userId: memberId,
+      teamId,
+      type: 'team_messages',
+      title: 'Welcome to the team!',
+      message: `You have been added to ${teamName} as a ${role}.`,
+      priority: 'high',
+      actionUrl: '/teams',
+      actionLabel: 'View Team'
+    }, db);
+  } catch (err) {
+    console.error('Failed to send add member notification:', err);
+  }
 }
 
 /**
@@ -1492,6 +1550,25 @@ export async function removeTeamMember(
         shouldDeleteCompletely = true;
       }
   
+      // Send notification
+      try {
+        const { teams } = await import('../drizzle/schema.js');
+        const [team] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, teamId)).limit(1);
+        const teamName = team?.name || 'a team';
+        await sendNotification({
+          userId: targetMemberId,
+          teamId,
+          type: 'team_messages',
+          title: 'Team Access Revoked',
+          message: `You have been removed from ${teamName}.`,
+          priority: 'high',
+          actionUrl: '/',
+          actionLabel: 'View Dashboard'
+        }, db);
+      } catch (err) {
+        console.error('Failed to send remove member notification:', err);
+      }
+
       return true;
     });
     
@@ -1662,6 +1739,7 @@ export async function createTask(
       }, db);
     }
 
+    notifyTaskChanged();
     return created;
   });
 }
@@ -1901,6 +1979,7 @@ export async function updateTask(
       }, db);
     }
 
+    notifyTaskChanged();
     return updated;
   });
 }
@@ -1963,6 +2042,7 @@ export async function deleteTask(taskId: number, deletedBy: number): Promise<boo
     // Broadcast task deleted event to team members (real-time sync)
     broadcastTaskDeleted(existingTask.teamId, taskId);
 
+    notifyTaskChanged();
     return true;
   });
 }
@@ -2974,7 +3054,6 @@ export async function createApproval(
         voters: [],
       })
       .returning();
-
     // Create activity
     await db.insert(activities).values({
       teamId: approvalData.teamId,
@@ -2990,6 +3069,46 @@ export async function createApproval(
         toStage: approvalData.toStage,
       },
     });
+
+    // Dispatch approval request notification
+    try {
+      const title = 'New Approval Request';
+      const message = `An approval request was submitted for a ${approvalData.entityType}.`;
+      if (approverUserId) {
+        await sendNotification({
+          userId: approverUserId,
+          teamId: approvalData.teamId,
+          type: 'approval_request',
+          title,
+          message,
+          priority: 'high',
+        }, db);
+      } else if (approvalMode === 'team_vote') {
+        const members = await db
+          .select({ userId: teamMembersCollaborative.userId })
+          .from(teamMembersCollaborative)
+          .where(
+            and(
+              eq(teamMembersCollaborative.teamId, approvalData.teamId),
+              eq(teamMembersCollaborative.status, 'active')
+            )
+          );
+        for (const member of members) {
+          if (member.userId !== requestedBy) {
+            await sendNotification({
+              userId: member.userId,
+              teamId: approvalData.teamId,
+              type: 'approval_request',
+              title,
+              message,
+              priority: 'high',
+            }, db);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to send approval notification:', err);
+    }
 
     return approval;
   });
@@ -4645,6 +4764,30 @@ export async function sendChatMessage(
     .insert(chatMessages)
     .values({ fromMemberId, toMemberId, teamId, content, messageType, fileUrl, fileName })
     .returning();
+
+  // Send a mention/team_messages notification to the recipient
+  try {
+    const { users, teamMembers } = await import('../drizzle/schema.js');
+    const sender = await db.select({ name: users.name }).from(teamMembers).innerJoin(users, eq(teamMembers.userId, users.id)).where(eq(teamMembers.id, fromMemberId)).limit(1);
+    const senderName = sender[0]?.name || 'A teammate';
+    
+    // We notify the toMemberId user
+    const recipient = await db.select({ userId: teamMembers.userId }).from(teamMembers).where(eq(teamMembers.id, toMemberId)).limit(1);
+    if (recipient[0]) {
+      await sendNotification({
+        userId: recipient[0].userId,
+        teamId: teamId,
+        type: 'mention', // using mention for direct messages
+        title: 'New Message',
+        message: `${senderName} sent you a message: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+        priority: 'high',
+        actionUrl: '/chat',
+        actionLabel: 'View Message'
+      }, db);
+    }
+  } catch (err) {
+    console.error('Failed to send chat notification:', err);
+  }
 
   return msg;
 }

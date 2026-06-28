@@ -3092,6 +3092,41 @@ export const appRouter = router({
         }
         return { success: true };
       }),
+
+    notifyDriveUpload: protectedProcedure
+      .input(z.object({
+        teamId: z.number(),
+        fileName: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await import('./db.js').then(m => m.getDb());
+        if (!db) throw new Error('DB unavailable');
+        const { teamMembers, users } = await import('../drizzle/schema.js');
+        const { sendNotification } = await import('./db.js');
+        const { eq, and } = await import('drizzle-orm');
+        
+        // Fetch all members of the team except the uploader
+        const members = await db
+          .select({ userId: teamMembers.userId })
+          .from(teamMembers)
+          .where(and(eq(teamMembers.teamId, input.teamId), eq(teamMembers.status, 'active')));
+          
+        for (const member of members) {
+          if (member.userId !== ctx.user.id) {
+            await sendNotification({
+              userId: member.userId,
+              teamId: input.teamId,
+              type: 'folder_alert',
+              title: 'New File in Drive',
+              message: `A new file "${input.fileName}" was uploaded to your team folder.`,
+              priority: 'low',
+              actionUrl: `/files`,
+              actionLabel: 'Open Drive'
+            } as any, db);
+          }
+        }
+        return { success: true, notified: members.length - 1 };
+      }),
   }),
 
   // Notification Preferences Router
