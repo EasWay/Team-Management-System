@@ -41,6 +41,15 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
+    makeMeAdmin: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await import('./db.js').then(m => m.getDb());
+      const { users } = await import('../drizzle/schema.js');
+      const { eq } = await import('drizzle-orm');
+      if (!db) throw new Error('DB unavailable');
+      await db.update(users).set({ role: 'admin' }).where(eq(users.id, ctx.user.id));
+      return { success: true };
+    }),
 
     updateProfile: protectedProcedure
       .input(z.object({

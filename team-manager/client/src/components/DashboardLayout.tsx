@@ -46,6 +46,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { loading, user, logout } = useAuth();
+  const makeMeAdminMutation = trpc.auth.makeMeAdmin.useMutation();
   const [location, setLocation] = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { selectedTeamId, setSelectedTeamId, teams } = useTeamContext();
@@ -211,6 +212,18 @@ export default function DashboardLayout({
             <div className="flex flex-col">
               <span className="text-xs font-bold text-foreground">{user.name || "Member"}</span>
               <span className="text-[10px] opacity-50">System Role: {(user as any)?.role || 'undefined'}</span>
+              {(user as any)?.role !== 'admin' && (
+                <button 
+                  onClick={async () => {
+                    await makeMeAdminMutation.mutateAsync();
+                    window.location.reload();
+                  }}
+                  disabled={makeMeAdminMutation.isPending}
+                  className="text-[10px] text-blue-500 hover:underline mt-1 text-left"
+                >
+                  {makeMeAdminMutation.isPending ? "Updating..." : "Make me admin"}
+                </button>
+              )}
             </div>
           </div>
         </div>
