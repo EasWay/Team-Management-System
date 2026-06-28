@@ -4929,7 +4929,8 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
       await runSafe(sql`UPDATE team_invitations SET invited_by = ${fallbackAdminId} WHERE invited_by = ${targetUserId}`);
       await runSafe(sql`UPDATE files SET uploaded_by = ${fallbackAdminId} WHERE uploaded_by = ${targetUserId}`);
       await runSafe(sql`UPDATE file_versions SET uploaded_by = ${fallbackAdminId} WHERE uploaded_by = ${targetUserId}`);
-      await runSafe(sql`UPDATE resource_permissions SET shared_by = ${fallbackAdminId} WHERE shared_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE file_shares SET shared_by = ${fallbackAdminId} WHERE shared_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE milestones SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
       await runSafe(sql`UPDATE automated_rules SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
     } else {
       // Very rare fallback if no other admin exists: just delete to avoid constraint failures
@@ -4945,7 +4946,8 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
       await runSafe(sql`DELETE FROM team_invitations WHERE invited_by = ${targetUserId}`);
       await runSafe(sql`DELETE FROM files WHERE uploaded_by = ${targetUserId}`);
       await runSafe(sql`DELETE FROM file_versions WHERE uploaded_by = ${targetUserId}`);
-      await runSafe(sql`DELETE FROM resource_permissions WHERE shared_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM file_shares WHERE shared_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM milestones WHERE created_by = ${targetUserId}`);
       await runSafe(sql`DELETE FROM automated_rules WHERE created_by = ${targetUserId}`);
     }
 
@@ -4954,12 +4956,16 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
     await runSafe(sql`UPDATE teams SET boss_user_id = NULL WHERE boss_user_id = ${targetUserId}`);
     await runSafe(sql`UPDATE teams SET pm_user_id = NULL WHERE pm_user_id = ${targetUserId}`);
     await runSafe(sql`UPDATE projects SET created_by = NULL WHERE created_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE project_files SET uploaded_by = NULL WHERE uploaded_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE repositories SET created_by = NULL WHERE created_by = ${targetUserId}`);
     await runSafe(sql`UPDATE approvals SET approver_user_id = NULL WHERE approver_user_id = ${targetUserId}`);
     await runSafe(sql`UPDATE approvals SET reviewed_by = NULL WHERE reviewed_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE approvals SET resolved_by = NULL WHERE resolved_by = ${targetUserId}`);
     await runSafe(sql`UPDATE files SET created_by = NULL WHERE created_by = ${targetUserId}`);
     await runSafe(sql`UPDATE tasks SET created_by = NULL WHERE created_by = ${targetUserId}`);
     await runSafe(sql`UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ${targetUserId}`);
     await runSafe(sql`UPDATE tasks SET completed_by = NULL WHERE completed_by = ${targetUserId}`);
+    await runSafe(sql`UPDATE milestones SET completed_by = NULL WHERE completed_by = ${targetUserId}`);
 
     // Delete records strictly bound to the user
     await runSafe(sql`DELETE FROM security_audit_trail WHERE user_id = ${targetUserId}`);
