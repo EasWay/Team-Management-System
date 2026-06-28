@@ -4906,27 +4906,37 @@ export async function permanentlyDeleteUser(targetUserId: number): Promise<void>
     const adminRes = await tx.execute(sql`SELECT id FROM users WHERE role = 'admin' AND id != ${targetUserId} LIMIT 1`);
     const fallbackAdminId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
     
+    const runSafe = async (query: any) => {
+      try {
+        await tx.execute(sql`SAVEPOINT update_sp`);
+        await tx.execute(query);
+        await tx.execute(sql`RELEASE SAVEPOINT update_sp`);
+      } catch (err) {
+        await tx.execute(sql`ROLLBACK TO SAVEPOINT update_sp`);
+      }
+    };
+
     if (fallbackAdminId) {
-      await tx.execute(sql`UPDATE file_folders SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE calendar_events SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE video_calls SET host_id = ${fallbackAdminId} WHERE host_id = ${targetUserId}`);
-      await tx.execute(sql`UPDATE resource_permissions SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE office_access_control SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE ip_whitelist SET added_by = ${fallbackAdminId} WHERE added_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE permission_roles SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE user_role_assignments SET assigned_by = ${fallbackAdminId} WHERE assigned_by = ${targetUserId}`);
-      await tx.execute(sql`UPDATE google_drive_connections SET connected_by = ${fallbackAdminId} WHERE connected_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE file_folders SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE calendar_events SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE video_calls SET host_id = ${fallbackAdminId} WHERE host_id = ${targetUserId}`);
+      await runSafe(sql`UPDATE resource_permissions SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE office_access_control SET granted_by = ${fallbackAdminId} WHERE granted_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE ip_whitelist SET added_by = ${fallbackAdminId} WHERE added_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE permission_roles SET created_by = ${fallbackAdminId} WHERE created_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE user_role_assignments SET assigned_by = ${fallbackAdminId} WHERE assigned_by = ${targetUserId}`);
+      await runSafe(sql`UPDATE google_drive_connections SET connected_by = ${fallbackAdminId} WHERE connected_by = ${targetUserId}`);
     } else {
       // Very rare fallback if no other admin exists: just delete to avoid constraint failures
-      await tx.execute(sql`DELETE FROM file_folders WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM calendar_events WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM video_calls WHERE host_id = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM resource_permissions WHERE granted_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM office_access_control WHERE granted_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM ip_whitelist WHERE added_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM permission_roles WHERE created_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM user_role_assignments WHERE assigned_by = ${targetUserId}`);
-      await tx.execute(sql`DELETE FROM google_drive_connections WHERE connected_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM file_folders WHERE created_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM calendar_events WHERE created_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM video_calls WHERE host_id = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM resource_permissions WHERE granted_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM office_access_control WHERE granted_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM ip_whitelist WHERE added_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM permission_roles WHERE created_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM user_role_assignments WHERE assigned_by = ${targetUserId}`);
+      await runSafe(sql`DELETE FROM google_drive_connections WHERE connected_by = ${targetUserId}`);
     }
 
     // Set nullable references to NULL
