@@ -1,4 +1,4 @@
-name: EAS Build APK
+name: EAS Build APK / AAB
 
 on:
   # Manually trigger from GitHub → Actions tab → Run workflow
@@ -16,7 +16,7 @@ on:
 
 jobs:
   build-android:
-    name: Build Android APK
+    name: Build Android APK / AAB
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -39,7 +39,7 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build Android APK via EAS
+      - name: Build Android APK / AAB via EAS
         working-directory: team-manager/mobile
         run: |
           eas build \
@@ -54,4 +54,4 @@ jobs:
       - name: Build submitted
         run: |
           echo "Build submitted to EAS!"
-          echo "Track progress and download APK at: https://expo.dev/accounts/[your-username]/projects/team-manager-mobile/builds"
+          echo "Track progress and download your build at: https://expo.dev/accounts/[your-username]/projects/team-manager-mobile/builds"
