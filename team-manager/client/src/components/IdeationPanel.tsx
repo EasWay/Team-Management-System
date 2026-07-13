@@ -25,7 +25,13 @@ import {
   Send,
   MessageCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Lightbulb,
+  ClipboardPaste,
+  AlertTriangle,
+  Trash2,
+  Bot,
+  RotateCcw,
 } from "lucide-react";
 
 interface IdeationPanelProps {
@@ -248,7 +254,7 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
                 <MessageSquare className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <CardTitle>💡 Idea Lab - AI Transcriptionist</CardTitle>
+                <CardTitle>Idea Lab - AI Transcriptionist</CardTitle>
                 <CardDescription>
                   Chat live with your team OR paste external conversations - AI will structure it into a project folder
                 </CardDescription>
@@ -260,11 +266,11 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="live-chat">
                   <MessageCircle className="h-4 w-4 mr-2" />
-                  💬 Live Chat
+                  Live Chat
                 </TabsTrigger>
                 <TabsTrigger value="paste">
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  📋 Paste Conversation
+                  Paste Conversation
                 </TabsTrigger>
               </TabsList>
 
@@ -275,7 +281,8 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-base flex items-center gap-2">
-                          💬 Team Brainstorming Chat
+                          <MessageCircle className="h-4 w-4" />
+                          Team Brainstorming Chat
                           {isConnected ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
                               <Wifi className="h-3 w-3 mr-1" />
@@ -323,7 +330,10 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
                           <p className="font-medium">Start brainstorming!</p>
                           <p className="text-sm">Type your ideas below and AI will capture everything</p>
                           {!isConnected && (
-                            <p className="text-xs text-red-500 mt-2">⚠️ Connecting to server...</p>
+                            <p className="flex items-center justify-center gap-1 text-xs text-red-500 mt-2">
+                              <AlertTriangle className="h-3 w-3" />
+                              Connecting to server...
+                            </p>
                           )}
                         </div>
                       ) : (
@@ -380,9 +390,10 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
                         disabled={liveMessages.length === 0}
                         className="flex-1"
                       >
-                        🗑️ Clear Chat
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear Chat
                       </Button>
-                      <Button 
+                      <Button
                         onClick={handleProcessLiveChat}
                         disabled={isProcessing || liveMessages.length === 0}
                         className="flex-1 bg-purple-600 hover:bg-purple-700"
@@ -390,19 +401,20 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
                         {isProcessing ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            🤖 AI is analyzing...
+                            AI is analyzing...
                           </>
                         ) : (
                           <>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            🚀 Generate Project Folder
+                            Generate Project Folder
                           </>
                         )}
                       </Button>
                     </div>
 
-                    <div className="text-xs text-muted-foreground text-center">
-                      💡 Tip: Discuss goals, features, timeline, and team roles. AI will capture everything!
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground text-center">
+                      <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                      Tip: Discuss goals, features, timeline, and team roles. AI will capture everything!
                     </div>
                   </CardContent>
                 </Card>
@@ -412,7 +424,10 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
               <TabsContent value="paste" className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="chatLogs">Paste External Chat Logs</Label>
+                    <Label htmlFor="chatLogs" className="flex items-center gap-1.5">
+                      <ClipboardPaste className="h-3.5 w-3.5" />
+                      Paste External Chat Logs
+                    </Label>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -424,20 +439,20 @@ export function IdeationPanel({ teamId, onProjectActivated }: IdeationPanelProps
                   </div>
                   <Textarea
                     id="chatLogs"
-                    placeholder="📋 Paste your brainstorming chat here...
+                    placeholder="Paste your brainstorming chat here...
 
 Example formats:
 - WhatsApp: [Date, Time] Name: Message
-- Slack: Name [Time]: Message  
+- Slack: Name [Time]: Message
 - Discord: Name - Today at Time: Message
 - Generic: Name: Message
 
 The AI will identify all speakers and extract:
-✅ Business goals
-✅ Design requirements
-✅ Technical specifications
-✅ Target audience
-✅ Success metrics"
+- Business goals
+- Design requirements
+- Technical specifications
+- Target audience
+- Success metrics"
                     value={chatLogs}
                     onChange={(e) => setChatLogs(e.target.value)}
                     rows={15}
@@ -453,12 +468,12 @@ The AI will identify all speakers and extract:
                   {isProcessing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      🤖 AI is analyzing your chat...
+                      AI is analyzing your chat...
                     </>
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      🚀 Create Project Folder with AI
+                      Create Project Folder with AI
                     </>
                   )}
                 </Button>
@@ -474,10 +489,11 @@ The AI will identify all speakers and extract:
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  <CardTitle>📁 {ideationResult.finalDecisionReport.projectName}</CardTitle>
+                  <CardTitle>{ideationResult.finalDecisionReport.projectName}</CardTitle>
                 </div>
-                <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                  🤖 AI Generated Folder
+                <Badge variant="secondary" className="flex items-center gap-1 bg-purple-100 text-purple-700">
+                  <Bot className="h-3 w-3" />
+                  AI Generated Folder
                 </Badge>
               </div>
               <CardDescription>
@@ -669,7 +685,10 @@ The AI will identify all speakers and extract:
           {/* Client Information & Activation */}
           <Card className="border-green-200 border-2">
             <CardHeader>
-              <CardTitle>📤 Deliver Folder to Lead Researcher's Office</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Deliver Folder to Lead Researcher's Office
+              </CardTitle>
               <CardDescription>
                 Add client information and send this folder to George Essel Bonsu (Lead Researcher) to start scoping
               </CardDescription>
@@ -724,7 +743,8 @@ The AI will identify all speakers and extract:
                   onClick={() => setIdeationResult(null)}
                   className="flex-1"
                 >
-                  🔄 Start Over
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Start Over
                 </Button>
                 <Button 
                   onClick={handleActivateProject}
@@ -739,7 +759,7 @@ The AI will identify all speakers and extract:
                   ) : (
                     <>
                       <Rocket className="mr-2 h-4 w-4" />
-                      📤 Deliver to Lead Researcher
+                      Deliver to Lead Researcher
                     </>
                   )}
                 </Button>

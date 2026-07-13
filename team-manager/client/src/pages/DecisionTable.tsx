@@ -26,6 +26,7 @@ import {
   FileText,
   Loader2,
   Lightbulb,
+  Landmark,
 } from "lucide-react";
 import {
   Dialog,
@@ -176,7 +177,7 @@ export default function DecisionTable() {
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-blue-500" />
               <CardTitle className="text-lg">
-                📁 Folder: {approval.entityType.charAt(0).toUpperCase() + approval.entityType.slice(1)} #{approval.entityId}
+                Folder: {approval.entityType.charAt(0).toUpperCase() + approval.entityType.slice(1)} #{approval.entityId}
               </CardTitle>
               {getStatusBadge(approval.status)}
             </div>
@@ -267,13 +268,14 @@ export default function DecisionTable() {
                     onClick={() => setSelectedApproval(approval)}
                   >
                     <FileText className="h-4 w-4 mr-1" />
-                    📋 Review Folder
+                    Review Folder
                   </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>
-                    📋 Review Folder: {approval.entityType} #{approval.entityId}
+                  <DialogTitle className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Review Folder: {approval.entityType} #{approval.entityId}
                   </DialogTitle>
                   <DialogDescription>
                     {approval.entityName || 'Review this folder before it moves to the next office'}
@@ -439,7 +441,10 @@ export default function DecisionTable() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">🏛️ Conference Room</h1>
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
+            <Landmark className="h-7 w-7" />
+            Conference Room
+          </h1>
           <p className="text-muted-foreground">
             Idea Lab for brainstorming • Decision Table for approvals • Quality gates
           </p>
@@ -449,19 +454,19 @@ export default function DecisionTable() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="idea-lab">
               <Lightbulb className="h-4 w-4 mr-2" />
-              🎨 Idea Lab
+              Idea Lab
             </TabsTrigger>
             <TabsTrigger value="pending">
               <Clock className="h-4 w-4 mr-2" />
-              📋 Awaiting Review ({pendingApprovals?.length || 0})
+              Awaiting Review ({pendingApprovals?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="approved">
               <CheckCircle2 className="h-4 w-4 mr-2" />
-              ✅ Approved ({approvedApprovals?.length || 0})
+              Approved ({approvedApprovals?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="rejected">
               <XCircle className="h-4 w-4 mr-2" />
-              ❌ Rejected ({rejectedApprovals?.length || 0})
+              Rejected ({rejectedApprovals?.length || 0})
             </TabsTrigger>
           </TabsList>
 

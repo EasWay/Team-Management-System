@@ -14,6 +14,8 @@ import {
   Rocket,
   Loader2,
   BarChart3,
+  ClipboardCheck,
+  FileSearch,
 } from "lucide-react";
 import {
   Dialog,
@@ -74,7 +76,10 @@ export default function Evaluation() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">📊 Quality Assurance Office</h1>
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
+            <ClipboardCheck className="h-7 w-7" />
+            Quality Assurance Office
+          </h1>
           <p className="text-muted-foreground">
             Final review station where completed folders are inspected before launch
           </p>
@@ -141,7 +146,7 @@ export default function Evaluation() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Rocket className="h-5 w-5 text-green-500" />
-                <CardTitle>🚀 Cleared for Launch</CardTitle>
+                <CardTitle>Cleared for Launch</CardTitle>
               </div>
               <CardDescription>
                 Folders that passed all quality checks and are ready to ship
@@ -178,7 +183,10 @@ export default function Evaluation() {
                       </DialogTrigger>
                       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>📋 Folder Inspection: {project.name}</DialogTitle>
+                          <DialogTitle className="flex items-center gap-2">
+                            <FileSearch className="h-4 w-4" />
+                            Folder Inspection: {project.name}
+                          </DialogTitle>
                           <DialogDescription>
                             Comprehensive quality assurance report
                           </DialogDescription>
@@ -203,7 +211,7 @@ export default function Evaluation() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle>📁 All Inspected Folders</CardTitle>
+              <CardTitle>All Inspected Folders</CardTitle>
             </div>
             <CardDescription>
               View detailed quality reports for all completed folders
@@ -267,7 +275,10 @@ export default function Evaluation() {
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
-                            <DialogTitle>📋 Folder Inspection: {project.name}</DialogTitle>
+                            <DialogTitle className="flex items-center gap-2">
+                              <FileSearch className="h-4 w-4" />
+                              Folder Inspection: {project.name}
+                            </DialogTitle>
                             <DialogDescription>
                               Comprehensive quality assurance report
                             </DialogDescription>

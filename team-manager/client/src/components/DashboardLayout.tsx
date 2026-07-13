@@ -5,7 +5,30 @@ import { Button } from "./ui/button";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { NotificationBell } from './NotificationBell';
-import { LogOut, BarChart, Sun, Moon, ChevronDown, LayoutDashboard } from "lucide-react";
+import {
+  LogOut,
+  BarChart,
+  Sun,
+  Moon,
+  ChevronDown,
+  LayoutDashboard,
+  Home,
+  Building2,
+  Landmark,
+  ClipboardCheck,
+  TrendingUp,
+  FolderOpen,
+  Calendar,
+  Video,
+  Bell,
+  CheckSquare,
+  Users,
+  FolderKanban,
+  GitBranch,
+  MessageSquare,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTeamContext } from "@/contexts/TeamContext";
 import {
@@ -17,28 +40,28 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-const workspaceMenuItems = [
-  { label: "Home", path: "/" },
-  { label: "🏢 My Office", path: "/workspace" },
-  { label: "🏛️ Conference Room", path: "/conference-room" },
-  { label: "📊 QA Office", path: "/evaluation" },
-  { label: "📈 Analytics", path: "/analytics" },
-  { label: "📁 Files", path: "/files" },
-  { label: "📅 Calendar", path: "/calendar" },
-  { label: "🎥 Video Calls", path: "/video-calls" },
-  { label: "🔔 Notifications", path: "/notifications" },
-  { label: "Tasks", path: "/tasks" },
-  { label: "Team Members", path: "/team" },
-  { label: "Projects", path: "/projects" },
-  { label: "Repositories", path: "/repositories" },
-  { label: "Messages", path: "/messages" },
-  { label: "⚙️ Admin", path: "/admin", adminOnly: true },
+const workspaceMenuItems: { label: string; path: string; icon: LucideIcon; adminOnly?: boolean }[] = [
+  { label: "Home", path: "/", icon: Home },
+  { label: "My Office", path: "/workspace", icon: Building2 },
+  { label: "Conference Room", path: "/conference-room", icon: Landmark },
+  { label: "QA Office", path: "/evaluation", icon: ClipboardCheck },
+  { label: "Analytics", path: "/analytics", icon: TrendingUp },
+  { label: "Files", path: "/files", icon: FolderOpen },
+  { label: "Calendar", path: "/calendar", icon: Calendar },
+  { label: "Video Calls", path: "/video-calls", icon: Video },
+  { label: "Notifications", path: "/notifications", icon: Bell },
+  { label: "Tasks", path: "/tasks", icon: CheckSquare },
+  { label: "Team Members", path: "/team", icon: Users },
+  { label: "Projects", path: "/projects", icon: FolderKanban },
+  { label: "Repositories", path: "/repositories", icon: GitBranch },
+  { label: "Messages", path: "/messages", icon: MessageSquare },
+  { label: "Admin", path: "/admin", adminOnly: true, icon: Settings },
 ];
 
 
-const globalMenuItems = [
-  { label: "Teams", path: "/teams" },
-  { label: "⚙️ Admin", path: "/admin", adminOnly: true },
+const globalMenuItems: { label: string; path: string; icon: LucideIcon; adminOnly?: boolean }[] = [
+  { label: "Teams", path: "/teams", icon: Users },
+  { label: "Admin", path: "/admin", adminOnly: true, icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -167,11 +190,12 @@ export default function DashboardLayout({
                   setLocation(item.path);
                 }}
                 href={item.path}
-                className={`block px-4 py-3 rounded transition-colors cursor-pointer ${isActive
+                className={`flex items-center gap-3 px-4 py-3 rounded transition-colors cursor-pointer ${isActive
                   ? "bg-foreground/10 text-foreground font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-foreground/5 font-medium"
                   }`}
               >
+                <item.icon className="size-4 shrink-0" />
                 <span className="text-sm">{item.label}</span>
               </a>
             );

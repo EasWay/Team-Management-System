@@ -26,6 +26,9 @@ import {
   Folder,
   FolderOpen,
   Upload,
+  Info,
+  Copy,
+  BookOpen,
 } from "lucide-react";
 
 function extractFolderId(url: string): string | null {
@@ -131,7 +134,7 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
           <div className="flex items-center gap-2">
             <Cloud className="h-5 w-5 text-blue-600" />
             <CardTitle className="text-base">
-              {connectionType === 'team' ? '☁️ Team Google Drive' : isOwner ? '☁️ My Office Drive' : '☁️ Office Drive'}
+              {connectionType === 'team' ? 'Team Google Drive' : isOwner ? 'My Office Drive' : 'Office Drive'}
             </CardTitle>
           </div>
           {isConnected && (
@@ -207,10 +210,13 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
             </div>
 
             {/* Quick Info */}
-            <div className="text-xs text-muted-foreground bg-blue-50 p-3 rounded-lg">
-              {isOwner
-                ? `💡 Files in this drive are accessible to ${connectionType === 'team' ? 'all team members' : 'you in this office'}`
-                : '💡 You can add files to this drive. Only the owner can remove or modify files.'}
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-blue-50 p-3 rounded-lg">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-600" />
+              <span>
+                {isOwner
+                  ? `Files in this drive are accessible to ${connectionType === 'team' ? 'all team members' : 'you in this office'}`
+                  : 'You can add files to this drive. Only the owner can remove or modify files.'}
+              </span>
             </div>
           </>
         ) : (
@@ -233,8 +239,9 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>
-                        {connectionType === 'team' ? '☁️ Connect Team Google Drive' : '☁️ Connect Office Google Drive'}
+                      <DialogTitle className="flex items-center gap-2">
+                        <Cloud className="h-4 w-4 text-blue-600" />
+                        {connectionType === 'team' ? 'Connect Team Google Drive' : 'Connect Office Google Drive'}
                       </DialogTitle>
                       <DialogDescription>
                         {connectionType === 'team'
@@ -253,8 +260,9 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
                           value={driveUrl}
                           onChange={(e) => setDriveUrl(e.target.value)}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          📋 Copy the URL from your Google Drive folder
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Copy className="h-3 w-3 shrink-0" />
+                          Copy the URL from your Google Drive folder
                         </p>
                       </div>
 
@@ -269,7 +277,10 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
                       </div>
 
                       <div className="bg-blue-50 p-3 rounded-lg text-xs space-y-2">
-                        <p className="font-semibold text-blue-900">📖 How to get your Google Drive URL:</p>
+                        <p className="flex items-center gap-1.5 font-semibold text-blue-900">
+                          <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                          How to get your Google Drive URL:
+                        </p>
                         <ol className="list-decimal list-inside space-y-1 text-blue-800">
                           <li>Open Google Drive in your browser</li>
                           <li>Navigate to the folder you want to connect</li>

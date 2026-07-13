@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useSocket } from "@/contexts/SocketContext";
-import { Send, Users, MessageCircle, Wifi, WifiOff } from "lucide-react";
+import { Send, Users, MessageCircle, Wifi, WifiOff, Info } from "lucide-react";
 
 interface OfficeChatProps {
   officeRole: string;
@@ -108,7 +108,8 @@ export function OfficeChat({ officeRole, teamId }: OfficeChatProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              💬 Office Chat
+              <MessageCircle className="h-4 w-4" />
+              Office Chat
               {isConnected ? (
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
                   <Wifi className="h-3 w-3 mr-1" />
@@ -211,8 +212,9 @@ export function OfficeChat({ officeRole, teamId }: OfficeChatProps) {
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground text-center">
-          💡 Collaborate with team members visiting your office
+        <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground text-center">
+          <Info className="h-3 w-3 shrink-0" />
+          Collaborate with team members visiting your office
         </p>
       </CardContent>
     </Card>

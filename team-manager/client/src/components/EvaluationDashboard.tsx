@@ -180,7 +180,7 @@ export function EvaluationDashboard({ projectId, projectName, onEvaluationComple
         <CardHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <CardTitle>📋 Quality Assurance Inspection</CardTitle>
+            <CardTitle>Quality Assurance Inspection</CardTitle>
           </div>
           <CardDescription>
             Get comprehensive quality report for {projectName}
@@ -221,7 +221,7 @@ export function EvaluationDashboard({ projectId, projectName, onEvaluationComple
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle>📊 Quality Inspection Report</CardTitle>
+              <CardTitle>Quality Inspection Report</CardTitle>
             </div>
             <div className="flex items-center gap-2">
               {evalData.readyForLaunch ? (
