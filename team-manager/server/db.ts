@@ -13,8 +13,8 @@ import { GitHubService, parseGitHubUrl } from './github-service';
 
 // Team Role Permissions
 export const TEAM_PERMISSIONS: Record<string, string[]> = {
-  admin: ['create_team', 'delete_team', 'update_team', 'invite_member', 'remove_member', 'change_role', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document'],
-  team_lead: ['update_team', 'invite_member', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document'],
+  admin: ['create_team', 'delete_team', 'update_team', 'invite_member', 'remove_member', 'change_role', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document', 'grant_permission', 'assign_role', 'view_audit_trail'],
+  team_lead: ['update_team', 'invite_member', 'create_task', 'update_task', 'delete_task', 'manage_repositories', 'delete_document', 'view_audit_trail'],
   developer: ['create_task', 'update_task'],
   member: ['create_task', 'update_task'],
   viewer: [],

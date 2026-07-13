@@ -1,7 +1,8 @@
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure, teamProcedure } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { authService } from "./_core/auth";
-import { updateUserProfile, createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, getMemberRoleInTeam, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, reopenTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead, listAllUsers, getUserTeamMemberships, setUserSystemRole, removeUserFromSystem, addUserToSystem, sendNotification, getDb, handoffTask, handoffProject, getTasksByRole, getProjectsByRole, getTasksByStage, getProjectsByStage, getMyWorkQueue, acceptHandoff } from "./db";
+import { updateUserProfile, createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, getMemberRoleInTeam, hasPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, reopenTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead, listAllUsers, getUserTeamMemberships, setUserSystemRole, removeUserFromSystem, addUserToSystem, sendNotification, getDb, handoffTask, handoffProject, getTasksByRole, getProjectsByRole, getTasksByStage, getProjectsByStage, getMyWorkQueue, acceptHandoff } from "./db";
 import { parsePRDText } from "./_core/prdParser";
 import { processIdeation } from "./_core/ideationEngine";
 import { evaluateProject, quickEvaluate } from "./_core/projectEvaluator";
@@ -14,7 +15,7 @@ import { upsertNotificationPreferences, getNotificationPreferences, createNotifi
 import { createClientPortalAccess, clientLogin, verifyClientToken, getClientPortalAccess, updateClientPortalAccess, getClientProjects, getClientProjectDetails, createClientFeedback, getClientFeedback, getTeamFeedback, respondToFeedback, logClientActivity, getClientActivityLog, setProjectVisibility, getProjectVisibility, getClientDashboard, changeClientPassword, getClientStatistics } from "./client-portal-service";
 import { grantResourcePermission, revokeResourcePermission, checkResourcePermission, getUserResourcePermissions, setOfficeAccessControl, getOfficeAccessControl, checkOfficePermission, logSecurityAudit, getSecurityAuditTrail, exportAuditLogs, enable2FA, verify2FAToken, generateBackupCodes, addIPToWhitelist, checkIPWhitelist, getIPWhitelist, createUserSession, getUserSessions, revokeSession, revokeAllSessions, createPermissionRole, assignRoleToUser, getUserRoles, checkRolePermission } from "./security-service";
 import { z } from "zod";
-import { users, teamMembersCollaborative } from "../drizzle/schema";
+import { users, teamMembersCollaborative, clients, projects } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 // Helper function to safely extract audit context
@@ -28,6 +29,11 @@ function getAuditContext(ctx: any) {
 
 // Helper function to handle database errors and convert them to appropriate tRPC errors
 function handleDatabaseError(error: unknown): never {
+  // Preserve tRPC error codes (e.g. FORBIDDEN) instead of downgrading them to 500s
+  if (error instanceof TRPCError) {
+    throw error;
+  }
+
   // Handle generic errors
   if (error instanceof Error) {
     throw new Error(error.message);
@@ -35,6 +41,41 @@ function handleDatabaseError(error: unknown): never {
 
   // Fallback for unknown errors
   throw new Error('An unexpected error occurred');
+}
+
+// Throws FORBIDDEN unless the caller is acting on their own account or is a platform admin
+function assertSelfOrAdmin(ctx: any, userId: number) {
+  if (userId !== ctx.user.id && ctx.user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only manage your own account' });
+  }
+}
+
+// Resolves the owning teamId for a client, for endpoints that only take a clientId
+async function resolveClientTeamId(clientId: number): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [client] = await db.select({ teamId: clients.teamId }).from(clients).where(eq(clients.id, clientId)).limit(1);
+  return client?.teamId ?? null;
+}
+
+// Resolves the owning teamId for a project, for endpoints that only take a projectId
+async function resolveProjectTeamId(projectId: number): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [project] = await db.select({ teamId: projects.teamId }).from(projects).where(eq(projects.id, projectId)).limit(1);
+  return project?.teamId ?? null;
+}
+
+// Throws FORBIDDEN unless ctx.user is an active member of the resolved teamId
+async function assertMemberOfResolvedTeam(ctx: any, teamId: number | null) {
+  if (!teamId) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Resource not found' });
+  }
+  const teamRole = await getMemberRoleInTeam(teamId, ctx.user.id);
+  if (!teamRole) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not a member of this team' });
+  }
+  return teamRole;
 }
 
 export const appRouter = router({
@@ -3460,7 +3501,7 @@ export const appRouter = router({
   // Client Portal Admin Router - Team management of client portal
   clientPortalAdmin: router({
     // Create client portal access
-    createAccess: protectedProcedure
+    createAccess: teamProcedure
       .input(z.object({
         clientId: z.number(),
         teamId: z.number(),
@@ -3474,22 +3515,27 @@ export const appRouter = router({
         brandColor: z.string().optional(),
         whiteLabel: z.boolean().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
+          const clientTeamId = await resolveClientTeamId(input.clientId);
+          if (clientTeamId !== ctx.teamId) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'That client does not belong to this team' });
+          }
           return await createClientPortalAccess(input);
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to create access');
+          handleDatabaseError(error);
         }
       }),
 
     // Get client access
     getAccess: protectedProcedure
       .input(z.object({ clientId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         try {
+          await assertMemberOfResolvedTeam(ctx, await resolveClientTeamId(input.clientId));
           return await getClientPortalAccess(input.clientId);
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to get access');
+          handleDatabaseError(error);
         }
       }),
 
@@ -3506,17 +3552,18 @@ export const appRouter = router({
         brandColor: z.string().optional(),
         whiteLabel: z.boolean().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
+          await assertMemberOfResolvedTeam(ctx, await resolveClientTeamId(input.clientId));
           const { clientId, ...data } = input;
           return await updateClientPortalAccess(clientId, data);
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to update access');
+          handleDatabaseError(error);
         }
       }),
 
     // Get team feedback
-    getTeamFeedback: protectedProcedure
+    getTeamFeedback: teamProcedure
       .input(z.object({
         teamId: z.number(),
         projectId: z.number().optional(),
@@ -3531,7 +3578,7 @@ export const appRouter = router({
             clientId: input.clientId,
           });
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to get feedback');
+          handleDatabaseError(error);
         }
       }),
 
@@ -3553,7 +3600,7 @@ export const appRouter = router({
       }),
 
     // Set project visibility
-    setProjectVisibility: protectedProcedure
+    setProjectVisibility: teamProcedure
       .input(z.object({
         clientId: z.number(),
         projectId: z.number(),
@@ -3566,11 +3613,18 @@ export const appRouter = router({
         customStatus: z.string().optional(),
         customDescription: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
+          const [clientTeamId, projectTeamId] = await Promise.all([
+            resolveClientTeamId(input.clientId),
+            resolveProjectTeamId(input.projectId),
+          ]);
+          if (clientTeamId !== ctx.teamId || projectTeamId !== ctx.teamId) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'That client/project does not belong to this team' });
+          }
           return await setProjectVisibility(input);
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to set visibility');
+          handleDatabaseError(error);
         }
       }),
 
@@ -3580,22 +3634,23 @@ export const appRouter = router({
         clientId: z.number(),
         projectId: z.number(),
       }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         try {
+          await assertMemberOfResolvedTeam(ctx, await resolveProjectTeamId(input.projectId));
           return await getProjectVisibility(input.clientId, input.projectId);
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to get visibility');
+          handleDatabaseError(error);
         }
       }),
 
     // Get client statistics
-    getStatistics: protectedProcedure
+    getStatistics: teamProcedure
       .input(z.object({ teamId: z.number() }))
       .query(async ({ input }) => {
         try {
           return await getClientStatistics(input.teamId);
         } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Failed to get statistics');
+          handleDatabaseError(error);
         }
       }),
   }),
@@ -3605,7 +3660,7 @@ export const appRouter = router({
     // Resource Permissions
     permissions: router({
       // Grant permission
-      grant: protectedProcedure
+      grant: teamProcedure
         .input(z.object({
           teamId: z.number(),
           userId: z.number(),
@@ -3617,15 +3672,15 @@ export const appRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
           try {
-            if (!ctx.user?.id) {
-              throw new Error('User not authenticated');
+            if (!hasPermission(ctx.teamRole, 'grant_permission')) {
+              throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to grant resource permissions' });
             }
             return await grantResourcePermission({
               ...input,
               grantedBy: ctx.user.id,
             });
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to grant permission');
+            handleDatabaseError(error);
           }
         }),
 
@@ -3750,7 +3805,8 @@ export const appRouter = router({
 
     // Audit Trail
     audit: router({
-      // Get audit trail
+      // Get audit trail. Platform admins may omit teamId to see all teams;
+      // everyone else must specify a teamId they belong to with sufficient permission.
       getTrail: protectedProcedure
         .input(z.object({
           teamId: z.number().optional(),
@@ -3763,15 +3819,24 @@ export const appRouter = router({
           flagged: z.boolean().optional(),
           limit: z.number().optional(),
         }))
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
           try {
+            if (ctx.user.role !== 'admin') {
+              if (!input.teamId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'teamId is required' });
+              }
+              const teamRole = await getMemberRoleInTeam(input.teamId, ctx.user.id);
+              if (!teamRole || !hasPermission(teamRole as any, 'view_audit_trail')) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to view this team\'s audit trail' });
+              }
+            }
             return await getSecurityAuditTrail(input);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to get audit trail');
+            handleDatabaseError(error);
           }
         }),
 
-      // Export audit logs
+      // Export audit logs. Same admin-bypass rule as getTrail.
       export: protectedProcedure
         .input(z.object({
           teamId: z.number().optional(),
@@ -3779,11 +3844,20 @@ export const appRouter = router({
           endDate: z.date().optional(),
           format: z.enum(['json', 'csv']).optional(),
         }))
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
           try {
+            if (ctx.user.role !== 'admin') {
+              if (!input.teamId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'teamId is required' });
+              }
+              const teamRole = await getMemberRoleInTeam(input.teamId, ctx.user.id);
+              if (!teamRole || !hasPermission(teamRole as any, 'view_audit_trail')) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to export this team\'s audit logs' });
+              }
+            }
             return await exportAuditLogs(input);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to export logs');
+            handleDatabaseError(error);
           }
         }),
     }),
@@ -3796,11 +3870,12 @@ export const appRouter = router({
           userId: z.number(),
           method: z.enum(['totp', 'sms', 'email']),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
           try {
+            assertSelfOrAdmin(ctx, input.userId);
             return await enable2FA(input.userId, input.method);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to enable 2FA');
+            handleDatabaseError(error);
           }
         }),
 
@@ -3810,19 +3885,21 @@ export const appRouter = router({
           userId: z.number(),
           token: z.string(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
           try {
+            assertSelfOrAdmin(ctx, input.userId);
             return await verify2FAToken(input.userId, input.token);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to verify token');
+            handleDatabaseError(error);
           }
         }),
 
       // Generate backup codes
       generateBackupCodes: protectedProcedure
         .input(z.object({ userId: z.number() }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
           try {
+            assertSelfOrAdmin(ctx, input.userId);
             return await generateBackupCodes(input.userId);
           } catch (error) {
             throw new Error(error instanceof Error ? error.message : 'Failed to generate codes');
@@ -3893,11 +3970,12 @@ export const appRouter = router({
           userId: z.number(),
           activeOnly: z.boolean().optional(),
         }))
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
           try {
+            assertSelfOrAdmin(ctx, input.userId);
             return await getUserSessions(input.userId, input.activeOnly);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to get sessions');
+            handleDatabaseError(error);
           }
         }),
 
@@ -3907,11 +3985,12 @@ export const appRouter = router({
           sessionId: z.number(),
           userId: z.number(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
           try {
+            assertSelfOrAdmin(ctx, input.userId);
             return await revokeSession(input.sessionId, input.userId);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to revoke session');
+            handleDatabaseError(error);
           }
         }),
 
@@ -3921,11 +4000,12 @@ export const appRouter = router({
           userId: z.number(),
           exceptSessionId: z.number().optional(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
           try {
+            assertSelfOrAdmin(ctx, input.userId);
             return await revokeAllSessions(input.userId, input.exceptSessionId);
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to revoke sessions');
+            handleDatabaseError(error);
           }
         }),
     }),
@@ -3933,7 +4013,7 @@ export const appRouter = router({
     // Role-Based Access Control
     roles: router({
       // Create role
-      create: protectedProcedure
+      create: teamProcedure
         .input(z.object({
           teamId: z.number(),
           name: z.string(),
@@ -3944,20 +4024,20 @@ export const appRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
           try {
-            if (!ctx.user?.id) {
-              throw new Error('User not authenticated');
+            if (!hasPermission(ctx.teamRole, 'assign_role')) {
+              throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to create roles' });
             }
             return await createPermissionRole({
               ...input,
               createdBy: ctx.user.id,
             });
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to create role');
+            handleDatabaseError(error);
           }
         }),
 
       // Assign role to user
-      assign: protectedProcedure
+      assign: teamProcedure
         .input(z.object({
           userId: z.number(),
           roleId: z.number(),
@@ -3966,15 +4046,15 @@ export const appRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
           try {
-            if (!ctx.user?.id) {
-              throw new Error('User not authenticated');
+            if (!hasPermission(ctx.teamRole, 'assign_role')) {
+              throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign roles' });
             }
             return await assignRoleToUser({
               ...input,
               assignedBy: ctx.user.id,
             });
           } catch (error) {
-            throw new Error(error instanceof Error ? error.message : 'Failed to assign role');
+            handleDatabaseError(error);
           }
         }),
 
