@@ -155,7 +155,10 @@
     @apply border-border outline-ring/50;
   }
 
-  html {
+  /* Applied to <html> only while an authenticated app view (DashboardLayout)
+     is mounted, so the dashboard renders desktop-only on phones while
+     public pages (landing, login, register, privacy, terms) stay responsive. */
+  html.force-desktop {
     min-width: 1280px;
   }
 
