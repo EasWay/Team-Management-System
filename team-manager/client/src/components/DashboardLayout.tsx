@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
@@ -73,6 +74,21 @@ export default function DashboardLayout({
   const [location, setLocation] = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { selectedTeamId, setSelectedTeamId, teams } = useTeamContext();
+
+  // Force desktop layout on phones only while the authenticated app is
+  // mounted — public pages (landing, login, register, privacy, terms) stay
+  // naturally responsive since they don't render DashboardLayout.
+  useEffect(() => {
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    const previousContent = viewportMeta?.getAttribute('content') ?? null;
+    viewportMeta?.setAttribute('content', 'width=1280');
+    document.documentElement.classList.add('force-desktop');
+
+    return () => {
+      if (previousContent) viewportMeta?.setAttribute('content', previousContent);
+      document.documentElement.classList.remove('force-desktop');
+    };
+  }, []);
 
   const currentTeam = teams?.find(t => t.id === selectedTeamId);
   const currentTeamName = currentTeam?.name || 'NO ACTIVE TEAM';

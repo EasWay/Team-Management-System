@@ -23,6 +23,7 @@ import VideoCalls from "./pages/VideoCalls";
 import Notifications from "./pages/Notifications";
 import { tokenStorage } from "./lib/tokenStorage";
 import Landing from "./pages/Landing";
+import Register from "./pages/Register";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
@@ -35,6 +36,7 @@ function Router() {
         {() => (tokenStorage.getAccessToken() ? <Home /> : <Landing />)}
       </Route>
       <Route path={"/login"} component={Landing} />
+      <Route path={"/register"} component={Register} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
       <Route path={"/team"} component={TeamMembers} />
