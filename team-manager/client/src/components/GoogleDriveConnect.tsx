@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { GoogleDriveBrowser } from "@/components/GoogleDriveBrowser";
 import {
   Cloud,
   Link as LinkIcon,
@@ -23,8 +24,14 @@ import {
   CheckCircle2,
   XCircle,
   Folder,
+  FolderOpen,
   Upload,
 } from "lucide-react";
+
+function extractFolderId(url: string): string | null {
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
 
 interface GoogleDriveConnectProps {
   teamId: number;
@@ -38,6 +45,7 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
   const [driveUrl, setDriveUrl] = useState("");
   const [driveName, setDriveName] = useState("");
   const [showConnectDialog, setShowConnectDialog] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
 
   // Get existing connection
   const { data: connection, refetch } = connectionType === 'team'
@@ -113,8 +121,10 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
 
   const isConnected = !!connection && connection.isActive;
   const isLoading = connectTeamMutation.isPending || connectOfficeMutation.isPending || disconnectMutation.isPending;
+  const folderId = connection?.driveUrl ? extractFolderId(connection.driveUrl) : null;
 
   return (
+    <>
     <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/50 to-cyan-50/30">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -156,35 +166,43 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
 
               <Separator />
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenDrive}
-                  className="flex-1"
-                >
-                  <ExternalLink className="h-3 w-3 mr-2" />
-                  Open Drive
-                </Button>
-                {/* Only the owner can disconnect */}
-                {isOwner && (
+              <div className="flex flex-col gap-2">
+                {folderId && (
+                  <Button size="sm" onClick={() => setBrowserOpen(true)} className="w-full">
+                    <FolderOpen className="h-3 w-3 mr-2" />
+                    Browse Files
+                  </Button>
+                )}
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDisconnect}
-                    disabled={isLoading}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={handleOpenDrive}
+                    className="flex-1"
                   >
-                    {isLoading ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <>
-                        <XCircle className="h-3 w-3 mr-2" />
-                        Disconnect
-                      </>
-                    )}
+                    <ExternalLink className="h-3 w-3 mr-2" />
+                    Open Drive
                   </Button>
-                )}
+                  {/* Only the owner can disconnect */}
+                  {isOwner && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnect}
+                      disabled={isLoading}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <>
+                          <XCircle className="h-3 w-3 mr-2" />
+                          Disconnect
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -286,5 +304,17 @@ export function GoogleDriveConnect({ teamId, officeRole, connectionType, isOwner
         )}
       </CardContent>
     </Card>
+    {isConnected && folderId && (
+      <GoogleDriveBrowser
+        open={browserOpen}
+        onOpenChange={setBrowserOpen}
+        rootFolderId={folderId}
+        rootName={connection.driveName || 'Google Drive'}
+        teamId={teamId}
+        canDelete={isOwner}
+        canUpload={true}
+      />
+    )}
+    </>
   );
 }
