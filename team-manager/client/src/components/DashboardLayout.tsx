@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
@@ -75,40 +74,16 @@ export default function DashboardLayout({
   const { theme, toggleTheme } = useTheme();
   const { selectedTeamId, setSelectedTeamId, teams } = useTeamContext();
 
-  // Force desktop layout on phones only while the authenticated app is
-  // mounted — public pages (landing, login, register, privacy, terms) stay
-  // naturally responsive since they don't render DashboardLayout.
-  useEffect(() => {
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    const previousContent = viewportMeta?.getAttribute('content') ?? null;
-    viewportMeta?.setAttribute('content', 'width=1280');
-    document.documentElement.classList.add('force-desktop');
-
-    return () => {
-      if (previousContent) viewportMeta?.setAttribute('content', previousContent);
-      document.documentElement.classList.remove('force-desktop');
-    };
-  }, []);
-
   const currentTeam = teams?.find(t => t.id === selectedTeamId);
   const currentTeamName = currentTeam?.name || 'NO ACTIVE TEAM';
 
   const allMenuItems = selectedTeamId ? workspaceMenuItems : globalMenuItems;
-  
-  // Verbose logging for admin link debugging
-  console.log('[DashboardLayout Debug] Current User:', user);
-  console.log('[DashboardLayout Debug] User Role:', (user as any)?.role);
-  console.log('[DashboardLayout Debug] Selected Team ID:', selectedTeamId);
-  
+
   const menuItems = allMenuItems.filter(
     (item) => {
       const userRole = ((user as any)?.role || '').toLowerCase().trim();
       const isAdmin = ['admin', 'owner', 'superadmin'].includes(userRole);
-      const passed = !(item as any).adminOnly || isAdmin;
-      if ((item as any).adminOnly) {
-        console.log(`[DashboardLayout Debug] Evaluating admin link: adminOnly=${(item as any).adminOnly}, userRole=${(user as any)?.role}, showingLink=${passed}`);
-      }
-      return passed;
+      return !(item as any).adminOnly || isAdmin;
     }
   );
 
