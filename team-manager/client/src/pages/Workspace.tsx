@@ -61,7 +61,7 @@ const ROLE_CONFIG = {
     label: "Project Manager's Office",
     color: "text-blue-600",
     bgColor: "bg-blue-50",
-    description: "📋 Oversee workflows, manage pipeline, ensure timelines",
+    description: "Oversee workflows, manage pipeline, ensure timelines",
     officeNumber: "100",
     realName: "Abena Ntewusu Exceltrine",
   },
@@ -70,7 +70,7 @@ const ROLE_CONFIG = {
     label: "Lead Researcher's Office",
     color: "text-purple-600",
     bgColor: "bg-purple-50",
-    description: "🔬 Research frameworks, scope requirements, evaluate tech",
+    description: "Research frameworks, scope requirements, evaluate tech",
     officeNumber: "101",
     realName: "George Essel Bonsu",
   },
@@ -79,7 +79,7 @@ const ROLE_CONFIG = {
     label: "Systems Architect's Office",
     color: "text-indigo-600",
     bgColor: "bg-indigo-50",
-    description: "🏗️ Design scalable architecture, plan deployments",
+    description: "Design scalable architecture, plan deployments",
     officeNumber: "201",
     realName: "Daniel Mensah",
   },
@@ -88,7 +88,7 @@ const ROLE_CONFIG = {
     label: "Backend Engineer's Office",
     color: "text-green-600",
     bgColor: "bg-green-50",
-    description: "⚙️ Build APIs, databases, backend architecture",
+    description: "Build APIs, databases, backend architecture",
     officeNumber: "202",
     realName: "Kingsley Okyere (Founder)",
   },
@@ -97,7 +97,7 @@ const ROLE_CONFIG = {
     label: "Full Stack Engineer's Office",
     color: "text-cyan-600",
     bgColor: "bg-cyan-50",
-    description: "💻 Full-stack development (Python, React, Next.js, Rust)",
+    description: "Full-stack development (Python, React, Next.js, Rust)",
     officeNumber: "203",
     realName: "Godfred Fokuo (Co-founder)",
   },
@@ -106,7 +106,7 @@ const ROLE_CONFIG = {
     label: "AI Engineer's Office",
     color: "text-orange-600",
     bgColor: "bg-orange-50",
-    description: "🤖 Autonomous agents, intelligent backend capabilities",
+    description: "Autonomous agents, intelligent backend capabilities",
     officeNumber: "301",
     realName: "Godsway Ganyo",
   },
@@ -115,7 +115,7 @@ const ROLE_CONFIG = {
     label: "QA Tester's Office",
     color: "text-yellow-600",
     bgColor: "bg-yellow-50",
-    description: "🧪 Test functionality, find bugs, ensure quality",
+    description: "Test functionality, find bugs, ensure quality",
     officeNumber: "302",
     realName: "Quality Assurance Team",
   },
@@ -124,7 +124,7 @@ const ROLE_CONFIG = {
     label: "Designer's Office",
     color: "text-pink-600",
     bgColor: "bg-pink-50",
-    description: "🎨 Create mockups, wireframes, and visual designs",
+    description: "Create mockups, wireframes, and visual designs",
     officeNumber: "303",
     realName: "Design Team",
   },
@@ -192,7 +192,7 @@ export default function Workspace() {
     if (officeRole === userOfficeRole) {
       setSelectedRole(officeRole);
       setIsOfficeLocked(true); // Auto-lock when entering own office
-      toast.success(`🔒 Entered your office - Locked Mode`);
+      toast.success(`Entered your office - Locked Mode`, { icon: <Lock className="h-4 w-4" /> });
       return;
     }
     
@@ -223,7 +223,7 @@ export default function Workspace() {
       setOfficeCodeInput("");
       setAccessError("");
       setIsOfficeLocked(true); // Lock the office when entering with code
-      toast.success(`🔒 Entered ${officeConfig.label} - Locked Mode`);
+      toast.success(`Entered ${officeConfig.label} - Locked Mode`, { icon: <Lock className="h-4 w-4" /> });
     } else {
       setAccessError("Incorrect office code. Please try again.");
       toast.error("Incorrect office code");
@@ -358,7 +358,7 @@ export default function Workspace() {
             <Building2 className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">🏢 My Office</h1>
+            <h1 className="text-3xl font-bold">My Office</h1>
             <p className="text-muted-foreground">
               Your private workspace in the Digital HQ
             </p>
@@ -379,7 +379,10 @@ export default function Workspace() {
                 <div className="text-2xl font-bold capitalize">
                   {workspaceSummary.myRole || 'Visitor'}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">🔒 Private Workspace</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                  <Lock className="h-3 w-3" />
+                  Private Workspace
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -498,7 +501,7 @@ export default function Workspace() {
                         {isOfficeLocked && (
                           <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
                             <Lock className="h-3 w-3 mr-1" />
-                            🔒 Locked Mode
+                            Locked Mode
                           </Badge>
                         )}
                       </CardTitle>
@@ -531,7 +534,7 @@ export default function Workspace() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Monitor className="h-5 w-5 text-primary" />
-                    <CardTitle>🖥️ My Desk</CardTitle>
+                    <CardTitle>My Desk</CardTitle>
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
@@ -624,7 +627,10 @@ export default function Workspace() {
                                     </DialogTrigger>
                                     <DialogContent>
                                       <DialogHeader>
-                                        <DialogTitle>📄 Add File to Folder</DialogTitle>
+                                        <DialogTitle className="flex items-center gap-2">
+                                          <FilePlus className="h-4 w-4" />
+                                          Add File to Folder
+                                        </DialogTitle>
                                         <DialogDescription>
                                           Add your work to: {item.title}
                                         </DialogDescription>
@@ -701,7 +707,10 @@ export default function Workspace() {
                                     </DialogTrigger>
                                     <DialogContent>
                                       <DialogHeader>
-                                        <DialogTitle>📤 Send Folder to Next Office</DialogTitle>
+                                        <DialogTitle className="flex items-center gap-2">
+                                          <Send className="h-4 w-4" />
+                                          Send Folder to Next Office
+                                        </DialogTitle>
                                         <DialogDescription>
                                           Deliver "{item.title}" to another office
                                         </DialogDescription>
@@ -853,7 +862,7 @@ export default function Workspace() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Inbox className="h-5 w-5 text-blue-600" />
-                  <CardTitle>📬 Inbox</CardTitle>
+                  <CardTitle>Inbox</CardTitle>
                 </div>
                 <CardDescription>New folders delivered to you</CardDescription>
               </CardHeader>
@@ -886,7 +895,7 @@ export default function Workspace() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Archive className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle>🗄️ Filing Cabinet</CardTitle>
+                  <CardTitle>Filing Cabinet</CardTitle>
                 </div>
                 <CardDescription>Archived and completed work</CardDescription>
               </CardHeader>
@@ -903,7 +912,7 @@ export default function Workspace() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-purple-600" />
-                  <CardTitle>📚 Quick Access</CardTitle>
+                  <CardTitle>Quick Access</CardTitle>
                 </div>
                 <CardDescription>Navigate to other areas</CardDescription>
               </CardHeader>
@@ -956,7 +965,10 @@ export default function Workspace() {
       <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>🔐 Office Access Required</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              Office Access Required
+            </DialogTitle>
             <DialogDescription>
               {pendingOfficeRole && (
                 <>

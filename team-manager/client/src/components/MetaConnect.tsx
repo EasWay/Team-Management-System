@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { Facebook, Instagram } from 'lucide-react';
 
 interface MetaAccount {
   connected: boolean;
@@ -117,7 +118,7 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
       <div className="space-y-3">
         {account.page && (
           <div className="flex items-center gap-2">
-            <span className="text-2xl">📘</span>
+            <Facebook className="h-6 w-6 text-blue-600" />
             <div>
               <p className="font-medium">Facebook Page</p>
               <p className="text-sm text-muted-foreground">{account.page.name}</p>
@@ -127,7 +128,7 @@ export function MetaConnect({ teamId }: MetaConnectProps) {
 
         {account.instagram && (
           <div className="flex items-center gap-2">
-            <span className="text-2xl">📸</span>
+            <Instagram className="h-6 w-6 text-pink-600" />
             <div>
               <p className="font-medium">Instagram</p>
               <p className="text-sm text-muted-foreground">@{account.instagram.username}</p>
