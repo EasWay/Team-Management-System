@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SocketProvider, ConnectionStatus } from "./contexts/SocketContext";
@@ -28,7 +29,29 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
 
+// Routes that always show the public/marketing experience and should stay
+// mobile-responsive, regardless of auth state.
+const PUBLIC_ONLY_PATHS = ["/login", "/register", "/privacy", "/terms"];
+
 function Router() {
+  const [location] = useLocation();
+  const isAppRoute = !!tokenStorage.getAccessToken() && !PUBLIC_ONLY_PATHS.includes(location);
+
+  // Force desktop layout on phones while inside the authenticated app, and
+  // only there — this only re-runs when crossing the public/app boundary,
+  // not on every in-app navigation (DashboardLayout remounts per page, so
+  // toggling this per-component there caused visible thrashing/lag).
+  useEffect(() => {
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (isAppRoute) {
+      viewportMeta?.setAttribute('content', 'width=1280');
+      document.documentElement.classList.add('force-desktop');
+    } else {
+      viewportMeta?.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      document.documentElement.classList.remove('force-desktop');
+    }
+  }, [isAppRoute]);
+
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
