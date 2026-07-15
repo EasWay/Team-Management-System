@@ -111,22 +111,15 @@ export async function getDb() {
 
           ALTER TABLE users ADD COLUMN IF NOT EXISTS username text UNIQUE;
 
-          -- Automatically assign all existing users to all teams
+          -- Ensure every user row has a matching team_members row (FK target
+          -- for team_members_collaborative). This is NOT team membership by
+          -- itself — it does not add anyone to any team.
           INSERT INTO "team_members" ("id", "name", "email", "position")
           SELECT u.id, COALESCE(u.name, split_part(u.email, '@', 1), 'Unknown User'), u.email, 'Member'
           FROM "users" u
           WHERE NOT EXISTS (
-              SELECT 1 FROM "team_members" tm 
+              SELECT 1 FROM "team_members" tm
               WHERE tm.id = u.id
-          );
-
-          INSERT INTO "team_members_collaborative" ("team_id", "member_id", "role", "status")
-          SELECT t.id, u.id, 'developer', 'active'
-          FROM "teams" t
-          CROSS JOIN "users" u
-          WHERE NOT EXISTS (
-              SELECT 1 FROM "team_members_collaborative" tmc 
-              WHERE tmc.team_id = t.id AND tmc.member_id = u.id
           );
         `);
         console.log("[Database] Auto-migration applied successfully.");
@@ -1041,21 +1034,6 @@ export async function createUserWithPassword(userData: {
 
     return user;
   });
-}
-
-export async function automaticallyAssignTeams(userId: number) {
-  const db = await getDb();
-  if (!db) return;
-  const existingTeams = await db.select({ id: teams.id }).from(teams);
-  if (existingTeams.length > 0) {
-    const membershipsToInsert = existingTeams.map(t => ({
-      teamId: t.id,
-      memberId: userId,
-      role: 'developer',
-      status: 'active'
-    }));
-    await db.insert(teamMembersCollaborative).values(membershipsToInsert).onConflictDoNothing();
-  }
 }
 
 export async function updateUserLastSignedIn(userId: number): Promise<typeof users.$inferSelect> {
