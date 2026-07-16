@@ -55,7 +55,12 @@ export default function Register() {
       if (result.accessToken && result.refreshToken) {
         tokenStorage.setAccessToken(result.accessToken);
         tokenStorage.setRefreshToken(result.refreshToken);
-        setLocation("/");
+        const inviteToken = localStorage.getItem('pending_invite_token');
+        if (inviteToken) {
+          setLocation(`/accept-invite?token=${inviteToken}`);
+        } else {
+          setLocation("/");
+        }
       }
     } catch (error) {
       let errorMessage = "Registration failed. Please try again.";

@@ -10,6 +10,7 @@ import { checkTeamLimit, checkProjectLimit, checkStorageLimit } from './meta.js'
 import { notifyTaskChanged } from './deadline-tracker.js';
 import { encrypt, decrypt, generateToken } from './crypto';
 import { GitHubService, parseGitHubUrl } from './github-service';
+import { sendInvitationEmail } from './email-service';
 
 // Team Role Permissions
 export const TEAM_PERMISSIONS: Record<string, string[]> = {
@@ -1191,6 +1192,47 @@ export async function backfillTeamMemberStatus(): Promise<void> {
     if (result.length > 0) {
       console.log(`[DB] Backfilled status='active' on ${result.length} team_members_collaborative row(s)`);
     }
+
+    // Clean up membership pollution from pre-existing system bugs
+    const cleanupResult = await db.execute(sql`
+      WITH bug1_candidates AS (
+        SELECT tmc.*
+        FROM team_members_collaborative tmc
+        JOIN (
+          SELECT team_id, joined_at
+          FROM team_members_collaborative
+          GROUP BY team_id, joined_at
+          HAVING COUNT(*) > 1
+        ) clusters ON tmc.team_id = clusters.team_id AND tmc.joined_at = clusters.joined_at
+      ),
+      bug2_candidates AS (
+        SELECT tmc.*
+        FROM team_members_collaborative tmc
+        JOIN (
+          SELECT member_id, joined_at
+          FROM team_members_collaborative
+          GROUP BY member_id, joined_at
+          HAVING COUNT(*) > 1
+        ) clusters ON tmc.member_id = clusters.member_id AND tmc.joined_at = clusters.joined_at
+      ),
+      candidates AS (
+        SELECT c.id
+        FROM (SELECT * FROM bug1_candidates UNION SELECT * FROM bug2_candidates) c
+        JOIN teams t ON t.id = c.team_id
+        JOIN team_members tm ON tm.id = c.member_id
+        WHERE t.created_by != c.member_id
+          AND NOT EXISTS (
+            SELECT 1 FROM team_invitations ti
+            WHERE ti.team_id = c.team_id AND ti.email = tm.email AND ti.status = 'accepted'
+          )
+      )
+      DELETE FROM team_members_collaborative
+      WHERE id IN (SELECT id FROM candidates);
+    `);
+    
+    if (cleanupResult.rowCount && cleanupResult.rowCount > 0) {
+      console.log(`[DB] Cleaned up ${cleanupResult.rowCount} polluted team membership rows`);
+    }
   } catch (err) {
     console.error('[DB] backfillTeamMemberStatus failed (non-fatal):', err);
   }
@@ -1563,7 +1605,7 @@ export async function createTeamInvitation(
     invitedBy: number;
   }
 ): Promise<TeamInvitation> {
-  return await withTransaction(async (db) => {
+  const result = await withTransaction(async (db) => {
     // Check inviter has permission
     const [membership] = await db
       .select()
@@ -1604,6 +1646,20 @@ export async function createTeamInvitation(
       }
     }
 
+    // Fetch inviter info for email
+    const [inviter] = await db
+      .select()
+      .from(teamMembers)
+      .where(eq(teamMembers.id, invitation.invitedBy))
+      .limit(1);
+
+    // Fetch team info
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, invitation.teamId))
+      .limit(1);
+
     // Create invitation
     const token = generateInvitationToken();
     const expiresAt = new Date();
@@ -1621,8 +1677,24 @@ export async function createTeamInvitation(
       })
       .returning();
 
-    return newInvitation;
+    return {
+      newInvitation,
+      teamName: team ? team.name : 'a team',
+      inviterName: inviter ? (inviter.name || inviter.email) : 'Someone',
+    };
   });
+
+  // Send invitation email asynchronously after transaction commits
+  sendInvitationEmail(
+    invitation.email,
+    result.newInvitation.token,
+    result.teamName,
+    result.inviterName
+  ).catch((err) => {
+    console.error('[Email] Failed to send invitation email:', err);
+  });
+
+  return result.newInvitation;
 }
 
 /**
@@ -1706,7 +1778,7 @@ export async function acceptTeamInvitation(
       .values({
         teamId: invitation.teamId,
         memberId,
-        role: 'member',
+        role: invitation.role || 'member',
         status: 'active',
       })
       .returning();
@@ -1732,6 +1804,59 @@ export async function rejectTeamInvitation(token: string): Promise<boolean> {
 
   await db.delete(teamInvitations).where(eq(teamInvitations.token, token));
   return true;
+}
+
+/**
+ * Get pending invitations for an email address
+ */
+export async function getInvitationsByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  return await db
+    .select({
+      invitation: teamInvitations,
+      teamName: teams.name,
+    })
+    .from(teamInvitations)
+    .innerJoin(teams, eq(teamInvitations.teamId, teams.id))
+    .where(
+      and(
+        eq(teamInvitations.email, email),
+        eq(teamInvitations.status, 'pending'),
+        gte(teamInvitations.expiresAt, new Date())
+      )
+    );
+}
+
+/**
+ * Get invitation details by token
+ */
+export async function getInvitationByToken(token: string) {
+  const db = await getDb();
+  if (!db) {
+    return null;
+  }
+
+  const [result] = await db
+    .select({
+      invitation: teamInvitations,
+      teamName: teams.name,
+    })
+    .from(teamInvitations)
+    .innerJoin(teams, eq(teamInvitations.teamId, teams.id))
+    .where(
+      and(
+        eq(teamInvitations.token, token),
+        eq(teamInvitations.status, 'pending'),
+        gte(teamInvitations.expiresAt, new Date())
+      )
+    )
+    .limit(1);
+
+  return result || null;
 }
 
 // Member Management Operations

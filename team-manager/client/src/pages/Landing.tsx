@@ -49,7 +49,12 @@ export default function Landing() {
 
             tokenStorage.setAccessToken(result.accessToken);
             tokenStorage.setRefreshToken(result.refreshToken);
-            setLocation("/");
+            const inviteToken = localStorage.getItem('pending_invite_token');
+            if (inviteToken) {
+                setLocation(`/accept-invite?token=${inviteToken}`);
+            } else {
+                setLocation("/");
+            }
             // Force reload to refresh context and socket
             window.location.reload();
         } catch (error) {

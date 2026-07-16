@@ -28,6 +28,7 @@ import Register from "./pages/Register";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
+import AcceptInvite from "./pages/AcceptInvite";
 
 // Routes that always show the public/marketing experience and should stay
 // mobile-responsive, regardless of auth state.
@@ -79,6 +80,7 @@ function Router() {
       <Route path={"/calendar"} component={Calendar} />
       <Route path={"/video-calls"} component={VideoCalls} />
       <Route path={"/notifications"} component={Notifications} />
+      <Route path={"/accept-invite"} component={AcceptInvite} />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

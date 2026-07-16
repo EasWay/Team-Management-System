@@ -3,6 +3,7 @@ import { publicProcedure, router, protectedProcedure, teamProcedure } from "./_c
 import { TRPCError } from "@trpc/server";
 import { authService } from "./_core/auth";
 import { updateUserProfile, createTeamMember, getTeamMembers, getTeamMemberById, updateTeamMember, deleteTeamMember, getAuditLogs, ValidationError, ConflictError, NotFoundError, IntegrityError, createTeam, getUserTeams, getTeamById, updateTeam, deleteTeam, getCollaborativeTeamMembers, createTeamInvitation, getTeamInvitations, acceptTeamInvitation, rejectTeamInvitation, changeTeamMemberRole, updateTeamMemberOfficeRole, removeTeamMember, checkTeamPermission, getMemberRoleInTeam, hasPermission, createTask, getTasksByTeam, getTaskById, updateTask, deleteTask, moveTask, reopenTask, getTaskHistory, createRepository, getRepositoriesByTeam, getRepositoryById, updateRepository, deleteRepository, linkTaskToPR, syncRepository, createClient, getClientsByTeam, getClientById, updateClient, createProject, getProjectsByTeam, getProjectById, updateProject, deleteProject, createProjectFile, getProjectFiles, getUserByEmail, createUserWithPassword, updateUserLastSignedIn, createProjectFromParsedPRD, setTeamGithubToken, getTeamGithubToken, getAllTeams, requestToJoinTeam, approveJoinRequest, searchGlobalTeamMembers, deleteProjectFile, addMemberToTeam, getMessages, createApproval, getApprovals, getApprovalById, approveOrReject, castVote, getPendingApprovalsForUser, configureTeamApproval, getWorkspaceItems, getItemsByStage, addDeliverable, handoffToNextStage, completeHandoff, getHandoffHistory, getDeliverables, getWorkspaceSummary, saveProjectEvaluation, getProjectEvaluation, getEvaluatedProjects, getProjectsReadyForLaunch, getEvaluationStats, sendChatMessage, getChatMessages, getChatConversations, markMessagesAsRead, listAllUsers, getUserTeamMemberships, setUserSystemRole, removeUserFromSystem, addUserToSystem, sendNotification, getDb, handoffTask, handoffProject, getTasksByRole, getProjectsByRole, getTasksByStage, getProjectsByStage, getMyWorkQueue, acceptHandoff } from "./db";
+import { getInvitationsByEmail, getInvitationByToken } from "./db";
 import { parsePRDText } from "./_core/prdParser";
 import { processIdeation } from "./_core/ideationEngine";
 import { evaluateProject, quickEvaluate } from "./_core/projectEvaluator";
@@ -578,6 +579,28 @@ export const appRouter = router({
           return await rejectTeamInvitation(input.token);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Failed to reject invitation');
+        }
+      }),
+
+    getMyInvitations: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (!ctx.user?.email) {
+            throw new Error('User email not found');
+          }
+          return await getInvitationsByEmail(ctx.user.email);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to get invitations');
+        }
+      }),
+
+    getInvitationByToken: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(async ({ input }) => {
+        try {
+          return await getInvitationByToken(input.token);
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : 'Failed to get invitation');
         }
       }),
 
